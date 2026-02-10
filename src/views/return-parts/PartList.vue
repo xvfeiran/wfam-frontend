@@ -113,7 +113,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
@@ -125,7 +125,8 @@ import {
   ExperimentOutlined,
   FileSearchOutlined,
 } from '@ant-design/icons-vue'
-import { MOCK_PARTS, BUSINESS_UNITS, PRODUCT_PLATFORMS } from '@/services/mockData'
+import { partApi } from '@/services/partApi'
+import { lookupApi } from '@/services/lookupApi'
 import { PART_STATUS_MAP } from '@/types'
 import type { Part } from '@/types'
 import AnalysisReportModal from './components/AnalysisReportModal.vue'
@@ -133,10 +134,10 @@ import AnalysisReportModal from './components/AnalysisReportModal.vue'
 const { t } = useI18n()
 const router = useRouter()
 const loading = ref(false)
-const parts = ref<Part[]>([...MOCK_PARTS])
+const parts = ref<Part[]>([])
 const selectedRowKeys = ref<string[]>([])
-const businessUnits = ref(BUSINESS_UNITS)
-const productPlatforms = ref(PRODUCT_PLATFORMS)
+const businessUnits = ref<string[]>([])
+const productPlatforms = ref<string[]>([])
 
 // 映射 PartStatus 蛇形命名到 i18n 驼峰命名
 const statusKeyMap: Record<string, string> = {
@@ -171,7 +172,7 @@ const filters = ref({
 const pagination = computed(() => ({
   current: 1,
   pageSize: 10,
-  total: MOCK_PARTS.length,
+  total: filteredParts.value.length,
   showSizeChanger: true,
   showQuickJumper: true,
   showTotal: (total: number) => t('common.total', { total }),
@@ -216,12 +217,20 @@ const onSelectChange = (keys: string[]) => {
   selectedRowKeys.value = keys
 }
 
-const handleSearch = () => {
+const handleSearch = async () => {
   loading.value = true
-  setTimeout(() => {
-    loading.value = false
+  try {
+    parts.value = await partApi.list({
+      partNumber: filters.value.partNumber || undefined,
+      partCode: filters.value.partCode || undefined,
+      businessUnit: filters.value.businessUnit,
+      productPlatform: filters.value.productPlatform,
+      status: filters.value.status,
+    })
     message.success(t('message.searchComplete'))
-  }, 500)
+  } finally {
+    loading.value = false
+  }
 }
 
 const handleReset = () => {
@@ -233,6 +242,21 @@ const handleReset = () => {
     status: undefined,
   }
 }
+
+onMounted(async () => {
+  loading.value = true
+  try {
+    const [partsData, lookups] = await Promise.all([
+      partApi.list(),
+      lookupApi.getAll(),
+    ])
+    parts.value = partsData
+    businessUnits.value = lookups.businessUnits
+    productPlatforms.value = lookups.productPlatforms
+  } finally {
+    loading.value = false
+  }
+})
 
 const handleView = (id: string) => {
   router.push(`/return-parts/${id}`)

@@ -60,7 +60,8 @@ import { ref, reactive, computed, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import { LinkOutlined } from '@ant-design/icons-vue'
-import { MOCK_ORDERS } from '@/services/mockData'
+import { returnOrderApi } from '@/services/returnOrderApi'
+import type { ReturnOrder } from '@/types'
 
 const { t } = useI18n()
 
@@ -76,21 +77,24 @@ const form = reactive({
   remark: '',
 })
 
+const orders = ref<ReturnOrder[]>([])
+
 // 获取选中的退货单号
 const orderNumbers = computed(() => {
   return props.selectedIds
-    .map(id => MOCK_ORDERS.find(o => o.id === id)?.orderNumber)
+    .map(id => orders.value.find(o => o.id === id)?.orderNumber)
     .filter(Boolean)
     .join(', ') || '-'
 })
 
-// 重置表单
+// 重置表单并加载订单数据
 watch(
   () => props.visible,
-  (visible) => {
+  async (visible) => {
     if (visible) {
       form.scrapStatus = 'pending_workon'
       form.remark = ''
+      orders.value = await returnOrderApi.list()
     }
   }
 )

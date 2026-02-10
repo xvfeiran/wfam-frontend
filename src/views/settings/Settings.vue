@@ -132,11 +132,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { message, Modal } from 'ant-design-vue'
 import { PlusOutlined, UploadOutlined, SyncOutlined } from '@ant-design/icons-vue'
-import { PRODUCT_PLATFORMS, FAILURE_TYPES } from '@/services/mockData'
+import { lookupApi } from '@/services/lookupApi'
 
 const { t } = useI18n()
 
@@ -172,8 +172,14 @@ const notificationFormRef = ref()
 const syncing = ref(false)
 
 // 产品平台和失效类型选项
-const productPlatformOptions = ref(PRODUCT_PLATFORMS)
-const failureTypeOptions = ref(FAILURE_TYPES)
+const productPlatformOptions = ref<string[]>([])
+const failureTypeOptions = ref<string[]>([])
+
+onMounted(async () => {
+  const lookups = await lookupApi.getAll()
+  productPlatformOptions.value = lookups.productPlatforms
+  failureTypeOptions.value = lookups.failureTypes
+})
 
 // 用户选项
 const userOptions = ref([

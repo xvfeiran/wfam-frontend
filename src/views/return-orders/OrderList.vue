@@ -121,7 +121,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
@@ -138,17 +138,18 @@ import {
   EditOutlined,
   StopOutlined,
 } from '@ant-design/icons-vue'
-import { MOCK_ORDERS, CUSTOMERS } from '@/services/mockData'
-import { ORDER_STATUS_MAP, RETURN_METHOD_MAP } from '@/types'
+import { returnOrderApi } from '@/services/returnOrderApi'
+import { lookupApi } from '@/services/lookupApi'
+import { ORDER_STATUS_MAP } from '@/types'
 import type { ReturnOrder } from '@/types'
 import SamplingModal from './components/SamplingModal.vue'
 import ScrapModal from './components/ScrapModal.vue'
 
 const router = useRouter()
 const loading = ref(false)
-const orders = ref<ReturnOrder[]>([...MOCK_ORDERS])
+const orders = ref<ReturnOrder[]>([])
 const selectedRowKeys = ref<string[]>([])
-const customers = ref(CUSTOMERS)
+const customers = ref<string[]>([])
 
 // 筛选条件
 const filters = ref({
@@ -162,7 +163,7 @@ const filters = ref({
 const paginationConfig = computed(() => ({
   current: 1,
   pageSize: 10,
-  total: MOCK_ORDERS.length,
+  total: filteredOrders.value.length,
   showSizeChanger: true,
   showQuickJumper: true,
   showTotal: (total: number) => t('common.total', { total }),
@@ -281,13 +282,29 @@ const onSelectChange = (keys: string[]) => {
   selectedRowKeys.value = keys
 }
 
-const handleSearch = () => {
+const handleSearch = async () => {
   loading.value = true
-  setTimeout(() => {
-    loading.value = false
+  try {
+    orders.value = await returnOrderApi.list({
+      orderNumber: filters.value.orderNumber || undefined,
+      customer: filters.value.customer || undefined,
+    })
     message.success(t('message.searchComplete'))
-  }, 500)
+  } finally {
+    loading.value = false
+  }
 }
+
+onMounted(async () => {
+  loading.value = true
+  try {
+    orders.value = await returnOrderApi.list()
+    const lookups = await lookupApi.getAll()
+    customers.value = lookups.customers
+  } finally {
+    loading.value = false
+  }
+})
 
 const handleReset = () => {
   filters.value = {

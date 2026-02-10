@@ -247,24 +247,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import VChart from 'vue-echarts'
 import { message } from 'ant-design-vue'
 import { SearchOutlined, DownloadOutlined, ReloadOutlined } from '@ant-design/icons-vue'
-import {
-  CUSTOMERS,
-  generateTrendData,
-  CUSTOMER_RANKING,
-  FAILURE_MODE_DATA,
-  BU_DISTRIBUTION,
-  PROCESSING_TIME_DATA,
-} from '@/services/mockData'
+import { reportsApi } from '@/services/reportsApi'
+import { lookupApi } from '@/services/lookupApi'
+import type { ChartDataItem, ProcessingTimeItem, TrendDataPoint } from '@/services/reportsApi'
 
 const { t } = useI18n()
 
 // 筛选选项
-const customerOptions = ref(CUSTOMERS)
+const customerOptions = ref<string[]>([])
 const buOptions = ref(['WS', 'IB', 'CA'])
 const productPlatformOptions = ref(['WSA', 'PCE', 'AHC', 'PLT4', 'PLT5'])
 const failureModeOptions = ref(['噪音', '断裂', '变形', '异响', '渗漏'])
@@ -308,7 +303,28 @@ const filters = reactive({
   responsibilities: [] as string[],
 })
 
-const trendData = computed(() => generateTrendData(30))
+const trendData = ref<TrendDataPoint[]>([])
+const customerRankingData = ref<ChartDataItem[]>([])
+const failureModeData = ref<ChartDataItem[]>([])
+const buDistributionData = ref<ChartDataItem[]>([])
+const processingTimeData = ref<ProcessingTimeItem[]>([])
+
+onMounted(async () => {
+  const [lookups, trend, ranking, failureMode, buDist, procTime] = await Promise.all([
+    lookupApi.getAll(),
+    reportsApi.getTrend(30),
+    reportsApi.getCustomerRanking(),
+    reportsApi.getFailureModeDistribution(),
+    reportsApi.getBuDistribution(),
+    reportsApi.getProcessingTime(),
+  ])
+  customerOptions.value = lookups.customers
+  trendData.value = trend
+  customerRankingData.value = ranking
+  failureModeData.value = failureMode
+  buDistributionData.value = buDist
+  processingTimeData.value = procTime
+})
 
 // 趋势图配置
 const trendChartOption = computed(() => ({
@@ -374,7 +390,7 @@ const customerRankingOption = computed(() => ({
   },
   yAxis: {
     type: 'category',
-    data: CUSTOMER_RANKING.map(c => c.customer).reverse(),
+    data: customerRankingData.value.map(c => c.name).reverse(),
     axisLabel: {
       width: 60,
       overflow: 'truncate',
@@ -383,7 +399,7 @@ const customerRankingOption = computed(() => ({
   series: [
     {
       type: 'bar',
-      data: CUSTOMER_RANKING.map(c => c.count).reverse(),
+      data: customerRankingData.value.map(c => c.value).reverse(),
       itemStyle: {
         color: '#0066B2',
       },
@@ -409,7 +425,7 @@ const processingTimeOption = computed(() => ({
   },
   xAxis: {
     type: 'category',
-    data: PROCESSING_TIME_DATA.map(d => d.stage),
+    data: processingTimeData.value.map(d => d.stage),
   },
   yAxis: {
     type: 'value',
@@ -418,7 +434,7 @@ const processingTimeOption = computed(() => ({
   series: [
     {
       type: 'bar',
-      data: PROCESSING_TIME_DATA.map(d => d.avgDays),
+      data: processingTimeData.value.map(d => d.avgDays),
       itemStyle: {
         color: '#722ed1',
       },
@@ -456,7 +472,7 @@ const failureModeOption = computed(() => ({
         show: true,
         formatter: '{b}\n{d}%',
       },
-      data: FAILURE_MODE_DATA.map((d, i) => ({
+      data: failureModeData.value.map((d, i) => ({
         ...d,
         itemStyle: {
           color: ['#0066B2', '#52c41a', '#faad14', '#ff4d4f'][i],
@@ -481,7 +497,7 @@ const buDistributionOption = computed(() => ({
       type: 'pie',
       radius: '60%',
       center: ['60%', '50%'],
-      data: BU_DISTRIBUTION.map((d, i) => ({
+      data: buDistributionData.value.map((d, i) => ({
         ...d,
         itemStyle: {
           color: ['#0066B2', '#52c41a', '#722ed1', '#faad14'][i],

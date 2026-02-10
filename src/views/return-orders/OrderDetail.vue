@@ -101,7 +101,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import { StopOutlined } from '@ant-design/icons-vue'
-import { MOCK_ORDERS, MOCK_PARTS } from '@/services/mockData'
+import { returnOrderApi } from '@/services/returnOrderApi'
 import { ORDER_STATUS_MAP, PART_STATUS_MAP, RETURN_METHOD_MAP, OrderStatus } from '@/types'
 import type { ReturnOrder, Part } from '@/types'
 import SamplingModal from './components/SamplingModal.vue'
@@ -189,11 +189,11 @@ const getStepDescription = (step: number) => {
   return ''
 }
 
-onMounted(() => {
+onMounted(async () => {
   // 加载退货单数据
-  order.value = MOCK_ORDERS.find(o => o.id === orderId.value) || null
+  order.value = await returnOrderApi.getById(orderId.value)
   if (order.value) {
-    parts.value = MOCK_PARTS.filter(p => p.orderId === order.value!.id)
+    parts.value = await returnOrderApi.getParts(orderId.value)
   }
 })
 

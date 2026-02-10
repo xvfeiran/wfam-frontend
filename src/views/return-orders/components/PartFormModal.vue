@@ -47,7 +47,7 @@
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { BUSINESS_UNITS, PRODUCT_PLATFORMS } from '@/services/mockData'
+import { lookupApi } from '@/services/lookupApi'
 import type { Part } from '@/types'
 import { PartStatus } from '@/types'
 
@@ -61,8 +61,16 @@ const props = defineProps<{
 const emit = defineEmits(['update:visible', 'success'])
 
 const formRef = ref()
-const businessUnits = ref(BUSINESS_UNITS)
-const productPlatforms = ref(PRODUCT_PLATFORMS)
+const businessUnits = ref<string[]>([])
+const productPlatforms = ref<string[]>([])
+
+watch(() => props.visible, async (val) => {
+  if (val && businessUnits.value.length === 0) {
+    const lookups = await lookupApi.getAll()
+    businessUnits.value = lookups.businessUnits
+    productPlatforms.value = lookups.productPlatforms
+  }
+})
 
 const form = reactive({
   partCode: '',

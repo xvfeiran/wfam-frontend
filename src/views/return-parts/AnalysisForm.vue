@@ -144,7 +144,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import { DownloadOutlined, PlusOutlined } from '@ant-design/icons-vue'
-import { MOCK_PARTS } from '@/services/mockData'
+import { partApi } from '@/services/partApi'
 import type { Part } from '@/types'
 
 const { t } = useI18n()
@@ -166,8 +166,8 @@ const form = reactive({
 
 const failureModeLabel = computed(() => form.failureMode || t('returnPart.failureType'))
 
-onMounted(() => {
-  part.value = MOCK_PARTS.find(p => p.id === partId.value) || null
+onMounted(async () => {
+  part.value = await partApi.getById(partId.value)
 })
 
 const handleBack = () => {

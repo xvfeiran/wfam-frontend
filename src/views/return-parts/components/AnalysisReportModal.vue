@@ -76,7 +76,7 @@ import { ref, reactive, computed, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import { UploadOutlined, DownloadOutlined } from '@ant-design/icons-vue'
-import { MOCK_TEMPLATES } from '@/services/mockData'
+import { reportsApi } from '@/services/reportsApi'
 import type { Part, ReportTemplate } from '@/types'
 
 const { t } = useI18n()
@@ -89,7 +89,7 @@ const props = defineProps<{
 const emit = defineEmits(['update:visible', 'success'])
 
 const formRef = ref()
-const templates = ref(MOCK_TEMPLATES)
+const templates = ref<ReportTemplate[]>([])
 
 const form = reactive({
   templateId: undefined as string | undefined,
@@ -129,6 +129,13 @@ const selectedTemplate = computed(() => {
   }
 
   return template || null
+})
+
+// 当弹窗打开时加载模板
+watch(() => props.visible, async (val) => {
+  if (val && templates.value.length === 0) {
+    templates.value = await reportsApi.getTemplates()
+  }
 })
 
 // 当模板变化时重置表单内容

@@ -122,7 +122,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import VChart from 'vue-echarts'
@@ -141,7 +141,8 @@ import {
   FormOutlined,
   AppstoreOutlined,
 } from '@ant-design/icons-vue'
-import { MOCK_TASKS, MOCK_ORDERS, MOCK_PARTS, generateTrendData } from '@/services/mockData'
+import { dashboardApi } from '@/services/dashboardApi'
+import type { DashboardStats } from '@/services/dashboardApi'
 import type { Task } from '@/types'
 
 const { t } = useI18n()
@@ -149,15 +150,10 @@ const router = useRouter()
 const timeRange = ref('month')
 
 // 统计数据
-const stats = computed(() => ({
-  totalOrders: MOCK_ORDERS.length,
-  totalParts: MOCK_PARTS.length,
-  pendingTasks: MOCK_TASKS.reduce((sum, t) => sum + t.count, 0),
-  completionRate: 78.5,
-}))
+const stats = ref<DashboardStats>({ totalOrders: 0, totalParts: 0, pendingTasks: 0, completionRate: 0 })
 
 // 任务列表
-const tasks = ref(MOCK_TASKS)
+const tasks = ref<Task[]>([])
 
 // 任务标题翻译
 const getTaskTitle = (type: string) => {
@@ -173,7 +169,7 @@ const getTaskTitle = (type: string) => {
 }
 
 // 趋势图表配置
-const trendData = ref(generateTrendData(30))
+const trendData = ref<{date: string, orders: number, parts: number}[]>([])
 
 const trendChartOption = computed(() => ({
   tooltip: {
@@ -233,15 +229,21 @@ const quickLinks = [
   { key: 'help', i18nKey: 'helpManual', icon: QuestionCircleOutlined, path: '/help', external: false },
 ]
 
-const handleTimeRangeChange = () => {
+const handleTimeRangeChange = async () => {
   const days = {
     day: 7,
     week: 28,
     month: 30,
     year: 365,
   }[timeRange.value] || 30
-  trendData.value = generateTrendData(days)
+  trendData.value = await dashboardApi.getTrend(days)
 }
+
+onMounted(async () => {
+  stats.value = await dashboardApi.getStats()
+  tasks.value = await dashboardApi.getTasks()
+  trendData.value = await dashboardApi.getTrend(30)
+})
 
 const getTaskBadgeStatus = (priority: string) => {
   const statusMap: Record<string, 'default' | 'processing' | 'warning' | 'error'> = {

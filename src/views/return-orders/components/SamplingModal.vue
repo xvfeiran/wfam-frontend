@@ -99,7 +99,7 @@
 import { ref, watch, computed } from 'vue'
 import { message } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
-import { MOCK_PARTS } from '@/services/mockData'
+import { returnOrderApi } from '@/services/returnOrderApi'
 import { OrderStatus } from '@/types'
 import type { ReturnOrder, Part } from '@/types'
 
@@ -132,9 +132,9 @@ const isSampled = computed(() => {
 
 watch(
   () => props.order,
-  (order) => {
+  async (order) => {
     if (order) {
-      availableParts.value = MOCK_PARTS.filter(p => p.orderId === order.id)
+      availableParts.value = await returnOrderApi.getParts(order.id)
       selectedPartIds.value = []
       // 模拟已抽样的结果（实际应从后端获取）
       if (isSampled.value) {

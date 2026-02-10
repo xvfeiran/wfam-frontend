@@ -229,7 +229,9 @@ import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
 import { CameraOutlined, PlusOutlined, CheckCircleOutlined } from '@ant-design/icons-vue'
-import { MOCK_ORDERS, MOCK_PARTS, BUSINESS_UNITS, PRODUCT_PLATFORMS } from '@/services/mockData'
+import { returnOrderApi } from '@/services/returnOrderApi'
+import { partApi } from '@/services/partApi'
+import { lookupApi } from '@/services/lookupApi'
 
 const { t } = useI18n()
 
@@ -246,10 +248,10 @@ const formRef = ref()
 const isEdit = computed(() => !!route.params.id)
 const partId = computed(() => route.params.id as string)
 
-const orders = ref(MOCK_ORDERS)
-const businessUnits = ref(BUSINESS_UNITS)
-const productPlatforms = ref(PRODUCT_PLATFORMS)
-const failureTypes = ref(['噪音', '断裂', '变形', '异响', '渗漏', '其他'])
+const orders = ref<any[]>([])
+const businessUnits = ref<string[]>([])
+const productPlatforms = ref<string[]>([])
+const failureTypes = ref<string[]>([])
 
 const previewVisible = ref(false)
 const previewImage = ref('')
@@ -301,7 +303,7 @@ const rules = computed(() => ({
 
 const generatePartNumber = () => {
   if (form.businessUnit && form.productPlatform) {
-    const seq = String(MOCK_PARTS.length + 1).padStart(4, '0')
+    const seq = String(Date.now() % 10000).padStart(4, '0')
     form.partNumber = `${form.businessUnit}-${form.productPlatform}-${seq}`
   }
 }
@@ -371,9 +373,19 @@ const handlePreview = (file: any) => {
   previewVisible.value = true
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // Load lookup data and orders in parallel
+  const [lookups, ordersData] = await Promise.all([
+    lookupApi.getAll(),
+    returnOrderApi.list(),
+  ])
+  businessUnits.value = lookups.businessUnits
+  productPlatforms.value = lookups.productPlatforms
+  failureTypes.value = lookups.failureTypes
+  orders.value = ordersData
+
   if (isEdit.value) {
-    const part = MOCK_PARTS.find(p => p.id === partId.value)
+    const part = await partApi.getById(partId.value)
     if (part) {
       form.partNumber = part.partNumber
       form.orderId = part.orderId

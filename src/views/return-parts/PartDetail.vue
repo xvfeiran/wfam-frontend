@@ -108,9 +108,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
-import { MOCK_PARTS, MOCK_REPORTS, MOCK_TEMPLATES } from '@/services/mockData'
+import { partApi } from '@/services/partApi'
+import { reportsApi } from '@/services/reportsApi'
 import { PART_STATUS_MAP, PartStatus } from '@/types'
-import type { Part, AnalysisReport } from '@/types'
+import type { Part, AnalysisReport, ReportTemplate } from '@/types'
 import AnalysisReportModal from './components/AnalysisReportModal.vue'
 
 const { t } = useI18n()
@@ -120,6 +121,7 @@ const partId = computed(() => route.params.id as string)
 
 const part = ref<Part | null>(null)
 const report = ref<AnalysisReport | null>(null)
+const templates = ref<ReportTemplate[]>([])
 const analysisVisible = ref(false)
 
 // 状态步骤映射
@@ -145,7 +147,7 @@ const getStepDescription = (step: number) => {
 }
 
 const getTemplateName = (templateId: string) => {
-  return MOCK_TEMPLATES.find(t => t.id === templateId)?.name || '-'
+  return templates.value.find(t => t.id === templateId)?.name || '-'
 }
 
 const getReportStatusColor = (status: string) => {
@@ -173,11 +175,14 @@ const getStatusLabel = (status?: string) => {
   return key ? t(key) || PART_STATUS_MAP[status || 'registered'].label : PART_STATUS_MAP['registered'].label
 }
 
-onMounted(() => {
-  part.value = MOCK_PARTS.find(p => p.id === partId.value) || null
-  if (part.value) {
-    report.value = MOCK_REPORTS.find(r => r.partId === part.value!.id) || null
-  }
+onMounted(async () => {
+  part.value = await partApi.getById(partId.value)
+  const [reports, templateData] = await Promise.all([
+    partApi.getReports(partId.value),
+    reportsApi.getTemplates(),
+  ])
+  report.value = reports.length > 0 ? reports[0] : null
+  templates.value = templateData
 })
 
 const handleBack = () => {

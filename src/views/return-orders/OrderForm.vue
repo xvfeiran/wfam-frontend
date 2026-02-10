@@ -151,7 +151,8 @@ import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
 import { PlusOutlined } from '@ant-design/icons-vue'
-import { CUSTOMERS, MOCK_ORDERS, MOCK_PARTS } from '@/services/mockData'
+import { returnOrderApi } from '@/services/returnOrderApi'
+import { lookupApi } from '@/services/lookupApi'
 import type { Part } from '@/types'
 
 const { t } = useI18n()
@@ -163,7 +164,7 @@ const formRef = ref()
 const isEdit = computed(() => !!route.params.id)
 const orderId = computed(() => route.params.id as string)
 
-const customers = ref(CUSTOMERS)
+const customers = ref<string[]>([])
 const parts = ref<Part[]>([])
 
 const form = reactive({
@@ -206,10 +207,14 @@ const disabledFutureDate = (current: Dayjs) => {
   return current && current > dayjs().endOf('day')
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // 加载客户列表
+  const lookups = await lookupApi.getAll()
+  customers.value = lookups.customers
+
   if (isEdit.value) {
     // 加载退货单数据
-    const order = MOCK_ORDERS.find(o => o.id === orderId.value)
+    const order = await returnOrderApi.getById(orderId.value)
     if (order) {
       form.orderNumber = order.orderNumber
       form.customer = order.customer
@@ -222,12 +227,13 @@ onMounted(() => {
       form.description = order.description || ''
 
       // 加载关联的售后件
-      parts.value = MOCK_PARTS.filter(p => p.orderId === order.id)
+      parts.value = await returnOrderApi.getParts(order.id)
     }
   } else {
     // 生成新的退货单号（年+QMC+4位码，例：2026QMC0001）
     const year = dayjs().year()
-    form.orderNumber = `${year}QMC${String(MOCK_ORDERS.length + 1).padStart(4, '0')}`
+    const allOrders = await returnOrderApi.list()
+    form.orderNumber = `${year}QMC${String(allOrders.length + 1).padStart(4, '0')}`
   }
 })
 

@@ -207,7 +207,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { message, Modal } from 'ant-design-vue'
 import { CheckOutlined, CloseOutlined, EyeOutlined, DownOutlined } from '@ant-design/icons-vue'
@@ -218,6 +218,7 @@ import {
   type ScrapApplication,
   type AnalysisApplication,
 } from '@/types'
+import { approvalApi } from '@/services/approvalApi'
 
 const { t } = useI18n()
 
@@ -244,28 +245,29 @@ const tablePagination = {
 }
 
 // 我的报废申请（我提交的）
-const myScrapApplications = ref<ScrapApplication[]>([
-  { id: '1', orderNumber: 'RO-2026-0001', partNumbers: 'BU1-PLT1-0001, BU1-PLT1-0002', quantity: 2, applyTime: '2026-02-01 10:00', status: ApprovalStatus.PENDING, reason: '零件损坏无法修复', approver: '王五' },
-  { id: '2', orderNumber: 'RO-2026-0002', partNumbers: 'BU2-PLT3-0001', quantity: 1, applyTime: '2026-02-02 14:30', status: ApprovalStatus.APPROVED, reason: '客户要求报废处理', approver: '王五', approveTime: '2026-02-02 16:00' },
-])
+const myScrapApplications = ref<ScrapApplication[]>([])
 
 // 我的精分析申请（我提交的）
-const myAnalysisApplications = ref<AnalysisApplication[]>([
-  { id: '1', reportNumber: 'AR-2026-0001', partNumber: 'BU1-PLT1-0001', productPlatform: 'PLT1', failureType: '噪音', submitTime: '2026-02-01 14:00', status: ApprovalStatus.PENDING, summary: '怠速噪音异常分析报告', approver: '赵六', content: { failureMode: '机械失效', failureDescription: '发动机怠速时产生异常噪音', rootCause: '轴承磨损导致', improvement: '更换新轴承', responsibleDept: '工程部' } },
-  { id: '2', reportNumber: 'AR-2026-0002', partNumber: 'BU2-PLT3-0001', productPlatform: 'PLT3', failureType: '渗漏', submitTime: '2026-02-02 10:30', status: ApprovalStatus.APPROVED, summary: '油封渗漏分析报告', approver: '赵六', approveTime: '2026-02-02 15:00', content: { failureMode: '材料失效', failureDescription: '油封老化导致渗漏', rootCause: '材料选型不当', improvement: '更换耐久性更好的油封材料', responsibleDept: '采购部' } },
-])
+const myAnalysisApplications = ref<AnalysisApplication[]>([])
 
 // 待我审批的报废申请（别人提交的）
-const pendingScrapApprovals = ref<ScrapApplication[]>([
-  { id: '3', orderNumber: 'RO-2026-0003', partNumbers: 'BU3-PLT2-0001', quantity: 1, applicant: '赵六', applyTime: '2026-02-03 09:15', status: ApprovalStatus.PENDING, reason: '超期未处理' },
-  { id: '4', orderNumber: 'RO-2026-0004', partNumbers: 'BU1-PLT4-0001', quantity: 1, applicant: '钱七', applyTime: '2026-02-04 08:00', status: ApprovalStatus.PENDING, reason: '质量问题无法使用' },
-])
+const pendingScrapApprovals = ref<ScrapApplication[]>([])
 
 // 待我审批的精分析报告（别人提交的）
-const pendingAnalysisApprovals = ref<AnalysisApplication[]>([
-  { id: '3', reportNumber: 'AR-2026-0003', partNumber: 'BU3-PLT2-0001', productPlatform: 'PLT2', failureType: '断裂', submitter: '钱七', submitTime: '2026-02-03 16:45', status: ApprovalStatus.PENDING, summary: '连接件断裂分析报告', content: { failureMode: '疲劳断裂', failureDescription: '连接件在长期使用后断裂', rootCause: '设计强度不足', improvement: '增加截面积，提高强度', responsibleDept: '工程部' } },
-  { id: '4', reportNumber: 'AR-2026-0004', partNumber: 'BU1-PLT1-0002', productPlatform: 'PLT1', failureType: '异响', submitter: '张三', submitTime: '2026-02-04 09:30', status: ApprovalStatus.PENDING, summary: '异响问题分析报告', content: { failureMode: '机械失效', failureDescription: '运行时产生异响', rootCause: '装配不良', improvement: '改进装配工艺', responsibleDept: '生产部' } },
-])
+const pendingAnalysisApprovals = ref<AnalysisApplication[]>([])
+
+onMounted(async () => {
+  const [myScrap, myAnalysis, pendingScrap, pendingAnalysis] = await Promise.all([
+    approvalApi.getMyScrapApplications(),
+    approvalApi.getMyAnalysisApplications(),
+    approvalApi.getPendingScrapApprovals(),
+    approvalApi.getPendingAnalysisApprovals(),
+  ])
+  myScrapApplications.value = myScrap
+  myAnalysisApplications.value = myAnalysis
+  pendingScrapApprovals.value = pendingScrap
+  pendingAnalysisApprovals.value = pendingAnalysis
+})
 
 // 我的报废申请列配置
 const myScrapColumns = computed(() => [
@@ -344,7 +346,8 @@ const handleCancelApplication = (record: ScrapApplication | AnalysisApplication,
   Modal.confirm({
     title: t('approval.confirmWithdrawApplication'),
     content: t('approval.confirmWithdraw'),
-    onOk: () => {
+    onOk: async () => {
+      await approvalApi.withdraw(record.id)
       if (type === 'scrap') {
         myScrapApplications.value = myScrapApplications.value.filter(a => a.id !== record.id)
       } else {
@@ -367,7 +370,8 @@ const handleApprove = (record: ScrapApplication | AnalysisApplication, type: App
   Modal.confirm({
     title: t('approval.confirmApprove'),
     content: t('approval.confirmApprove').replace('{type}', typeName),
-    onOk: () => {
+    onOk: async () => {
+      await approvalApi.approve(record.id, type)
       if (type === 'scrap') {
         const item = pendingScrapApprovals.value.find(a => a.id === record.id)
         if (item) item.status = ApprovalStatus.APPROVED
@@ -389,13 +393,15 @@ const handleReject = (record: ScrapApplication | AnalysisApplication, type: Appl
 }
 
 // 确认驳回
-const handleConfirmReject = () => {
+const handleConfirmReject = async () => {
   if (!rejectReason.value.trim()) {
     message.error(t('approval.inputRejectReason'))
     return
   }
 
   if (!currentRejectRecord.value) return
+
+  await approvalApi.reject(currentRejectRecord.value.id, currentRejectType.value, rejectReason.value)
 
   if (currentRejectType.value === 'scrap') {
     const item = pendingScrapApprovals.value.find(a => a.id === currentRejectRecord.value!.id)
