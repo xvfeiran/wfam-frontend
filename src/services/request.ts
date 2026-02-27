@@ -5,7 +5,7 @@ import type { AxiosResponse } from 'axios'
 const DEV_AUTH_HEADER = JSON.stringify({
   loginType: 2,
   createUserName: 'SYSTEM',
-  expiresIn: 1728548941130,
+  expiresIn: 2051222400000,
   id: 6181,
   email: 'Raven.ZHENG@cn.bosch.com',
   departmentName: 'BD/SWD-FSB2',
@@ -16,7 +16,7 @@ const DEV_AUTH_HEADER = JSON.stringify({
   companyId: 1,
   roleIds: '99,241,81,242,41,321,365,368,326,366,85,84,405,4,444,4',
   createTime: 1721982699347,
-  passwordPeriod: 1737880299347,
+  passwordPeriod: 2051222400000,
   name: 'ZHENG Raven (BD/SWD-FSB2)',
   ntAccount: 'ZRN7SZH',
   grantType: 'authorization_code',
@@ -25,7 +25,7 @@ const DEV_AUTH_HEADER = JSON.stringify({
   status: 1,
   sub: 'ZRN7SZH',
   iat: 1728462541,
-  exp: 1728548941,
+  exp: 2051222400,
 })
 
 const request = axios.create({
