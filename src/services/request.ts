@@ -1,5 +1,6 @@
 import axios from 'axios'
 import type { AxiosResponse } from 'axios'
+import { useDevMode } from '@/composables/useDevMode'
 
 // 开发期间写死的请求头（上线后由中转网关添加）
 const DEV_AUTH_HEADER = JSON.stringify({
@@ -36,10 +37,14 @@ const request = axios.create({
   },
 })
 
-// 请求拦截器 - 添加认证头
+const { isDevMode } = useDevMode()
+
+// 请求拦截器 - 调试模式下添加认证头（生产环境由网关注入）
 request.interceptors.request.use(
   (config) => {
-    config.headers['x-authentication-header'] = DEV_AUTH_HEADER
+    if (isDevMode.value) {
+      config.headers['x-authentication-header'] = DEV_AUTH_HEADER
+    }
     return config
   },
   (error) => Promise.reject(error),
