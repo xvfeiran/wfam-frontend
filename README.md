@@ -63,18 +63,18 @@ npm run preview  # 本地预览构建产物
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
-| `VITE_BACKEND_URL` | 调试模式下 Axios baseURL，直接指向后端 | `http://localhost:8102/aftermarket-parts-management-system/api/v1` |
-| `VITE_GATEWAY_URL` | 微应用模式下 Axios baseURL，指向网关 | 空（生产构建前必须配置） |
+| `VITE_BACKEND_URL` | 调试模式下 Axios baseURL，浏览器直接访问后端 | `http://localhost:8102/aftermarket-parts-management-system/api/v1` |
+| `VITE_GATEWAY_URL` | 微应用模式下 Axios baseURL，浏览器直接访问网关 | 空（Docker 构建前必须配置） |
 
 在项目根目录创建 `.env.local`（已被 `.gitignore` 忽略）覆盖默认值：
 
 ```bash
-# .env.local
+# .env.local（按需修改，不提交 git）
 VITE_BACKEND_URL=http://your-backend-host:8102/aftermarket-parts-management-system/api/v1
 VITE_GATEWAY_URL=https://your-gateway/api/v1
 ```
 
-Vite 开发代理会根据 `VITE_BACKEND_URL` 自动派生代理目标，将 `/api/*` 请求转发到后端（用于无法直接跨域访问时的备选方案）。
+> 调试模式下浏览器直接跨域请求后端，后端需配置 CORS 允许来自开发服务器的请求（包括 `x-authentication-header`）。
 
 ### 调试模式（显示菜单和顶栏）
 
@@ -90,23 +90,16 @@ http://localhost:3000/?dev=1
 
 ### 构建镜像
 
+所有 `VITE_*` 配置通过 `.env.[mode]` 文件管理，**无需传入任何构建参数**。
+
 ```bash
-docker build \
-  --build-arg VITE_GATEWAY_URL=https://your-gateway/api/v1 \
-  -t wfam-frontend .
+# 测试构建（Dockerfile 默认 BUILD_MODE=test，自动加载 .env.test）
+docker build -t wfam-frontend:test .
 ```
 
-镜像采用两阶段构建：Node 构建静态文件，nginx:alpine 提供服务。`VITE_*` 变量在构建阶段注入，需通过 `--build-arg` 传入。
+镜像采用两阶段构建：Node 构建静态文件，nginx:alpine 提供服务。`VITE_*` 变量在构建阶段从 `.env.test` 读取并打包进 JS bundle。
 
-### 构建参数
-
-| 参数 | 说明 | 示例 |
-|------|------|------|
-| `VITE_GATEWAY_URL` | 微应用模式下前端调用的网关地址 | `https://gateway.example.com/api/v1` |
-
-> **注意：** `VITE_*` 变量在构建阶段打包进 JS bundle，与 nginx 的运行时变量是两套独立机制。
-> 前端现在直接请求 `VITE_GATEWAY_URL`（绝对地址），不再经过 nginx 的 `/api/` 代理，
-> 因此 `BACKEND_URL` 运行时变量已不影响 API 流量，nginx 仅负责静态文件服务和 SPA 路由回退。
+> `VITE_*` 变量在构建阶段打包进 JS bundle，nginx 仅负责静态文件服务和 SPA 路由回退。
 
 ### nginx 端点
 
