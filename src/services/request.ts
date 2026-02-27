@@ -29,15 +29,17 @@ const DEV_AUTH_HEADER = JSON.stringify({
   exp: 2051222400,
 })
 
+const { isDevMode } = useDevMode()
+
 const request = axios.create({
-  baseURL: '/api/v1',
+  baseURL: isDevMode.value
+    ? import.meta.env.VITE_BACKEND_URL
+    : import.meta.env.VITE_GATEWAY_URL,
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
   },
 })
-
-const { isDevMode } = useDevMode()
 
 // 请求拦截器 - 调试模式下添加认证头（生产环境由网关注入）
 request.interceptors.request.use(

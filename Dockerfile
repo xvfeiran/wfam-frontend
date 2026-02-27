@@ -12,8 +12,10 @@ RUN npm install --loglevel warn
 # 复制源代码
 COPY . .
 
-# 构建应用
-RUN npm run build
+# 构建模式：production（默认）/ test
+# 对应加载 .env.production / .env.test，再叠加 .env 中的默认值
+ARG BUILD_MODE=production
+RUN npm run build -- --mode ${BUILD_MODE}
 
 # 运行阶段
 FROM docker.production.tmp-service.bosch.com/nginx:alpine
@@ -21,11 +23,10 @@ FROM docker.production.tmp-service.bosch.com/nginx:alpine
 # 复制构建产物到 Nginx 目录
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# 复制 Nginx 配置模板
-COPY nginx.conf /etc/nginx/conf.d/default.conf.template
+# 复制 Nginx 配置（无运行时变量，直接使用）
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # 暴露端口
 EXPOSE 80
 
-# 启动时用 envsubst 将 BACKEND_URL 注入配置，再启动 nginx
-CMD ["/bin/sh", "-c", "envsubst '${BACKEND_URL}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+CMD ["nginx", "-g", "daemon off;"]

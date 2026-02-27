@@ -59,15 +59,26 @@ npm run build    # 构建到 dist/
 npm run preview  # 本地预览构建产物
 ```
 
-Vite 将 `/api` 请求代理到本地后端（见 [vite.config.ts](vite.config.ts)）：
+### 环境变量
 
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `VITE_BACKEND_URL` | 调试模式下 Axios baseURL，直接指向后端 | `http://localhost:8102/aftermarket-parts-management-system/api/v1` |
+| `VITE_GATEWAY_URL` | 微应用模式下 Axios baseURL，指向网关 | 空（生产构建前必须配置） |
+
+在项目根目录创建 `.env.local`（已被 `.gitignore` 忽略）覆盖默认值：
+
+```bash
+# .env.local
+VITE_BACKEND_URL=http://your-backend-host:8102/aftermarket-parts-management-system/api/v1
+VITE_GATEWAY_URL=https://your-gateway/api/v1
 ```
-/api/* → http://localhost:8102/aftermarket-parts-management-system/*
-```
+
+Vite 开发代理会根据 `VITE_BACKEND_URL` 自动派生代理目标，将 `/api/*` 请求转发到后端（用于无法直接跨域访问时的备选方案）。
 
 ### 调试模式（显示菜单和顶栏）
 
-本项目作为无界微前端子应用部署时默认不渲染菜单和顶栏。本地开发时在 URL 加上 `?dev=1` 开启完整布局：
+本项目作为无界微前端子应用部署时默认不渲染菜单和顶栏，API 请求使用 `VITE_GATEWAY_URL`。本地开发时在 URL 加上 `?dev=1` 开启完整布局，同时 API 请求切换为 `VITE_BACKEND_URL`：
 
 ```
 http://localhost:3000/?dev=1
@@ -80,41 +91,27 @@ http://localhost:3000/?dev=1
 ### 构建镜像
 
 ```bash
-docker build -t wfam-frontend .
+docker build \
+  --build-arg VITE_GATEWAY_URL=https://your-gateway/api/v1 \
+  -t wfam-frontend .
 ```
 
-镜像采用两阶段构建：Node 构建静态文件，nginx:alpine 提供服务。
+镜像采用两阶段构建：Node 构建静态文件，nginx:alpine 提供服务。`VITE_*` 变量在构建阶段注入，需通过 `--build-arg` 传入。
 
-### 运行时环境变量
+### 构建参数
 
-| 变量 | 说明 | 示例 |
+| 参数 | 说明 | 示例 |
 |------|------|------|
-| `BACKEND_URL` | 后端服务地址（不含路径，无结尾斜杠） | `http://wfam-backend-svc:8102` |
+| `VITE_GATEWAY_URL` | 微应用模式下前端调用的网关地址 | `https://gateway.example.com/api/v1` |
 
-nginx 在容器启动时自动将 `BACKEND_URL` 注入配置（通过 `/etc/nginx/templates/` 模板机制），将前端的 `/api/` 请求反向代理到后端。
-
-### 在 Rancher 中配置
-
-在工作负载的环境变量中添加：
-
-```
-BACKEND_URL=http://<后端 Service 名称>:<端口>
-```
-
-**完整请求链路：**
-
-```
-浏览器 /api/v1/...
-  → nginx（前端容器，80 端口）
-  → ${BACKEND_URL}/aftermarket-parts-management-system/api/v1/...
-  → 后端容器
-```
+> **注意：** `VITE_*` 变量在构建阶段打包进 JS bundle，与 nginx 的运行时变量是两套独立机制。
+> 前端现在直接请求 `VITE_GATEWAY_URL`（绝对地址），不再经过 nginx 的 `/api/` 代理，
+> 因此 `BACKEND_URL` 运行时变量已不影响 API 流量，nginx 仅负责静态文件服务和 SPA 路由回退。
 
 ### nginx 端点
 
 | 路径 | 说明 |
 |------|------|
-| `/api/` | 反向代理到后端，地址由 `BACKEND_URL` 决定 |
 | `/assets/` | 静态资源，1 年强缓存 |
 | `/` | SPA History 模式路由回退 |
 | `/health` | 健康检查，返回 `200 OK` |
