@@ -1,105 +1,144 @@
-# RBCC WFAM 售后件管理系统 - 前端原型
+# RBCC WFAM 售后件管理系统 - 前端
 
-基于 Vue 3 + Ant Design Vue + TypeScript + Vite 构建的交互原型。
+基于 Vue 3 + Ant Design Vue + TypeScript + Vite 构建。
 
 ## 技术栈
 
-- **Vue 3.4** - 渐进式JavaScript框架
-- **Ant Design Vue 4.x** - 企业级UI组件库
-- **TypeScript 5.3** - 类型安全
-- **Vite 5.0** - 下一代前端构建工具
-- **Vue Router 4** - 路由管理
-- **Pinia** - 状态管理
-- **ECharts 5** - 数据可视化图表库
-- **Day.js** - 日期处理库
+| 类别 | 技术 |
+|------|------|
+| 框架 | Vue 3.4 + TypeScript 5.3 |
+| 构建工具 | Vite 5 |
+| UI 组件库 | Ant Design Vue 4.x |
+| 状态管理 | Pinia |
+| 路由 | Vue Router 4 |
+| HTTP 客户端 | Axios |
+| 图表 | ECharts 5 + vue-echarts |
+| 国际化 | vue-i18n（中文 / 英文） |
+| 日期处理 | Day.js |
 
 ## 功能模块
 
-### 1. 工作台 (Dashboard)
-- 数据统计卡片（退货单/售后件/待处理任务/完成率）
-- 数量趋势图表（支持日/周/月/年切换）
-- 任务中心（待初分析/待精分析/预警/超期等）
-- 快捷入口（8个常用功能快捷链接）
+### 工作台（Dashboard）
+- 数据统计卡片（退货单 / 售后件 / 待处理任务 / 完成率）
+- 数量趋势图表（支持日 / 周 / 月 / 年切换）
+- 任务中心（待初分析 / 待精分析 / 预警 / 超期等）
+- 快捷入口
 
-### 2. 退货单管理
-- 列表查询（退货单号/客户/日期/退回方式筛选）
-- 新增/编辑退货单（含关联售后件管理）
-- 退货单详情（基本信息+状态流程+操作日志）
-- 抽样管理（标准抽样/指定抽样/不抽样）
+### 退货单管理
+- 列表查询（退货单号 / 客户 / 日期 / 退回方式筛选）
+- 新增 / 编辑退货单（含关联售后件管理）
+- 退货单详情（基本信息 + 状态流程 + 操作日志）
+- 抽样管理（标准抽样 / 指定抽样 / 不抽样）
 - 报废申请
 
-### 3. 售后件管理
-- 列表查询（编号/零件号/业务单元/产品平台/状态筛选）
-- 新增/编辑售后件
-- **OCR扫描识别**（模拟车辆信息识别功能）
+### 售后件管理
+- 列表查询（编号 / 零件号 / 业务单元 / 产品平台 / 状态筛选）
+- 新增 / 编辑售后件
+- OCR 扫描识别（车辆信息识别）
 - 照片上传
-- 售后件详情
-- 精分析报告（模板选择+动态表单+审批）
+- 精分析报告（模板选择 + 动态表单 + 审批）
 
-### 4. 统计报表
+### 统计报表
 - 汇总统计卡片
 - 退货趋势分析（折线图）
 - 客户投诉排名（柱状图）
-- 处理时效统计（柱状图）
-- 失效模式分布（饼图）
-- 业务单元分布（饼图）
-- 产品平台分布（柱状图）
+- 处理时效统计、失效模式分布、业务单元分布、产品平台分布
 
-## 快速开始
+### 审批 / 配置
+- 审批流管理
+- 系统配置
+
+## 本地开发
+
+**前置条件：** Node.js 20+
 
 ```bash
-# 安装依赖
 npm install
-
-# 启动开发服务器
-npm run dev
-
-# 构建生产版本
-npm run build
-
-# 预览构建结果
-npm run preview
+npm run dev      # 开发服务器：http://localhost:3000
+npm run build    # 构建到 dist/
+npm run preview  # 本地预览构建产物
 ```
+
+Vite 将 `/api` 请求代理到本地后端（见 [vite.config.ts](vite.config.ts)）：
+
+```
+/api/* → http://localhost:8102/aftermarket-parts-management-system/*
+```
+
+## 生产部署（Docker / Rancher）
+
+### 构建镜像
+
+```bash
+docker build -t wfam-frontend .
+```
+
+镜像采用两阶段构建：Node 构建静态文件，nginx:alpine 提供服务。
+
+### 运行时环境变量
+
+| 变量 | 说明 | 示例 |
+|------|------|------|
+| `BACKEND_URL` | 后端服务地址（不含路径，无结尾斜杠） | `http://wfam-backend-svc:8102` |
+
+nginx 在容器启动时自动将 `BACKEND_URL` 注入配置（通过 `/etc/nginx/templates/` 模板机制），将前端的 `/api/` 请求反向代理到后端。
+
+### 在 Rancher 中配置
+
+在工作负载的环境变量中添加：
+
+```
+BACKEND_URL=http://<后端 Service 名称>:<端口>
+```
+
+**完整请求链路：**
+
+```
+浏览器 /api/v1/...
+  → nginx（前端容器，80 端口）
+  → ${BACKEND_URL}/aftermarket-parts-management-system/api/v1/...
+  → 后端容器
+```
+
+### nginx 端点
+
+| 路径 | 说明 |
+|------|------|
+| `/api/` | 反向代理到后端，地址由 `BACKEND_URL` 决定 |
+| `/assets/` | 静态资源，1 年强缓存 |
+| `/` | SPA History 模式路由回退 |
+| `/health` | 健康检查，返回 `200 OK` |
 
 ## 项目结构
 
 ```
 src/
-├── assets/          # 静态资源
-├── layouts/         # 布局组件
-├── plugins/         # 插件配置 (ECharts)
-├── router/          # 路由配置
-├── services/        # Mock数据服务
-├── styles/          # 全局样式
-├── types/           # TypeScript类型定义
-├── views/           # 页面组件
-│   ├── dashboard/   # 工作台
-│   ├── return-orders/  # 退货单管理
-│   ├── return-parts/   # 售后件管理
-│   └── reports/     # 统计报表
-├── App.vue          # 根组件
-└── main.ts          # 入口文件
+├── components/        # 公共组件（LanguageSwitcher 等）
+├── i18n/              # 国际化资源（zh-CN / en-US）
+├── layouts/           # 页面布局（MainLayout）
+├── plugins/           # 插件配置（ECharts 按需引入）
+├── router/            # 路由定义
+├── services/          # API 服务层
+│   ├── request.ts     # Axios 实例与拦截器
+│   ├── approvalApi.ts
+│   ├── dashboardApi.ts
+│   ├── lookupApi.ts
+│   ├── partApi.ts
+│   ├── reportsApi.ts
+│   └── returnOrderApi.ts
+├── types/             # TypeScript 类型定义
+├── views/             # 页面组件
+│   ├── approval/
+│   ├── dashboard/
+│   ├── reports/
+│   ├── return-orders/
+│   ├── return-parts/
+│   └── settings/
+├── App.vue
+└── main.ts
 ```
-
-## Mock数据
-
-项目使用本地Mock数据进行演示，包含：
-- 5条退货单数据
-- 5条售后件数据
-- 6种任务类型
-- 8个客户数据
-- 趋势图表数据生成器
-
-## 注意事项
-
-1. 本原型为交互演示版本，数据存储在内存中
-2. OCR扫描功能为模拟实现
-3. 外部链接（WorkON、IQIS、SAP等）指向实际系统地址
-4. 后续正式开发时需对接真实API接口
 
 ## 浏览器支持
 
-- Chrome 90+
-- Edge 90+
-- Firefox 88+
+- Chrome 90+ / Edge 90+ / Firefox 88+
 - 推荐分辨率：1920×1080，最低支持 1366×768
