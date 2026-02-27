@@ -1,5 +1,9 @@
 <template>
-  <a-layout class="main-layout">
+  <!-- 子应用模式：无菜单和顶栏 -->
+  <router-view v-if="!isDevMode" />
+
+  <!-- 调试模式：完整布局（URL 加 ?dev=1 开启） -->
+  <a-layout v-else class="main-layout">
     <!-- 侧边栏 -->
     <a-layout-sider
       v-model:collapsed="collapsed"
@@ -107,6 +111,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useDevMode } from '@/composables/useDevMode'
 import {
   DashboardOutlined,
   FileTextOutlined,
@@ -123,6 +128,7 @@ import {
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 
 const { t } = useI18n()
+const { isDevMode } = useDevMode()
 const route = useRoute()
 const router = useRouter()
 const collapsed = ref(false)

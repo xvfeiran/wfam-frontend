@@ -65,6 +65,16 @@ Vite 将 `/api` 请求代理到本地后端（见 [vite.config.ts](vite.config.t
 /api/* → http://localhost:8102/aftermarket-parts-management-system/*
 ```
 
+### 调试模式（显示菜单和顶栏）
+
+本项目作为无界微前端子应用部署时默认不渲染菜单和顶栏。本地开发时在 URL 加上 `?dev=1` 开启完整布局：
+
+```
+http://localhost:3000/?dev=1
+```
+
+激活后状态保存在 `sessionStorage`，在同一 Tab 内的页面跳转中持续生效，无需每次携带参数。关闭 Tab 后恢复为子应用模式。
+
 ## 生产部署（Docker / Rancher）
 
 ### 构建镜像
@@ -114,6 +124,7 @@ BACKEND_URL=http://<后端 Service 名称>:<端口>
 ```
 src/
 ├── components/        # 公共组件（LanguageSwitcher 等）
+├── composables/       # 组合式函数（useDevMode 等）
 ├── i18n/              # 国际化资源（zh-CN / en-US）
 ├── layouts/           # 页面布局（MainLayout）
 ├── plugins/           # 插件配置（ECharts 按需引入）
