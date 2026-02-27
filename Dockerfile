@@ -14,7 +14,7 @@ COPY . .
 
 # 构建模式：production（默认）/ test
 # 对应加载 .env.production / .env.test，再叠加 .env 中的默认值
-ARG BUILD_MODE=production
+ARG BUILD_MODE=test
 RUN npm run build -- --mode ${BUILD_MODE}
 
 # 运行阶段
