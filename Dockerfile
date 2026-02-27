@@ -21,10 +21,11 @@ FROM docker.production.tmp-service.bosch.com/nginx:alpine
 # 复制构建产物到 Nginx 目录
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# 复制 Nginx 配置模板（nginx 官方镜像会自动对 /etc/nginx/templates/ 中的文件执行 envsubst）
-COPY nginx.conf /etc/nginx/templates/default.conf.template
+# 复制 Nginx 配置模板
+COPY nginx.conf /etc/nginx/conf.d/default.conf.template
 
 # 暴露端口
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+# 启动时用 envsubst 将 BACKEND_URL 注入配置，再启动 nginx
+CMD ["/bin/sh", "-c", "envsubst '${BACKEND_URL}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
