@@ -26,4 +26,10 @@ export const returnOrderApi = {
   getParts(orderId: string): Promise<Part[]> {
     return request.get(`/return-orders/${orderId}/parts`) as unknown as Promise<Part[]>
   },
+  sample(orderId: string, data: { sampledPartIds: string[] }): Promise<void> {
+    return request.post(`/return-orders/${orderId}/sample`, data) as unknown as Promise<void>
+  },
+  noSampling(orderId: string): Promise<void> {
+    return request.post(`/return-orders/${orderId}/no-sampling`) as unknown as Promise<void>
+  },
 }

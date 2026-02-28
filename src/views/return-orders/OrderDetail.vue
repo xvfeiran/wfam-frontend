@@ -84,6 +84,7 @@
       v-model:visible="samplingVisible"
       :order="order"
       @success="handleSamplingSuccess"
+      @no-sampling="handleNoSamplingSuccess"
     />
 
     <!-- 报废弹窗 -->
@@ -209,9 +210,14 @@ const handleSampling = () => {
   samplingVisible.value = true
 }
 
-const handleSamplingSuccess = () => {
-  samplingVisible.value = false
+const handleSamplingSuccess = async () => {
   message.success(t('message.samplingComplete'))
+  order.value = await returnOrderApi.getById(orderId.value)
+}
+
+const handleNoSamplingSuccess = async () => {
+  message.success(t('message.noSamplingSuccess'))
+  order.value = await returnOrderApi.getById(orderId.value)
 }
 
 const handleScrap = () => {

@@ -2,103 +2,134 @@
   <a-modal
     :open="visible"
     :title="isSampled ? t('modal.samplingResultView') : t('modal.samplingManagement')"
-    width="900px"
+    width="920px"
     :footer="null"
+    destroy-on-close
     @cancel="handleCancel"
   >
-    <!-- 已抽样状态：仅查看 -->
+    <!-- 已抽样：只读模式 -->
     <template v-if="isSampled">
       <a-alert :message="t('message.samplingCompletedAlert')" type="info" show-icon style="margin-bottom: 16px" />
-
-      <a-row :gutter="16">
-        <!-- 左侧：售后件列表 -->
-        <a-col :span="12">
-          <a-card :title="t('message.parts')" size="small">
-            <div class="parts-list">
-              <div v-for="part in availableParts" :key="part.id" class="part-item">
-                <div class="part-info">
-                  <div class="part-code">{{ part.partCode }}</div>
-                  <div class="part-meta">{{ part.businessUnit }} - {{ part.productPlatform }}</div>
-                </div>
-              </div>
-              <a-empty v-if="availableParts.length === 0" :description="t('message.noParts')" />
-            </div>
-          </a-card>
-        </a-col>
-
-        <!-- 右侧：抽样结果 -->
-        <a-col :span="12">
-          <a-card :title="t('message.samplingResult')" size="small" :extra="t('message.totalSamples', { count: sampledPartIds.length })">
-            <div class="selected-list">
-              <div v-for="(partId, index) in sampledPartIds" :key="partId" class="selected-item">
-                <div class="sample-info">
-                  <div class="sample-number">{{ generateSampleNumber(partId, index) }}</div>
-                  <div class="sample-code">{{ getPartById(partId)?.partCode }}</div>
-                </div>
-              </div>
-              <a-empty v-if="sampledPartIds.length === 0" :description="t('message.noSamplingResultView')" />
-            </div>
-          </a-card>
-        </a-col>
-      </a-row>
+      <a-transfer
+        :data-source="transferDataSource"
+        :target-keys="sampledPartIds"
+        :titles="[
+          `${t('message.allParts')} (${availableParts.length})`,
+          `${t('message.sampledParts')} (${sampledPartIds.length})`
+        ]"
+        :render="renderItem"
+        :list-style="{ width: '400px', height: '380px' }"
+        disabled
+        show-search
+      />
     </template>
 
-    <!-- 未抽样状态：可操作 -->
+    <!-- 未抽样：可操作模式 -->
     <template v-else>
-      <a-form layout="vertical">
-        <a-form-item :label="t('message.sampling')" style="margin-bottom: 8px">
-          <a-space>
-            <a-radio-group v-model:value="samplingMethod">
-              <a-radio value="standard">{{ t('message.standardSampling') }}</a-radio>
-              <a-radio value="custom">{{ t('message.customSampling') }}</a-radio>
-              <a-radio value="none">{{ t('message.noSampling') }}</a-radio>
-            </a-radio-group>
-            <a-button type="primary" @click="handleSampling" :disabled="samplingMethod === 'none'">
-              {{ t('message.sampling') }}
+      <!-- 选择抽样方式 -->
+      <div class="choice-section">
+        <span class="choice-label">{{ t('message.selectSamplingMethod') }}：</span>
+        <a-radio-group v-model:value="samplingChoice" button-style="solid" size="large">
+          <a-radio-button value="sampling">
+            <FilterOutlined /> {{ t('message.startSampling') }}
+          </a-radio-button>
+          <a-radio-button value="none">
+            <StopOutlined /> {{ t('message.noSampling') }}
+          </a-radio-button>
+        </a-radio-group>
+      </div>
+
+      <!-- 不抽样提示 -->
+      <template v-if="samplingChoice === 'none'">
+        <a-alert
+          :message="t('message.noSamplingWarning')"
+          type="warning"
+          show-icon
+          style="margin: 16px 0"
+        />
+        <div class="modal-footer">
+          <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
+          <a-button type="primary" danger :loading="submitting" @click="handleNoSampling">
+            {{ t('message.confirmNoSampling') }}
+          </a-button>
+        </div>
+      </template>
+
+      <!-- 抽样操作区域 -->
+      <template v-if="samplingChoice === 'sampling'">
+        <!-- 抽样比例/数量控制 -->
+        <div class="sampling-controls">
+          <a-space :size="24" align="center" wrap>
+            <a-space align="center" :size="8">
+              <span class="control-label">{{ t('message.samplingRatio') }}：</span>
+              <a-input-number
+                v-model:value="samplingRatio"
+                :min="0"
+                :max="100"
+                :precision="1"
+                :addon-after="'%'"
+                style="width: 130px"
+                @change="onRatioChange"
+              />
+            </a-space>
+            <a-space align="center" :size="8">
+              <span class="control-label">{{ t('message.sampledCount') }}：</span>
+              <a-input-number
+                v-model:value="sampledCount"
+                :min="0"
+                :max="totalCount"
+                style="width: 100px"
+                @change="onCountChange"
+              />
+              <span class="count-total">/ {{ totalCount }}</span>
+            </a-space>
+            <a-button
+              type="default"
+              :disabled="sampledCount === 0 || totalCount === 0"
+              @click="handleRandomSampling"
+            >
+              <template #icon><ThunderboltOutlined /></template>
+              {{ t('message.randomSampling') }}
             </a-button>
           </a-space>
-        </a-form-item>
-      </a-form>
+        </div>
 
-      <a-row :gutter="16">
-        <!-- 左侧：售后件列表（仅展示，不能操作） -->
-        <a-col :span="12">
-          <a-card :title="t('message.parts')" size="small">
-            <div class="parts-list">
-              <div v-for="part in availableParts" :key="part.id" class="part-item">
-                <div class="part-info">
-                  <div class="part-code">{{ part.partCode }}</div>
-                  <div class="part-meta">{{ part.businessUnit }} - {{ part.productPlatform }}</div>
-                </div>
-              </div>
-              <a-empty v-if="availableParts.length === 0" :description="t('message.noParts')" />
-            </div>
-          </a-card>
-        </a-col>
+        <!-- 穿梭框 -->
+        <a-transfer
+          :data-source="transferDataSource"
+          :target-keys="selectedPartIds"
+          :titles="[
+            `${t('message.allParts')} (${availableParts.length})`,
+            `${t('message.sampledParts')} (${selectedPartIds.length})`
+          ]"
+          :render="renderItem"
+          :list-style="{ width: '400px', height: '380px' }"
+          show-search
+          @change="handleTransferChange"
+        />
 
-        <!-- 右侧：抽样结果 -->
-        <a-col :span="12">
-          <a-card :title="t('message.samplingResult')" size="small" :extra="t('message.totalSamples', { count: selectedPartIds.length })">
-            <div class="selected-list">
-              <div v-for="(partId, index) in selectedPartIds" :key="partId" class="selected-item">
-                <div class="sample-info">
-                  <div class="sample-number">{{ generateSampleNumber(partId, index) }}</div>
-                  <div class="sample-code">{{ getPartById(partId)?.partCode }}</div>
-                </div>
-              </div>
-              <a-empty v-if="selectedPartIds.length === 0" :description="t('message.noSamplingResult')" />
-            </div>
-          </a-card>
-        </a-col>
-      </a-row>
+        <!-- 底部按钮 -->
+        <div class="modal-footer">
+          <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
+          <a-button
+            type="primary"
+            :disabled="selectedPartIds.length === 0"
+            :loading="submitting"
+            @click="handleConfirmSampling"
+          >
+            {{ t('message.confirmSampling') }}（{{ selectedPartIds.length }}）
+          </a-button>
+        </div>
+      </template>
     </template>
   </a-modal>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
+import { StopOutlined, FilterOutlined, ThunderboltOutlined } from '@ant-design/icons-vue'
 import { returnOrderApi } from '@/services/returnOrderApi'
 import { OrderStatus } from '@/types'
 import type { ReturnOrder, Part } from '@/types'
@@ -110,128 +141,191 @@ const props = defineProps<{
   order: ReturnOrder | null
 }>()
 
-const emit = defineEmits(['update:visible', 'success'])
+const emit = defineEmits<{
+  (e: 'update:visible', val: boolean): void
+  (e: 'success'): void
+  (e: 'no-sampling'): void
+}>()
 
-const samplingMethod = ref<'standard' | 'custom' | 'none'>('standard')
+// 状态
+const samplingChoice = ref<'none' | 'sampling' | null>('sampling')
 const selectedPartIds = ref<string[]>([])
-const sampledPartIds = ref<string[]>([])
-
-// 获取当前退货单关联的零件
+const sampledPartIds = ref<string[]>([])  // 已抽样只读视图用
+const samplingRatio = ref<number>(0)
+const sampledCount = ref<number>(0)
+const submitting = ref(false)
+const updating = ref(false)
 const availableParts = ref<Part[]>([])
 
-// 判断是否已抽样
+// 是否已完成抽样（只读模式）
 const isSampled = computed(() => {
   if (!props.order) return false
-  return props.order.status === OrderStatus.SAMPLING_COMPLETED ||
-         props.order.status === OrderStatus.PENDING_DETAILED_ANALYSIS ||
-         props.order.status === OrderStatus.IN_DETAILED_ANALYSIS ||
-         props.order.status === OrderStatus.PENDING_APPROVAL ||
-         props.order.status === OrderStatus.APPROVED ||
-         props.order.status === OrderStatus.COMPLETED
+  return [
+    OrderStatus.SAMPLING_COMPLETED,
+    OrderStatus.PENDING_DETAILED_ANALYSIS,
+    OrderStatus.IN_DETAILED_ANALYSIS,
+    OrderStatus.PENDING_APPROVAL,
+    OrderStatus.APPROVED,
+    OrderStatus.COMPLETED,
+  ].includes(props.order.status)
 })
 
+const totalCount = computed(() => availableParts.value.length)
+
+// 穿梭框数据源
+const transferDataSource = computed(() =>
+  availableParts.value.map(part => ({
+    key: part.id,
+    title: part.partCode,
+    description: `${part.businessUnit} / ${part.productPlatform}`,
+    partNumber: part.partNumber,
+  }))
+)
+
+// 穿梭框 item 渲染
+const renderItem = (item: any) => `${item.title}  |  ${item.description}`
+
+// 当 visible 或 order 变化时加载数据并重置状态
 watch(
-  () => props.order,
-  async (order) => {
-    if (order) {
-      availableParts.value = await returnOrderApi.getParts(order.id)
-      selectedPartIds.value = []
-      // 模拟已抽样的结果（实际应从后端获取）
-      if (isSampled.value) {
-        sampledPartIds.value = availableParts.value.slice(0, Math.ceil(availableParts.value.length / 2)).map(p => p.id)
-      } else {
-        sampledPartIds.value = []
-      }
+  () => [props.visible, props.order] as const,
+  async ([visible, order]) => {
+    if (!visible || !order) return
+    samplingChoice.value = 'sampling'
+    selectedPartIds.value = []
+    sampledCount.value = 0
+    samplingRatio.value = 0
+    availableParts.value = await returnOrderApi.getParts(order.id)
+    // 只读视图：模拟已抽样数据（实际由后端提供）
+    if (isSampled.value) {
+      sampledPartIds.value = availableParts.value
+        .slice(0, Math.ceil(availableParts.value.length / 2))
+        .map(p => p.id)
+    } else {
+      sampledPartIds.value = []
     }
   },
   { immediate: true }
 )
 
-const getPartById = (id: string) => availableParts.value.find(p => p.id === id)
-
-const generateSampleNumber = (partId: string, index: number) => {
-  const part = getPartById(partId)
-  if (!part) return ''
-  return `${part.businessUnit}-${part.productPlatform}-${String(index + 1).padStart(4, '0')}`
+// 手动拖拽穿梭框后同步比例/数量
+const handleTransferChange = (targetKeys: string[]) => {
+  selectedPartIds.value = targetKeys
+  if (updating.value) return
+  updating.value = true
+  sampledCount.value = targetKeys.length
+  samplingRatio.value =
+    totalCount.value > 0
+      ? parseFloat(((targetKeys.length / totalCount.value) * 100).toFixed(1))
+      : 0
+  updating.value = false
 }
 
+// 输入抽样比例 → 同步数量
+const onRatioChange = (ratio: number | null) => {
+  if (updating.value || ratio === null) return
+  updating.value = true
+  sampledCount.value = Math.min(
+    Math.round((ratio / 100) * totalCount.value),
+    totalCount.value
+  )
+  updating.value = false
+}
+
+// 输入抽样数 → 同步比例
+const onCountChange = (count: number | null) => {
+  if (updating.value || count === null) return
+  updating.value = true
+  samplingRatio.value =
+    totalCount.value > 0
+      ? parseFloat(((count / totalCount.value) * 100).toFixed(1))
+      : 0
+  updating.value = false
+}
+
+// 随机抽样：按当前 sampledCount 随机选取
+const handleRandomSampling = () => {
+  const count = Math.min(sampledCount.value, totalCount.value)
+  if (count <= 0) return
+  const shuffled = [...availableParts.value].sort(() => Math.random() - 0.5)
+  selectedPartIds.value = shuffled.slice(0, count).map(p => p.id)
+  message.success(t('message.randomSamplingComplete', { count }))
+}
+
+// 取消
 const handleCancel = () => {
   emit('update:visible', false)
 }
 
-const handleSampling = () => {
-  if (samplingMethod.value === 'none') {
-    message.info(t('message.currentSelectNoSampling'))
+// 确认不抽样 → 进入待报废流程
+const handleNoSampling = async () => {
+  submitting.value = true
+  try {
+    await returnOrderApi.noSampling(props.order!.id)
+    message.success(t('message.noSamplingSuccess'))
+    emit('no-sampling')
+    emit('update:visible', false)
+  } finally {
+    submitting.value = false
+  }
+}
+
+// 确认抽样
+const handleConfirmSampling = async () => {
+  if (selectedPartIds.value.length === 0) {
+    message.warning(t('message.pleaseSelectAtLeastOnePart'))
     return
   }
-
-  if (availableParts.value.length === 0) {
-    message.warning(t('message.noPartsAvailable'))
-    return
+  submitting.value = true
+  try {
+    await returnOrderApi.sample(props.order!.id, { sampledPartIds: selectedPartIds.value })
+    message.success(t('message.samplingSuccessMsg', { count: selectedPartIds.value.length }))
+    emit('success')
+    emit('update:visible', false)
+  } finally {
+    submitting.value = false
   }
-
-  // 根据抽样方式进行抽样
-  if (samplingMethod.value === 'standard') {
-    // 标准抽样：按一定比例随机抽取
-    const sampleCount = Math.max(1, Math.ceil(availableParts.value.length * 0.3))
-    const shuffled = [...availableParts.value].sort(() => Math.random() - 0.5)
-    selectedPartIds.value = shuffled.slice(0, sampleCount).map(p => p.id)
-    message.success(t('message.standardSamplingComplete', { count: sampleCount }))
-  } else if (samplingMethod.value === 'custom') {
-    // 指定抽样：全部选中（实际可根据需求调整）
-    selectedPartIds.value = availableParts.value.map(p => p.id)
-    message.success(t('message.customSamplingComplete', { count: selectedPartIds.value.length }))
-  }
-
-  emit('success')
 }
 </script>
 
 <style lang="less" scoped>
-.parts-list, .selected-list {
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.part-item {
-  padding: 8px 0;
-  border-bottom: 1px solid #f0f0f0;
-
-  &:last-child {
-    border-bottom: none;
-  }
-
-  .part-info {
-    .part-code {
-      font-weight: 500;
-    }
-    .part-meta {
-      font-size: 12px;
-      color: #999;
-    }
-  }
-}
-
-.selected-item {
+.choice-section {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #f0f0f0;
+  gap: 12px;
+  margin-bottom: 20px;
 
-  &:last-child {
-    border-bottom: none;
+  .choice-label {
+    font-size: 14px;
+    color: #333;
+    white-space: nowrap;
+  }
+}
+
+.sampling-controls {
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+
+  .control-label {
+    font-size: 14px;
+    color: #555;
+    white-space: nowrap;
   }
 
-  .sample-info {
-    .sample-number {
-      font-weight: 500;
-      color: #0066B2;
-    }
-    .sample-code {
-      font-size: 12px;
-      color: #999;
-    }
+  .count-total {
+    font-size: 14px;
+    color: #888;
   }
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
 }
 </style>
