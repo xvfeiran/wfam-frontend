@@ -41,11 +41,18 @@ const request = axios.create({
   },
 })
 
-// 请求拦截器 - 调试模式下添加认证头（生产环境由网关注入）
+// 请求拦截器
 request.interceptors.request.use(
   (config) => {
     if (isDevMode.value) {
+      // 调试模式：使用写死的认证头直接访问后端
       config.headers['x-authentication-header'] = DEV_AUTH_HEADER
+    } else {
+      // 子应用模式：从父应用 store 获取 token，通过网关鉴权
+      const accessToken = window.$wujie?.props?.store?.getters['accessToken']
+      if (accessToken) {
+        config.headers['Authorization'] = `Bearer ${accessToken}`
+      }
     }
     return config
   },
