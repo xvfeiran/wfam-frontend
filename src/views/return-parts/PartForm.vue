@@ -51,7 +51,11 @@
         <a-row :gutter="24">
           <a-col :span="12">
             <a-form-item :label="t('returnPart.partNumber')">
-              <a-input v-model:value="form.partNumber" disabled />
+              <a-input
+                v-model:value="form.partNumber"
+                disabled
+                :placeholder="!isEdit ? t('validation.autoGenerateOnSave') : ''"
+              />
             </a-form-item>
           </a-col>
           <a-col :span="12">
@@ -74,7 +78,7 @@
           </a-col>
           <a-col :span="12">
             <a-form-item :label="t('returnPart.businessUnit')" name="businessUnit">
-              <a-select v-model:value="form.businessUnit" :placeholder="t('validation.selectBusinessUnit')" @change="generatePartNumber">
+              <a-select v-model:value="form.businessUnit" :placeholder="t('validation.selectBusinessUnit')">
                 <a-select-option v-for="bu in businessUnits" :key="bu" :value="bu">
                   {{ bu }}
                 </a-select-option>
@@ -86,7 +90,7 @@
         <a-row :gutter="24">
           <a-col :span="12">
             <a-form-item :label="t('returnPart.productPlatform')" name="productPlatform">
-              <a-select v-model:value="form.productPlatform" :placeholder="t('validation.selectProductPlatform')" @change="generatePartNumber">
+              <a-select v-model:value="form.productPlatform" :placeholder="t('validation.selectProductPlatform')">
                 <a-select-option v-for="pp in productPlatforms" :key="pp" :value="pp">
                   {{ pp }}
                 </a-select-option>
@@ -324,7 +328,6 @@ onMounted(async () => {
       form.otherDescription = part.otherDescription || ''
     }
   } else {
-    generatePartNumber()
     // 处理从退货单页面跳转过来的情况
     if (route.query.orderId && route.query.orderId !== 'new') {
       form.orderId = route.query.orderId as string
@@ -337,11 +340,13 @@ const handleBack = () => {
 }
 
 const handleSave = () => {
+  if (!isEdit.value) generatePartNumber()
   message.success(t('message.saveSuccess'))
 }
 
 const handleSubmit = async () => {
   try {
+    if (!isEdit.value) generatePartNumber()
     await formRef.value?.validate()
     message.success(isEdit.value ? t('message.updateSuccess') : t('message.createSuccess'))
     router.push('/return-parts')

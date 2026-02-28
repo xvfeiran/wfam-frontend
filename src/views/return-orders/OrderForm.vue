@@ -16,7 +16,11 @@
         <a-row :gutter="24">
           <a-col :span="12">
             <a-form-item :label="t('returnOrder.orderNumber')" name="orderNumber">
-              <a-input v-model:value="form.orderNumber" :placeholder="t('validation.inputOrderNumber')" />
+              <a-input
+                v-model:value="form.orderNumber"
+                :disabled="!isEdit"
+                :placeholder="!isEdit ? t('validation.autoGenerateOnSave') : t('validation.inputOrderNumber')"
+              />
             </a-form-item>
           </a-col>
           <a-col :span="12">
@@ -180,7 +184,7 @@ const form = reactive({
 })
 
 const rules = computed(() => ({
-  orderNumber: [{ required: true, message: t('validation.inputOrderNumber') }],
+  ...(isEdit.value ? { orderNumber: [{ required: true, message: t('validation.inputOrderNumber') }] } : {}),
   customer: [{ required: true, message: t('validation.selectCustomer') }],
   receiveDate: [{ required: true, message: t('validation.selectReceiveDate') }],
   complaintDate: [{ required: true, message: t('validation.selectComplaintDate') }],
@@ -229,13 +233,15 @@ onMounted(async () => {
       // 加载关联的售后件
       parts.value = await returnOrderApi.getParts(order.id)
     }
-  } else {
-    // 生成新的退货单号（年+QMC+4位码，例：2026QMC0001）
-    const year = dayjs().year()
-    const allOrders = await returnOrderApi.list()
-    form.orderNumber = `${year}QMC${String(allOrders.length + 1).padStart(4, '0')}`
   }
 })
+
+const generateOrderNumber = async () => {
+  if (form.orderNumber) return
+  const year = dayjs().year()
+  const allOrders = await returnOrderApi.list()
+  form.orderNumber = `${year}QMC${String(allOrders.length + 1).padStart(4, '0')}`
+}
 
 const handleBack = () => {
   router.back()
@@ -262,12 +268,14 @@ const handleDeletePart = (id: string) => {
   message.success(t('message.deleteSuccess'))
 }
 
-const handleSave = () => {
+const handleSave = async () => {
+  if (!isEdit.value) await generateOrderNumber()
   message.success(t('message.saveSuccess'))
 }
 
 const handleSubmit = async () => {
   try {
+    if (!isEdit.value) await generateOrderNumber()
     await formRef.value?.validate()
     message.success(isEdit.value ? t('message.updateSuccess') : t('message.createSuccess'))
     router.push('/return-orders')

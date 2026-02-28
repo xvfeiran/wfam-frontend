@@ -62,6 +62,9 @@
     <!-- 操作区 -->
     <div class="action-bar">
       <a-space>
+        <a-button type="primary" @click="handleCreate">
+          <PlusOutlined /> {{ t('common.create') }}
+        </a-button>
         <a-button type="primary" :disabled="selectedRowKeys.length !== 1" @click="handleEdit(selectedRowKeys[0])">
           <EditOutlined /> {{ t('common.edit') }}
         </a-button>
@@ -120,6 +123,7 @@ import { message } from 'ant-design-vue'
 import {
   SearchOutlined,
   ReloadOutlined,
+  PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   ExperimentOutlined,
@@ -257,6 +261,10 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+const handleCreate = () => {
+  router.push('/return-parts/new')
+}
 
 const handleView = (id: string) => {
   router.push(`/return-parts/${id}`)

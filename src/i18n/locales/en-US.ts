@@ -282,6 +282,7 @@ export default {
     selectFailureType: 'Please select failure type',
     formError: 'Please check form fields',
     pleaseSelect: 'Please select',
+    autoGenerateOnSave: 'Auto-generated on save',
     inputTrackingNumber: 'Please enter tracking number',
     inputDescription: 'Please enter description',
   },

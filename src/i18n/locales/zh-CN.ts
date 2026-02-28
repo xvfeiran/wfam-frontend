@@ -282,6 +282,7 @@ export default {
     selectFailureType: '请选择失效类型',
     formError: '请检查表单填写',
     pleaseSelect: '请选择',
+    autoGenerateOnSave: '保存时自动生成',
     inputTrackingNumber: '请输入快递单号',
     inputDescription: '请输入退货描述',
   },
