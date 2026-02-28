@@ -466,4 +466,8 @@ export default {
     success: '识别成功',
     error: '识别失败',
   },
+  auth: {
+    tokenExpired: '登录过期，请重新登录！',
+    unauthorized: '您无权限访问该应用，请在应用中心申请权限！',
+  },
 }

@@ -3,20 +3,29 @@
 interface ImportMetaEnv {
   readonly VITE_BACKEND_URL: string
   readonly VITE_GATEWAY_URL: string
+  readonly VITE_AEP_LOGIN_URL: string
 }
 
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
 
-interface Window {
-  $wujie?: {
-    props?: {
-      store?: {
-        getters: Record<string, unknown>
-      }
-    }
+interface WujieProps {
+  userProfile?: {
+    accessToken: string
+    [key: string]: unknown
   }
+  locale?: string
+  token?: string
+  [key: string]: unknown
+}
+
+interface Window {
+  __POWERED_BY_WUJIE__?: boolean
+  __WUJIE_MOUNT?: () => void
+  __WUJIE_UNMOUNT?: () => void
+  __WUJIE?: { mount: () => void }
+  $wujie?: { props?: WujieProps }
 }
 
 declare module '*.vue' {

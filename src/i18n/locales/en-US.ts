@@ -466,4 +466,8 @@ export default {
     success: 'Recognition Successful',
     error: 'Recognition Failed',
   },
+  auth: {
+    tokenExpired: 'Login expired, please login again!',
+    unauthorized: 'No permission to access, please apply in Application Center!',
+  },
 }

@@ -1,4 +1,4 @@
-import { createApp } from 'vue'
+import { createApp, type App as VueApp } from 'vue'
 import { createPinia } from 'pinia'
 import Antd from 'ant-design-vue'
 import App from './App.vue'
@@ -8,11 +8,29 @@ import 'ant-design-vue/dist/reset.css'
 import './styles/global.less'
 import './plugins/echarts'
 
-const app = createApp(App)
+function mountApp(): VueApp {
+  const app = createApp(App)
+  app.use(createPinia())
+  app.use(router)
+  app.use(Antd)
+  app.use(i18n)
+  app.mount('#app')
+  return app
+}
 
-app.use(createPinia())
-app.use(router)
-app.use(Antd)
-app.use(i18n)
+let app: VueApp | null = null
 
-app.mount('#app')
+if (window.__POWERED_BY_WUJIE__) {
+  // 子应用模式：挂载/卸载由无界框架驱动
+  window.__WUJIE_MOUNT = () => {
+    app = mountApp()
+  }
+  window.__WUJIE_UNMOUNT = () => {
+    app?.unmount()
+    app = null
+  }
+  window.__WUJIE?.mount()
+} else {
+  // 独立运行模式（调试或本地开发）
+  mountApp()
+}

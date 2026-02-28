@@ -1,6 +1,9 @@
 import axios from 'axios'
 import type { AxiosResponse } from 'axios'
+import { message } from 'ant-design-vue'
 import { useDevMode } from '@/composables/useDevMode'
+import { useUserInfoStore } from '@/stores/userInfo'
+import i18n from '@/i18n'
 
 // 开发期间写死的请求头（上线后由中转网关添加）
 const DEV_AUTH_HEADER = JSON.stringify({
@@ -48,8 +51,8 @@ request.interceptors.request.use(
       // 调试模式：使用写死的认证头直接访问后端
       config.headers['x-authentication-header'] = DEV_AUTH_HEADER
     } else {
-      // 子应用模式：从父应用 store 获取 token，通过网关鉴权
-      const accessToken = window.$wujie?.props?.store?.getters['accessToken']
+      // 子应用模式：从 Pinia store 读取父应用传入的 token，通过网关鉴权
+      const { accessToken } = useUserInfoStore()
       if (accessToken) {
         config.headers['Authorization'] = `Bearer ${accessToken}`
       }
@@ -61,12 +64,26 @@ request.interceptors.request.use(
 
 // 响应拦截器 - 提取数据，处理错误
 request.interceptors.response.use(
-  (response: AxiosResponse) => {
-    return response.data
-  },
+  (response: AxiosResponse) => response.data,
   (error) => {
-    const message = error.response?.data?.message || error.message || 'Network Error'
-    console.error('[API Error]', message)
+    const { t } = i18n.global
+    const data = error.response?.data
+
+    // 子应用模式下处理网关 401
+    if (!isDevMode.value && data?.code === 401) {
+      if (data.message === 'Token has expired') {
+        message.error(t('auth.tokenExpired'))
+        setTimeout(() => {
+          window.location.href = import.meta.env.VITE_AEP_LOGIN_URL
+        }, 2000)
+      } else if (data.message === 'Unauthorized') {
+        message.error(t('auth.unauthorized'))
+      }
+      return Promise.reject(error)
+    }
+
+    const errMsg = data?.message || error.message || 'Network Error'
+    console.error('[API Error]', errMsg)
     return Promise.reject(error)
   },
 )
