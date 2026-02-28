@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n, type I18n } from 'vue-i18n'
 import zhCN from 'ant-design-vue/es/locale/zh_CN'
 import enUS from 'ant-design-vue/es/locale/en_US'
@@ -17,6 +17,11 @@ import { useUserInfoStore } from '@/stores/userInfo'
 const { locale } = useI18n()
 const userInfoStore = useUserInfoStore()
 
+// 将父应用的 locale（'zh'|'en'）映射为子应用的 locale（'zh-CN'|'en-US'）
+const applyLocale = (parentLocale: string) => {
+  locale.value = parentLocale === 'zh' ? 'zh-CN' : 'en-US'
+}
+
 onMounted(() => {
   if (window.__POWERED_BY_WUJIE__) {
     const props = window.$wujie?.props
@@ -25,12 +30,19 @@ onMounted(() => {
       if (props.userProfile?.accessToken) {
         userInfoStore.setToken(props.userProfile.accessToken)
       }
-      // 同步语言：父应用传 'zh' 或 'en'
+      // 初始语言同步（挂载时读取 props.locale）
       if (props.locale) {
-        locale.value = props.locale === 'zh' ? 'zh-CN' : 'en-US'
+        applyLocale(props.locale)
       }
     }
+    // 监听父应用运行时动态切换语言的 bus 事件
+    window.$wujie?.bus?.$on('locale', applyLocale)
   }
+})
+
+onUnmounted(() => {
+  // 子应用卸载时注销监听，防止内存泄漏
+  window.$wujie?.bus?.$off('locale', applyLocale)
 })
 
 const antdLocaleMap = {

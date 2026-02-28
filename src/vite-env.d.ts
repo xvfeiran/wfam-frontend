@@ -20,12 +20,18 @@ interface WujieProps {
   [key: string]: unknown
 }
 
+interface WujieBus {
+  $on: (event: string, callback: (...args: any[]) => void) => void
+  $off: (event: string, callback: (...args: any[]) => void) => void
+  $emit: (event: string, ...args: any[]) => void
+}
+
 interface Window {
   __POWERED_BY_WUJIE__?: boolean
   __WUJIE_MOUNT?: () => void
   __WUJIE_UNMOUNT?: () => void
   __WUJIE?: { mount: () => void }
-  $wujie?: { props?: WujieProps }
+  $wujie?: { props?: WujieProps; bus?: WujieBus }
 }
 
 declare module '*.vue' {
