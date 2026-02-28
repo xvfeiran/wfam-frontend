@@ -232,14 +232,9 @@ import { CameraOutlined, PlusOutlined, CheckCircleOutlined } from '@ant-design/i
 import { returnOrderApi } from '@/services/returnOrderApi'
 import { partApi } from '@/services/partApi'
 import { lookupApi } from '@/services/lookupApi'
+import { useOCR } from '@/composables/useOCR'
 
 const { t } = useI18n()
-
-interface OCRResultItem {
-  value: string
-  status: 'loading' | 'success' | 'error'
-  confidence?: number
-}
 
 const route = useRoute()
 const router = useRouter()
@@ -255,21 +250,6 @@ const failureTypes = ref<string[]>([])
 
 const previewVisible = ref(false)
 const previewImage = ref('')
-
-// OCR相关
-const ocrLoading = ref(false)
-const ocrResults = reactive<Record<string, OCRResultItem>>({
-  vehicleProductionDate: { value: '', status: 'loading' },
-  vehiclePurchaseDate: { value: '', status: 'loading' },
-  vehicleFailureDate: { value: '', status: 'loading' },
-  vehicleVIN: { value: '', status: 'loading' },
-  vehicleMileage: { value: '', status: 'loading' },
-  customerDescription: { value: '', status: 'loading' },
-})
-
-const hasOCRResults = computed(() => {
-  return Object.values(ocrResults).some(r => r.status === 'success')
-})
 
 // 是否从退货单页面预设了关联订单
 const hasPresetOrder = computed(() => {
@@ -308,65 +288,7 @@ const generatePartNumber = () => {
   }
 }
 
-const handleOCRUpload = (file: File) => {
-  ocrLoading.value = true
-
-  // 重置所有结果为loading
-  Object.keys(ocrResults).forEach(key => {
-    ocrResults[key] = { value: '', status: 'loading' }
-  })
-
-  // 模拟OCR识别过程
-  setTimeout(() => {
-    ocrResults.vehicleProductionDate = { value: '2025-06-15', status: 'success', confidence: 0.95 }
-    ocrResults.vehiclePurchaseDate = { value: '2025-07-20', status: 'success', confidence: 0.92 }
-    ocrResults.vehicleFailureDate = { value: '2026-01-10', status: 'success', confidence: 0.88 }
-    ocrResults.vehicleVIN = { value: 'LSVAB2183E2123456', status: 'success', confidence: 0.96 }
-    ocrResults.vehicleMileage = { value: '15234', status: 'success', confidence: 0.90 }
-    ocrResults.customerDescription = { value: '发动机异响，怠速不稳', status: 'success', confidence: 0.85 }
-    ocrLoading.value = false
-    message.success('识别完成')
-  }, 2000)
-
-  return false
-}
-
-const stopOCR = () => {
-  ocrLoading.value = false
-  Object.keys(ocrResults).forEach(key => {
-    if (ocrResults[key].status === 'loading') {
-      ocrResults[key].status = 'error'
-    }
-  })
-}
-
-const applyOCR = (field: string) => {
-  const result = ocrResults[field]
-  if (result.status !== 'success') return
-
-  switch (field) {
-    case 'vehicleProductionDate':
-    case 'vehiclePurchaseDate':
-    case 'vehicleFailureDate':
-      (form as any)[field] = dayjs(result.value)
-      break
-    case 'vehicleMileage':
-      form.vehicleMileage = parseInt(result.value)
-      break
-    default:
-      (form as any)[field] = result.value
-  }
-  message.success(t('message.applied'))
-}
-
-const applyAllOCR = () => {
-  Object.keys(ocrResults).forEach(key => {
-    if (ocrResults[key].status === 'success') {
-      applyOCR(key)
-    }
-  })
-  message.success(t('message.allApplied'))
-}
+const { ocrLoading, ocrResults, hasOCRResults, handleOCRUpload, stopOCR, applyAllOCR } = useOCR(form)
 
 const handlePreview = (file: any) => {
   previewImage.value = file.url || file.thumbUrl

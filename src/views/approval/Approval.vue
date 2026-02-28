@@ -207,7 +207,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { message, Modal } from 'ant-design-vue'
 import { CheckOutlined, CloseOutlined, EyeOutlined, DownOutlined } from '@ant-design/icons-vue'
@@ -219,6 +219,7 @@ import {
   type AnalysisApplication,
 } from '@/types'
 import { approvalApi } from '@/services/approvalApi'
+import { useApprovalColumns } from '@/composables/useApprovalColumns'
 
 const { t } = useI18n()
 
@@ -269,54 +270,7 @@ onMounted(async () => {
   pendingAnalysisApprovals.value = pendingAnalysis
 })
 
-// 我的报废申请列配置
-const myScrapColumns = computed(() => [
-  { title: t('returnOrder.orderNumber'), dataIndex: 'orderNumber', key: 'orderNumber' },
-  { title: t('returnPart.partNumber'), dataIndex: 'partNumbers', key: 'partNumbers', ellipsis: true },
-  { title: t('approval.quantity'), dataIndex: 'quantity', key: 'quantity', width: 80 },
-  { title: t('approval.applyTime'), dataIndex: 'applyTime', key: 'applyTime' },
-  { title: t('approval.applyReason'), dataIndex: 'reason', key: 'reason', ellipsis: true },
-  { title: t('approval.approver'), dataIndex: 'approver', key: 'approver' },
-  { title: t('common.status'), dataIndex: 'status', key: 'status', width: 100 },
-  { title: t('common.operation'), key: 'action', width: 100 },
-])
-
-// 我的精分析申请列配置
-const myAnalysisColumns = computed(() => [
-  { title: t('approval.reportNumber'), dataIndex: 'reportNumber', key: 'reportNumber' },
-  { title: t('returnPart.partNumber'), dataIndex: 'partNumber', key: 'partNumber' },
-  { title: t('returnPart.productPlatform'), dataIndex: 'productPlatform', key: 'productPlatform' },
-  { title: t('returnPart.failureType'), dataIndex: 'failureType', key: 'failureType' },
-  { title: t('approval.submitTime'), dataIndex: 'submitTime', key: 'submitTime' },
-  { title: t('approval.approver'), dataIndex: 'approver', key: 'approver' },
-  { title: t('common.status'), dataIndex: 'status', key: 'status', width: 100 },
-  { title: t('common.operation'), key: 'action', width: 120 },
-])
-
-// 待审批的报废申请列配置
-const approvalScrapColumns = computed(() => [
-  { title: t('returnOrder.orderNumber'), dataIndex: 'orderNumber', key: 'orderNumber' },
-  { title: t('returnPart.partNumber'), dataIndex: 'partNumbers', key: 'partNumbers', ellipsis: true },
-  { title: t('approval.quantity'), dataIndex: 'quantity', key: 'quantity', width: 80 },
-  { title: t('approval.applicant'), dataIndex: 'applicant', key: 'applicant' },
-  { title: t('approval.applyTime'), dataIndex: 'applyTime', key: 'applyTime' },
-  { title: t('approval.applyReason'), dataIndex: 'reason', key: 'reason', ellipsis: true },
-  { title: t('common.status'), dataIndex: 'status', key: 'status', width: 100 },
-  { title: t('common.operation'), key: 'action', width: 150 },
-])
-
-// 待审批的精分析报告列配置
-const approvalAnalysisColumns = computed(() => [
-  { title: t('approval.reportNumber'), dataIndex: 'reportNumber', key: 'reportNumber' },
-  { title: t('returnPart.partNumber'), dataIndex: 'partNumber', key: 'partNumber' },
-  { title: t('returnPart.productPlatform'), dataIndex: 'productPlatform', key: 'productPlatform' },
-  { title: t('returnPart.failureType'), dataIndex: 'failureType', key: 'failureType' },
-  { title: t('approval.submitter'), dataIndex: 'submitter', key: 'submitter' },
-  { title: t('approval.submitTime'), dataIndex: 'submitTime', key: 'submitTime' },
-  { title: t('approval.reportSummary'), dataIndex: 'summary', key: 'summary', ellipsis: true },
-  { title: t('common.status'), dataIndex: 'status', key: 'status', width: 100 },
-  { title: t('common.operation'), key: 'action', width: 100 },
-])
+const { myScrapColumns, myAnalysisColumns, approvalScrapColumns, approvalAnalysisColumns } = useApprovalColumns()
 
 // 状态到i18n键的映射
 const statusI18nKeyMap: Record<ApprovalStatus, string> = {
