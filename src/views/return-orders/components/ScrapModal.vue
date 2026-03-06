@@ -103,10 +103,20 @@ const handleCancel = () => {
   emit('update:visible', false)
 }
 
-const handleSubmit = () => {
-  const statusText = form.scrapStatus === 'pending_workon' ? t('message.pendingWorkOnScrap') : t('message.completedWorkOnScrap')
-  message.success(t('message.markedAsStatus', { status: statusText }))
-  emit('success')
+const submitting = ref(false)
+
+const handleSubmit = async () => {
+  submitting.value = true
+  try {
+    for (const id of props.selectedIds) {
+      await returnOrderApi.scrap(id)
+    }
+    message.success(t('message.scrapSubmitted'))
+    emit('success')
+    emit('update:visible', false)
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 

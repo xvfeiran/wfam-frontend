@@ -85,7 +85,7 @@
           <a @click="handleView(record.id)">{{ record.orderNumber }}</a>
         </template>
         <template v-else-if="column.key === 'status'">
-          <a-tag :color="ORDER_STATUS_MAP[record.status].color">
+          <a-tag :color="ORDER_STATUS_MAP[record.status]?.color || 'default'">
             {{ getStatusLabel(record.status) }}
           </a-tag>
         </template>
@@ -168,17 +168,13 @@ const columnFilters = ref<Record<string, string[] | null>>({})
 
 // 状态到i18n键的映射
 const statusI18nKeyMap: Record<string, string> = {
-  pending_registration: 'status.pendingRegistration',
-  pending_initial_analysis: 'status.pendingInitialAnalysis',
-  pending_sampling: 'status.pendingSampling',
-  sampling_completed: 'status.samplingCompleted',
-  pending_detailed_analysis: 'status.pendingDetailedAnalysis',
+  draft: 'status.draft',
+  in_initial_analysis: 'status.inInitialAnalysis',
   in_detailed_analysis: 'status.inDetailedAnalysis',
   pending_approval: 'status.pendingApproval',
-  approved: 'status.approved',
-  pending_scrap: 'status.pendingScrap',
+  analysis_completed: 'status.analysisCompleted',
+  scrap_in_progress: 'status.scrapInProgress',
   scrapped: 'status.scrapped',
-  completed: 'status.completed',
 }
 
 // 获取翻译后的状态标签
@@ -290,18 +286,61 @@ const handleDelete = (id: string) => {
   message.success(t('message.deleteSuccess'))
 }
 
-const handleBatchDelete = () => {
-  orders.value = orders.value.filter(o => !selectedRowKeys.value.includes(o.id))
-  selectedRowKeys.value = []
-  message.success(t('message.deleteSuccess'))
+const handleBatchDelete = async () => {
+  try {
+    for (const id of selectedRowKeys.value) {
+      await returnOrderApi.delete(id)
+    }
+    selectedRowKeys.value = []
+    orders.value = await returnOrderApi.list()
+    message.success(t('message.deleteSuccess'))
+  } catch {
+    message.error(t('message.deleteFailed'))
+    orders.value = await returnOrderApi.list()
+  }
+}
+
+const handleExport = async () => {
+  try {
+    const params = new URLSearchParams()
+    if (filters.value.orderNumber) params.append('orderNumber', filters.value.orderNumber)
+    if (filters.value.customer) params.append('customer', filters.value.customer)
+    const url = `/api/v1/return-orders/export${params.toString() ? '?' + params.toString() : ''}`
+    const response = await fetch(url)
+    if (!response.ok) throw new Error('Export failed')
+    const blob = await response.blob()
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    link.download = `ReturnOrders_${today}.xlsx`
+    link.click()
+    URL.revokeObjectURL(link.href)
+    message.success(t('message.exportSuccess'))
+  } catch {
+    message.error(t('message.exportFailed'))
+  }
 }
 
 const handleImport = () => {
-  message.info(t('message.importInProgress'))
-}
-
-const handleExport = () => {
-  message.success(t('message.exportSuccess'))
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.xlsx,.xls'
+  input.onchange = async (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0]
+    if (!file) return
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const response = await fetch('/api/v1/return-orders/import', { method: 'POST', body: formData })
+      if (!response.ok) throw new Error('Import failed')
+      const result = await response.json()
+      message.success(t('message.importSuccess', { success: result.success, fail: result.fail }))
+      orders.value = await returnOrderApi.list()
+    } catch {
+      message.error(t('message.importFailed'))
+    }
+  }
+  input.click()
 }
 
 const handleSampling = () => {

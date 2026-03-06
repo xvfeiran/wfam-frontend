@@ -7,10 +7,12 @@
       <template #extra>
         <a-space>
           <a-button @click="handleEdit">{{ t('common.edit') }}</a-button>
-          <a-button type="primary" @click="handleSampling">{{ t('returnOrder.sampling') }}</a-button>
-          <a-button danger @click="handleScrap">
+          <a-button v-if="order?.status === 'draft'" type="primary" @click="handleSubmit">{{ t('common.submit') }}</a-button>
+          <a-button v-if="order?.status === 'in_initial_analysis'" type="primary" @click="handleSampling">{{ t('returnOrder.sampling') }}</a-button>
+          <a-button v-if="order?.status === 'analysis_completed'" danger @click="handleScrap">
             <StopOutlined /> {{ t('returnOrder.scrap') }}
           </a-button>
+          <a-button v-if="order?.status === 'scrap_in_progress'" type="primary" @click="handleWorkonConfirm">{{ t('orderDetail.stepScrapped') }}</a-button>
         </a-space>
       </template>
     </a-page-header>
@@ -32,7 +34,7 @@
             <a-descriptions-item :label="t('orderDetail.qcCreatedQuantity')">{{ order?.qcCreatedQuantity }}</a-descriptions-item>
             <a-descriptions-item :label="t('orderDetail.qcNotCreatedQuantity')">{{ order?.qcNotCreatedQuantity }}</a-descriptions-item>
             <a-descriptions-item :label="t('common.status')" :span="2">
-              <a-tag :color="ORDER_STATUS_MAP[order?.status || 'pending_registration'].color">
+              <a-tag :color="ORDER_STATUS_MAP[order?.status || 'draft']?.color || 'default'">
                 {{ getStatusLabel() }}
               </a-tag>
             </a-descriptions-item>
@@ -52,7 +54,7 @@
                 <a @click="goToPartDetail(record.id)">{{ record.partNumber }}</a>
               </template>
               <template v-else-if="column.key === 'status'">
-                <a-tag :color="PART_STATUS_MAP[record.status].color">
+                <a-tag :color="PART_STATUS_MAP[record.status]?.color || 'default'">
                   {{ getStatusLabel(record.status) }}
                 </a-tag>
               </template>
@@ -65,13 +67,13 @@
       <a-col :span="8">
         <a-card :title="t('orderDetail.statusFlow')" class="status-card">
           <a-steps direction="vertical" :current="currentStep" size="small">
-            <a-step :title="t('orderDetail.stepRegistered')" :description="getStepDescription(0)" />
-            <a-step :title="t('orderDetail.stepPendingInitialAnalysis')" :description="getStepDescription(1)" />
-            <a-step :title="t('orderDetail.stepPendingSampling')" :description="getStepDescription(2)" />
-            <a-step :title="t('orderDetail.stepPendingDetailedAnalysis')" :description="getStepDescription(3)" />
-            <a-step :title="t('orderDetail.stepInDetailedAnalysis')" :description="getStepDescription(4)" />
-            <a-step :title="t('orderDetail.stepPendingApproval')" :description="getStepDescription(5)" />
-            <a-step :title="t('orderDetail.stepCompleted')" :description="getStepDescription(6)" />
+            <a-step :title="t('orderDetail.stepDraft')" :description="getStepDescription(0)" />
+            <a-step :title="t('orderDetail.stepInInitialAnalysis')" :description="getStepDescription(1)" />
+            <a-step :title="t('orderDetail.stepInDetailedAnalysis')" :description="getStepDescription(2)" />
+            <a-step :title="t('orderDetail.stepPendingApproval')" :description="getStepDescription(3)" />
+            <a-step :title="t('orderDetail.stepAnalysisCompleted')" :description="getStepDescription(4)" />
+            <a-step :title="t('orderDetail.stepScrapInProgress')" :description="getStepDescription(5)" />
+            <a-step :title="t('orderDetail.stepScrapped')" :description="getStepDescription(6)" />
           </a-steps>
         </a-card>
       </a-col>
@@ -119,17 +121,13 @@ const scrapVisible = ref(false)
 
 // 状态步骤映射
 const statusStepMap: Record<OrderStatus, number> = {
-  [OrderStatus.PENDING_REGISTRATION]: 0,
-  [OrderStatus.PENDING_INITIAL_ANALYSIS]: 1,
-  [OrderStatus.PENDING_SAMPLING]: 2,
-  [OrderStatus.SAMPLING_COMPLETED]: 3,
-  [OrderStatus.PENDING_DETAILED_ANALYSIS]: 3,
-  [OrderStatus.IN_DETAILED_ANALYSIS]: 4,
-  [OrderStatus.PENDING_APPROVAL]: 5,
-  [OrderStatus.APPROVED]: 6,
-  [OrderStatus.PENDING_SCRAP]: 6,
+  [OrderStatus.DRAFT]: 0,
+  [OrderStatus.IN_INITIAL_ANALYSIS]: 1,
+  [OrderStatus.IN_DETAILED_ANALYSIS]: 2,
+  [OrderStatus.PENDING_APPROVAL]: 3,
+  [OrderStatus.ANALYSIS_COMPLETED]: 4,
+  [OrderStatus.SCRAP_IN_PROGRESS]: 5,
   [OrderStatus.SCRAPPED]: 6,
-  [OrderStatus.COMPLETED]: 6,
 }
 
 const currentStep = computed(() => {
@@ -146,22 +144,18 @@ const partColumns = computed(() => [
 
 // 状态到i18n键的映射
 const returnOrderStatusI18nKeyMap: Record<string, string> = {
-  pending_registration: 'status.pendingRegistration',
-  pending_initial_analysis: 'status.pendingInitialAnalysis',
-  pending_sampling: 'status.pendingSampling',
-  sampling_completed: 'status.samplingCompleted',
-  pending_detailed_analysis: 'status.pendingDetailedAnalysis',
+  draft: 'status.draft',
+  in_initial_analysis: 'status.inInitialAnalysis',
   in_detailed_analysis: 'status.inDetailedAnalysis',
   pending_approval: 'status.pendingApproval',
-  approved: 'status.approved',
-  pending_scrap: 'status.pendingScrap',
+  analysis_completed: 'status.analysisCompleted',
+  scrap_in_progress: 'status.scrapInProgress',
   scrapped: 'status.scrapped',
-  completed: 'status.completed',
 }
 
 // 获取翻译后的状态标签（退货单）
 const getStatusLabel = (status?: string) => {
-  const key = returnOrderStatusI18nKeyMap[status || order.value?.status || 'pending_registration']
+  const key = returnOrderStatusI18nKeyMap[status || order.value?.status || 'draft']
   return key ? t(key) : status || order.value?.status || ''
 }
 
@@ -204,6 +198,15 @@ const handleEdit = () => {
   router.push(`/return-orders/${orderId.value}/edit`)
 }
 
+const handleSubmit = async () => {
+  try {
+    order.value = await returnOrderApi.submit(orderId.value)
+    message.success(t('message.submitSuccess'))
+  } catch {
+    message.error(t('message.submitSuccess'))
+  }
+}
+
 const handleSampling = () => {
   samplingVisible.value = true
 }
@@ -222,9 +225,19 @@ const handleScrap = () => {
   scrapVisible.value = true
 }
 
-const handleScrapSuccess = () => {
+const handleScrapSuccess = async () => {
   scrapVisible.value = false
   message.success(t('message.scrapStatusMarked'))
+  order.value = await returnOrderApi.getById(orderId.value)
+}
+
+const handleWorkonConfirm = async () => {
+  try {
+    order.value = await returnOrderApi.workonConfirm(orderId.value)
+    message.success(t('message.scrapStatusMarked'))
+  } catch {
+    message.error(t('message.scrapStatusMarked'))
+  }
 }
 
 const goToPartDetail = (id: string) => {

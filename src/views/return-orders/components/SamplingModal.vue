@@ -161,12 +161,11 @@ const availableParts = ref<Part[]>([])
 const isSampled = computed(() => {
   if (!props.order) return false
   return [
-    OrderStatus.SAMPLING_COMPLETED,
-    OrderStatus.PENDING_DETAILED_ANALYSIS,
     OrderStatus.IN_DETAILED_ANALYSIS,
     OrderStatus.PENDING_APPROVAL,
-    OrderStatus.APPROVED,
-    OrderStatus.COMPLETED,
+    OrderStatus.ANALYSIS_COMPLETED,
+    OrderStatus.SCRAP_IN_PROGRESS,
+    OrderStatus.SCRAPPED,
   ].includes(props.order.status)
 })
 
@@ -256,11 +255,11 @@ const handleCancel = () => {
   emit('update:visible', false)
 }
 
-// 确认不抽样 → 进入待报废流程
+// 确认不抽样 → 进入精分析（sampledPartIds 为空）
 const handleNoSampling = async () => {
   submitting.value = true
   try {
-    await returnOrderApi.noSampling(props.order!.id)
+    await returnOrderApi.sampling(props.order!.id, { sampledPartIds: [] })
     message.success(t('message.noSamplingSuccess'))
     emit('no-sampling')
     emit('update:visible', false)
@@ -277,7 +276,7 @@ const handleConfirmSampling = async () => {
   }
   submitting.value = true
   try {
-    await returnOrderApi.sample(props.order!.id, { sampledPartIds: selectedPartIds.value })
+    await returnOrderApi.sampling(props.order!.id, { sampledPartIds: selectedPartIds.value })
     message.success(t('message.samplingSuccessMsg', { count: selectedPartIds.value.length }))
     emit('success')
     emit('update:visible', false)

@@ -78,6 +78,7 @@
               <a-input-number v-model:value="form.returnQuantity" :min="1" style="width: 100%" />
             </a-form-item>
           </a-col>
+        </a-row>
       </a-form>
 
       <!-- 售后件列表区 -->
@@ -212,13 +213,6 @@ onMounted(async () => {
   }
 })
 
-const generateOrderNumber = async () => {
-  if (form.orderNumber) return
-  const year = dayjs().year()
-  const allOrders = await returnOrderApi.list()
-  form.orderNumber = `${year}QMC${String(allOrders.length + 1).padStart(4, '0')}`
-}
-
 const handleBack = () => {
   router.back()
 }
@@ -244,19 +238,53 @@ const handleDeletePart = (id: string) => {
   message.success(t('message.deleteSuccess'))
 }
 
+const buildPayload = () => ({
+  customer: form.customer,
+  receiveDate: form.receiveDate ? form.receiveDate.format('YYYY-MM-DD') : undefined,
+  complaintDate: form.complaintDate ? form.complaintDate.format('YYYY-MM-DD') : undefined,
+  returnMethod: form.returnMethod,
+  trackingNumber: form.trackingNumber || undefined,
+  returnQuantity: form.returnQuantity,
+})
+
 const handleSave = async () => {
-  if (!isEdit.value) await generateOrderNumber()
-  message.success(t('message.saveSuccess'))
+  try {
+    await formRef.value?.validate()
+    if (isEdit.value) {
+      await returnOrderApi.update(orderId.value, buildPayload())
+    } else {
+      await returnOrderApi.create(buildPayload())
+    }
+    message.success(t('message.saveSuccess'))
+    router.push('/return-orders')
+  } catch (error: any) {
+    if (error?.errorFields) {
+      message.error(t('validation.formError'))
+    } else {
+      message.error(t('message.saveFailed'))
+    }
+  }
 }
 
 const handleSubmit = async () => {
   try {
-    if (!isEdit.value) await generateOrderNumber()
     await formRef.value?.validate()
-    message.success(isEdit.value ? t('message.updateSuccess') : t('message.createSuccess'))
-    router.push('/return-orders')
-  } catch (error) {
-    message.error(t('validation.formError'))
+    let savedId = orderId.value
+    if (isEdit.value) {
+      await returnOrderApi.update(savedId, buildPayload())
+    } else {
+      const created = await returnOrderApi.create(buildPayload())
+      savedId = created.id
+    }
+    await returnOrderApi.submit(savedId)
+    message.success(t('message.submitSuccess'))
+    router.push(`/return-orders/${savedId}`)
+  } catch (error: any) {
+    if (error?.errorFields) {
+      message.error(t('validation.formError'))
+    } else {
+      message.error(t('message.submitFailed'))
+    }
   }
 }
 </script>

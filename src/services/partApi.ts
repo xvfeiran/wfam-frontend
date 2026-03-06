@@ -35,4 +35,7 @@ export const partApi = {
   updateQcNo(id: string, qcNo: string): Promise<Part> {
     return request.put(`/parts/${id}/qc-no`, { qcNo }) as unknown as Promise<Part>
   },
+  submit(id: string): Promise<Part> {
+    return request.post(`/parts/${id}/submit`) as unknown as Promise<Part>
+  },
 }

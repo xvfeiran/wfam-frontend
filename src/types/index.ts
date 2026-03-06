@@ -1,27 +1,21 @@
-// 退货单状态枚举
+// 退货单状态枚举（7个状态）
 export enum OrderStatus {
-  PENDING_REGISTRATION = 'pending_registration',
-  PENDING_INITIAL_ANALYSIS = 'pending_initial_analysis',
-  PENDING_SAMPLING = 'pending_sampling',
-  SAMPLING_COMPLETED = 'sampling_completed',
-  PENDING_DETAILED_ANALYSIS = 'pending_detailed_analysis',
+  DRAFT = 'draft',
+  IN_INITIAL_ANALYSIS = 'in_initial_analysis',
   IN_DETAILED_ANALYSIS = 'in_detailed_analysis',
   PENDING_APPROVAL = 'pending_approval',
-  APPROVED = 'approved',
-  PENDING_SCRAP = 'pending_scrap',
+  ANALYSIS_COMPLETED = 'analysis_completed',
+  SCRAP_IN_PROGRESS = 'scrap_in_progress',
   SCRAPPED = 'scrapped',
-  COMPLETED = 'completed',
 }
 
-// 售后件状态枚举
+// 售后件状态枚举（6个状态）
 export enum PartStatus {
-  REGISTERED = 'registered',
-  PENDING_INITIAL_ANALYSIS = 'pending_initial_analysis',
-  INITIAL_ANALYSIS_COMPLETED = 'initial_analysis_completed',
-  PENDING_DETAILED_ANALYSIS = 'pending_detailed_analysis',
+  IN_INITIAL_ANALYSIS = 'in_initial_analysis',
   IN_DETAILED_ANALYSIS = 'in_detailed_analysis',
+  PENDING_APPROVAL = 'pending_approval',
   ANALYSIS_COMPLETED = 'analysis_completed',
-  PENDING_SCRAP = 'pending_scrap',
+  SCRAP_IN_PROGRESS = 'scrap_in_progress',
   SCRAPPED = 'scrapped',
 }
 
@@ -190,27 +184,21 @@ export const ANALYSIS_FIELD_LABELS: Record<string, string> = {
 
 // 状态显示映射
 export const ORDER_STATUS_MAP: Record<OrderStatus, { label: string; color: string }> = {
-  [OrderStatus.PENDING_REGISTRATION]: { label: '待登记', color: 'default' },
-  [OrderStatus.PENDING_INITIAL_ANALYSIS]: { label: '待初分析', color: 'processing' },
-  [OrderStatus.PENDING_SAMPLING]: { label: '待抽样', color: 'warning' },
-  [OrderStatus.SAMPLING_COMPLETED]: { label: '抽样完成', color: 'success' },
-  [OrderStatus.PENDING_DETAILED_ANALYSIS]: { label: '待精分析', color: 'processing' },
+  [OrderStatus.DRAFT]: { label: '草稿', color: 'default' },
+  [OrderStatus.IN_INITIAL_ANALYSIS]: { label: '初分析中', color: 'processing' },
   [OrderStatus.IN_DETAILED_ANALYSIS]: { label: '精分析中', color: 'processing' },
   [OrderStatus.PENDING_APPROVAL]: { label: '待审批', color: 'warning' },
-  [OrderStatus.APPROVED]: { label: '已审批', color: 'success' },
-  [OrderStatus.PENDING_SCRAP]: { label: '待报废', color: 'warning' },
+  [OrderStatus.ANALYSIS_COMPLETED]: { label: '精分析完成', color: 'success' },
+  [OrderStatus.SCRAP_IN_PROGRESS]: { label: 'WorkOn报废中', color: 'warning' },
   [OrderStatus.SCRAPPED]: { label: '已报废', color: 'default' },
-  [OrderStatus.COMPLETED]: { label: '已完成', color: 'success' },
 }
 
 export const PART_STATUS_MAP: Record<PartStatus, { label: string; color: string }> = {
-  [PartStatus.REGISTERED]: { label: '已登记', color: 'default' },
-  [PartStatus.PENDING_INITIAL_ANALYSIS]: { label: '待初分析', color: 'processing' },
-  [PartStatus.INITIAL_ANALYSIS_COMPLETED]: { label: '初分析完成', color: 'success' },
-  [PartStatus.PENDING_DETAILED_ANALYSIS]: { label: '待精分析', color: 'processing' },
+  [PartStatus.IN_INITIAL_ANALYSIS]: { label: '初分析中', color: 'processing' },
   [PartStatus.IN_DETAILED_ANALYSIS]: { label: '精分析中', color: 'processing' },
-  [PartStatus.ANALYSIS_COMPLETED]: { label: '分析完成', color: 'success' },
-  [PartStatus.PENDING_SCRAP]: { label: '待报废', color: 'warning' },
+  [PartStatus.PENDING_APPROVAL]: { label: '待审批', color: 'warning' },
+  [PartStatus.ANALYSIS_COMPLETED]: { label: '精分析完成', color: 'success' },
+  [PartStatus.SCRAP_IN_PROGRESS]: { label: 'WorkOn报废中', color: 'warning' },
   [PartStatus.SCRAPPED]: { label: '已报废', color: 'default' },
 }
 

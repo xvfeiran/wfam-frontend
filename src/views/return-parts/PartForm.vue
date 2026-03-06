@@ -353,13 +353,6 @@ const rules = computed(() => ({
   productPlatform: [{ required: true, message: t('validation.selectProductPlatform') }],
 }))
 
-const generatePartNumber = () => {
-  if (form.businessUnit && form.productPlatform) {
-    const seq = String(Date.now() % 10000).padStart(4, '0')
-    form.partNumber = `${form.businessUnit}-${form.productPlatform}-${seq}`
-  }
-}
-
 const { ocrLoading, ocrResults, hasOCRResults, handleOCRUpload, stopOCR, applyAllOCR } = useOCR(form)
 
 const handlePreview = (file: any) => {
@@ -409,19 +402,64 @@ const handleBack = () => {
   router.back()
 }
 
-const handleSave = () => {
-  if (!isEdit.value) generatePartNumber()
-  message.success(t('message.saveSuccess'))
+const buildPartPayload = () => ({
+  orderId: form.orderId,
+  partCode: form.partCode,
+  businessUnit: form.businessUnit,
+  productPlatform: form.productPlatform,
+  productionShift: form.productionShift || undefined,
+  complaintType: form.complaintType || undefined,
+  responsibleEngineer: form.responsibleEngineer || undefined,
+  analyst: form.analyst || undefined,
+  repairStation: form.repairStation || undefined,
+  complaintLocation: form.complaintLocation || undefined,
+  vehicleProductionDate: form.vehicleProductionDate ? form.vehicleProductionDate.format('YYYY-MM-DD') : undefined,
+  vehiclePurchaseDate: form.vehiclePurchaseDate ? form.vehiclePurchaseDate.format('YYYY-MM-DD') : undefined,
+  vehicleFailureDate: form.vehicleFailureDate ? form.vehicleFailureDate.format('YYYY-MM-DD') : undefined,
+  vehicleVIN: form.vehicleVIN || undefined,
+  vehicleMileage: form.vehicleMileage || undefined,
+  customerDescription: form.customerDescription || undefined,
+  otherDescription: form.otherDescription || undefined,
+})
+
+const handleSave = async () => {
+  try {
+    await formRef.value?.validate()
+    if (isEdit.value) {
+      await partApi.update(partId.value, buildPartPayload())
+    } else {
+      await partApi.create(buildPartPayload())
+    }
+    message.success(t('message.saveSuccess'))
+    router.push('/return-parts')
+  } catch (error: any) {
+    if (error?.errorFields) {
+      message.error(t('validation.formError'))
+    } else {
+      message.error(t('message.saveFailed'))
+    }
+  }
 }
 
 const handleSubmit = async () => {
   try {
-    if (!isEdit.value) generatePartNumber()
     await formRef.value?.validate()
-    message.success(isEdit.value ? t('message.updateSuccess') : t('message.createSuccess'))
-    router.push('/return-parts')
-  } catch {
-    message.error(t('validation.formError'))
+    let savedId = partId.value
+    if (isEdit.value) {
+      await partApi.update(savedId, buildPartPayload())
+    } else {
+      const created = await partApi.create(buildPartPayload())
+      savedId = created.id
+    }
+    await partApi.submit(savedId)
+    message.success(t('message.submitSuccess'))
+    router.push(`/return-parts/${savedId}`)
+  } catch (error: any) {
+    if (error?.errorFields) {
+      message.error(t('validation.formError'))
+    } else {
+      message.error(t('message.submitFailed'))
+    }
   }
 }
 </script>

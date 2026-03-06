@@ -37,7 +37,7 @@
             <a-descriptions-item :label="t('partDetail.responsibleEngineer')">{{ (part as any)?.responsibleEngineer || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.analyst')">{{ (part as any)?.analyst || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('common.status')" :span="2">
-              <a-tag :color="PART_STATUS_MAP[part?.status || 'registered']?.color || 'default'">
+              <a-tag :color="PART_STATUS_MAP[part?.status || 'in_initial_analysis']?.color || 'default'">
                 {{ getStatusLabel(part?.status) }}
               </a-tag>
             </a-descriptions-item>
@@ -79,12 +79,12 @@
       <a-col :span="8">
         <a-card :title="t('partDetail.statusFlow')" class="status-card">
           <a-steps direction="vertical" :current="currentStep" size="small">
-            <a-step :title="t('partDetail.stepRegistered')" :description="getStepDescription(0)" />
-            <a-step :title="t('partDetail.stepPendingInitialAnalysis')" :description="getStepDescription(1)" />
-            <a-step :title="t('partDetail.stepInitialAnalysisCompleted')" :description="getStepDescription(2)" />
-            <a-step :title="t('partDetail.stepPendingDetailedAnalysis')" :description="getStepDescription(3)" />
-            <a-step :title="t('partDetail.stepInDetailedAnalysis')" :description="getStepDescription(4)" />
-            <a-step :title="t('partDetail.stepAnalysisCompleted')" :description="getStepDescription(5)" />
+            <a-step :title="t('partDetail.stepInInitialAnalysis')" :description="getStepDescription(0)" />
+            <a-step :title="t('partDetail.stepInDetailedAnalysis')" :description="getStepDescription(1)" />
+            <a-step :title="t('partDetail.stepPendingApproval')" :description="getStepDescription(2)" />
+            <a-step :title="t('partDetail.stepAnalysisCompleted')" :description="getStepDescription(3)" />
+            <a-step :title="t('partDetail.stepScrapInProgress')" :description="getStepDescription(4)" />
+            <a-step :title="t('partDetail.stepScrapped')" :description="getStepDescription(5)" />
           </a-steps>
         </a-card>
 
@@ -138,7 +138,7 @@ const templates = ref<ReportTemplate[]>([])
 const analysisVisible = ref(false)
 const qcNoInput = ref('')
 
-const QC_VISIBLE_STATUSES = [PartStatus.ANALYSIS_COMPLETED, PartStatus.PENDING_SCRAP, PartStatus.SCRAPPED]
+const QC_VISIBLE_STATUSES = [PartStatus.ANALYSIS_COMPLETED, PartStatus.SCRAP_IN_PROGRESS, PartStatus.SCRAPPED]
 const isQcVisible = computed(() => part.value ? QC_VISIBLE_STATUSES.includes(part.value.status) : false)
 
 const handleSubmitQcNo = async () => {
@@ -152,13 +152,11 @@ const handleSubmitQcNo = async () => {
 
 // 状态步骤映射
 const statusStepMap: Record<PartStatus, number> = {
-  [PartStatus.REGISTERED]: 0,
-  [PartStatus.PENDING_INITIAL_ANALYSIS]: 1,
-  [PartStatus.INITIAL_ANALYSIS_COMPLETED]: 2,
-  [PartStatus.PENDING_DETAILED_ANALYSIS]: 3,
-  [PartStatus.IN_DETAILED_ANALYSIS]: 4,
-  [PartStatus.ANALYSIS_COMPLETED]: 5,
-  [PartStatus.PENDING_SCRAP]: 5,
+  [PartStatus.IN_INITIAL_ANALYSIS]: 0,
+  [PartStatus.IN_DETAILED_ANALYSIS]: 1,
+  [PartStatus.PENDING_APPROVAL]: 2,
+  [PartStatus.ANALYSIS_COMPLETED]: 3,
+  [PartStatus.SCRAP_IN_PROGRESS]: 4,
   [PartStatus.SCRAPPED]: 5,
 }
 
@@ -197,13 +195,11 @@ const getReportStatusLabel = (status: string) => {
 }
 
 const partStatusI18nKeyMap: Record<string, string> = {
-  registered: 'registered',
-  pending_initial_analysis: 'pendingInitialAnalysis',
-  initial_analysis_completed: 'initialAnalysisCompleted',
-  pending_detailed_analysis: 'pendingDetailedAnalysis',
+  in_initial_analysis: 'inInitialAnalysis',
   in_detailed_analysis: 'inDetailedAnalysis',
+  pending_approval: 'pendingApproval',
   analysis_completed: 'analysisCompleted',
-  pending_scrap: 'pendingScrap',
+  scrap_in_progress: 'scrapInProgress',
   scrapped: 'scrapped',
 }
 

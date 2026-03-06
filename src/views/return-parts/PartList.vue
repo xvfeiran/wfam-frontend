@@ -153,22 +153,20 @@ const productPlatforms = ref<string[]>([])
 
 // 映射 PartStatus 蛇形命名到 i18n 驼峰命名
 const statusKeyMap: Record<string, string> = {
-  registered: 'registered',
-  pending_initial_analysis: 'pendingInitialAnalysis',
-  initial_analysis_completed: 'initialAnalysisCompleted',
-  pending_detailed_analysis: 'pendingDetailedAnalysis',
+  in_initial_analysis: 'inInitialAnalysis',
   in_detailed_analysis: 'inDetailedAnalysis',
+  pending_approval: 'pendingApproval',
   analysis_completed: 'analysisCompleted',
-  pending_scrap: 'pendingScrap',
+  scrap_in_progress: 'scrapInProgress',
   scrapped: 'scrapped',
 }
 
 // 获取状态标签
 const getStatusLabel = (status?: string) => {
-  if (!status) return PART_STATUS_MAP['registered']?.label || status
+  if (!status) return ''
   const i18nKey = statusKeyMap[status]
-  if (!i18nKey) return status  // 已是可读字符串（如中文状态），直接返回
-  return t(`status.${i18nKey}`) || PART_STATUS_MAP[status]?.label || status
+  if (!i18nKey) return status
+  return t(`status.${i18nKey}`) || PART_STATUS_MAP[status as any]?.label || status
 }
 
 // 筛选条件
@@ -295,10 +293,18 @@ const handleDelete = (id: string) => {
   message.success(t('message.deleteSuccess'))
 }
 
-const handleBatchDelete = () => {
-  parts.value = parts.value.filter(p => !selectedRowKeys.value.includes(p.id))
-  selectedRowKeys.value = []
-  message.success(t('message.deleteSuccess'))
+const handleBatchDelete = async () => {
+  try {
+    for (const id of selectedRowKeys.value) {
+      await partApi.delete(id)
+    }
+    selectedRowKeys.value = []
+    parts.value = await partApi.list()
+    message.success(t('message.deleteSuccess'))
+  } catch {
+    message.error(t('message.deleteFailed'))
+    parts.value = await partApi.list()
+  }
 }
 
 const handleDetailedAnalysis = () => {

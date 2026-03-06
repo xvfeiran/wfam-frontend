@@ -26,10 +26,16 @@ export const returnOrderApi = {
   getParts(orderId: string): Promise<Part[]> {
     return request.get(`/return-orders/${orderId}/parts`) as unknown as Promise<Part[]>
   },
-  sample(orderId: string, data: { sampledPartIds: string[] }): Promise<void> {
-    return request.post(`/return-orders/${orderId}/sample`, data) as unknown as Promise<void>
+  submit(id: string): Promise<ReturnOrder> {
+    return request.post(`/return-orders/${id}/submit`) as unknown as Promise<ReturnOrder>
   },
-  noSampling(orderId: string): Promise<void> {
-    return request.post(`/return-orders/${orderId}/no-sampling`) as unknown as Promise<void>
+  sampling(orderId: string, data: { sampledPartIds: string[] }): Promise<ReturnOrder> {
+    return request.post(`/return-orders/${orderId}/sampling`, data) as unknown as Promise<ReturnOrder>
+  },
+  scrap(id: string): Promise<ReturnOrder> {
+    return request.post(`/return-orders/${id}/scrap`) as unknown as Promise<ReturnOrder>
+  },
+  workonConfirm(id: string): Promise<ReturnOrder> {
+    return request.post(`/return-orders/${id}/scrap/workon-confirm`) as unknown as Promise<ReturnOrder>
   },
 }
