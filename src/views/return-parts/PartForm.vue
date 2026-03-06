@@ -106,6 +106,15 @@
 
         <a-row :gutter="24">
           <a-col :span="12">
+            <a-form-item :label="t('returnPart.returnType')" name="complaintType">
+              <a-select v-model:value="form.complaintType" :placeholder="t('validation.pleaseSelect')">
+                <a-select-option v-for="ct in complaintTypes" :key="ct.value" :value="ct.value">
+                  {{ ct.label }}
+                </a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
             <a-form-item :label="t('returnPart.failureType')" name="failureType">
               <a-select v-model:value="form.failureType" :placeholder="t('validation.selectFailureType')">
                 <a-select-option v-for="ft in failureTypes" :key="ft" :value="ft">
@@ -115,16 +124,46 @@
             </a-form-item>
           </a-col>
         </a-row>
+
+        <a-row :gutter="24">
+          <a-col :span="12">
+            <a-form-item :label="t('partDetail.responsibleEngineer')">
+              <a-select v-model:value="form.responsibleEngineer" :placeholder="t('validation.pleaseSelect')" allowClear>
+                <a-select-option v-for="u in users" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item :label="t('partDetail.analyst')">
+              <a-select v-model:value="form.analyst" :placeholder="t('validation.pleaseSelect')" allowClear>
+                <a-select-option v-for="u in users" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+        </a-row>
       </a-form>
     </a-card>
 
-    <!-- 车辆信息卡片 -->
-    <a-card :title="t('returnPart.vehicleInfo')" class="info-card">
+    <!-- 客诉信息卡片 -->
+    <a-card :title="t('partDetail.complaintInfo')" class="info-card">
       <a-form
         :model="form"
         :label-col="{ span: 6 }"
         :wrapper-col="{ span: 16 }"
       >
+        <a-row :gutter="24">
+          <a-col :span="12">
+            <a-form-item :label="t('partDetail.repairStation')">
+              <a-input v-model:value="form.repairStation" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item :label="t('partDetail.complaintLocation')">
+              <a-input v-model:value="form.complaintLocation" />
+            </a-form-item>
+          </a-col>
+        </a-row>
+
         <a-row :gutter="24">
           <a-col :span="12">
             <a-form-item :label="t('returnPart.vehicleProductionDate')">
@@ -236,7 +275,30 @@ import { CameraOutlined, PlusOutlined, CheckCircleOutlined } from '@ant-design/i
 import { returnOrderApi } from '@/services/returnOrderApi'
 import { partApi } from '@/services/partApi'
 import { lookupApi } from '@/services/lookupApi'
+import { userApi } from '@/services/userApi'
 import { useOCR } from '@/composables/useOCR'
+
+// 退货类型（BA代码）列表
+const complaintTypes = [
+  { value: 'BA10', label: 'BA10 - 0-mlg, provisional rework/accept. back' },
+  { value: 'BA20', label: 'BA20 - 0-km, uninstalled' },
+  { value: 'BA21', label: 'BA21 - QM01' },
+  { value: 'BA30', label: 'BA30 - stock product of AA volume (0-km)' },
+  { value: 'BA31', label: 'BA31 - Stock product of IAM Vol.(0-km, uninst)' },
+  { value: 'BA35', label: 'BA35 - Logistics complaint original equipment' },
+  { value: 'BA40', label: 'BA40 - field product' },
+  { value: 'BA41', label: 'BA41 - Field campaign' },
+  { value: 'BA42', label: 'BA42 - goodwill' },
+  { value: 'BA43', label: 'BA43 - Field product outside partial market' },
+  { value: 'BA50', label: 'BA50 - Internal Complaint' },
+  { value: 'BA60', label: 'BA60 - commercial processing, 0-km' },
+  { value: 'BA61', label: 'BA61 - commercial processing, field' },
+  { value: 'BA70', label: 'BA70 - product for exam. w/o warranty claim' },
+  { value: 'BA76', label: 'BA76 - Technical sample complaint' },
+  { value: 'BA77', label: 'BA77 - Sample product analysis due to contract' },
+  { value: 'BA78', label: 'BA78 - Sample product analysis customer request' },
+  { value: 'BA79', label: 'BA79 - Logistics sample complaint' },
+]
 
 const { t } = useI18n()
 
@@ -251,6 +313,7 @@ const orders = ref<any[]>([])
 const businessUnits = ref<string[]>([])
 const productPlatforms = ref<string[]>([])
 const failureTypes = ref<string[]>([])
+const users = ref<{ id: string; loginName: string; displayName: string }[]>([])
 
 const previewVisible = ref(false)
 const previewImage = ref('')
@@ -267,7 +330,12 @@ const form = reactive({
   businessUnit: undefined as string | undefined,
   productPlatform: undefined as string | undefined,
   productionShift: '',
+  complaintType: undefined as string | undefined,
   failureType: undefined as string | undefined,
+  responsibleEngineer: undefined as string | undefined,
+  analyst: undefined as string | undefined,
+  repairStation: '',
+  complaintLocation: '',
   vehicleProductionDate: null as Dayjs | null,
   vehiclePurchaseDate: null as Dayjs | null,
   vehicleFailureDate: null as Dayjs | null,
@@ -300,15 +368,17 @@ const handlePreview = (file: any) => {
 }
 
 onMounted(async () => {
-  // Load lookup data and orders in parallel
-  const [lookups, ordersData] = await Promise.all([
+  // Load lookup data, orders and users in parallel
+  const [lookups, ordersData, usersData] = await Promise.all([
     lookupApi.getAll(),
     returnOrderApi.list(),
+    userApi.list(),
   ])
   businessUnits.value = lookups.businessUnits
   productPlatforms.value = lookups.productPlatforms
   failureTypes.value = lookups.failureTypes
   orders.value = ordersData
+  users.value = usersData
 
   if (isEdit.value) {
     const part = await partApi.getById(partId.value)

@@ -27,7 +27,6 @@
             <a-descriptions-item :label="t('returnOrder.returnMethod')">{{ getReturnMethodLabel() }}</a-descriptions-item>
             <a-descriptions-item :label="t('returnOrder.trackingNumber')">{{ order?.trackingNumber || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('returnOrder.returnQuantity')">{{ order?.returnQuantity }}</a-descriptions-item>
-            <a-descriptions-item :label="t('returnOrder.initialAnalysisQuantity')">{{ order?.initialAnalysisQuantity }}</a-descriptions-item>
             <a-descriptions-item :label="t('orderDetail.detailedAnalysisQuantity')">{{ order?.detailedAnalysisQuantity }}</a-descriptions-item>
             <a-descriptions-item :label="t('orderDetail.scrappedQuantity')">{{ order?.scrappedQuantity }}</a-descriptions-item>
             <a-descriptions-item :label="t('orderDetail.qcCreatedQuantity')">{{ order?.qcCreatedQuantity }}</a-descriptions-item>
@@ -37,7 +36,6 @@
                 {{ getStatusLabel() }}
               </a-tag>
             </a-descriptions-item>
-            <a-descriptions-item :label="t('returnOrder.description')" :span="2">{{ order?.description || '-' }}</a-descriptions-item>
           </a-descriptions>
         </a-card>
 

@@ -78,26 +78,6 @@
               <a-input-number v-model:value="form.returnQuantity" :min="1" style="width: 100%" />
             </a-form-item>
           </a-col>
-          <a-col :span="12">
-            <a-form-item :label="t('returnOrder.initialAnalysisQuantity')">
-              <a-input-number v-model:value="form.initialAnalysisQuantity" :min="0" style="width: 100%" />
-            </a-form-item>
-          </a-col>
-        </a-row>
-
-        <a-row :gutter="24">
-          <a-col :span="24">
-            <a-form-item :label="t('returnOrder.description')" name="description" :label-col="{ span: 3 }" :wrapper-col="{ span: 19 }">
-              <a-textarea
-                v-model:value="form.description"
-                :placeholder="t('validation.inputOrderNumber')"
-                :rows="4"
-                show-count
-                :maxlength="500"
-              />
-            </a-form-item>
-          </a-col>
-        </a-row>
       </a-form>
 
       <!-- 售后件列表区 -->
@@ -179,8 +159,6 @@ const form = reactive({
   returnMethod: 'express',
   trackingNumber: '',
   returnQuantity: 1,
-  initialAnalysisQuantity: 0,
-  description: '',
 })
 
 const rules = computed(() => ({
@@ -227,8 +205,6 @@ onMounted(async () => {
       form.returnMethod = order.returnMethod
       form.trackingNumber = order.trackingNumber || ''
       form.returnQuantity = order.returnQuantity
-      form.initialAnalysisQuantity = order.initialAnalysisQuantity
-      form.description = order.description || ''
 
       // 加载关联的售后件
       parts.value = await returnOrderApi.getParts(order.id)

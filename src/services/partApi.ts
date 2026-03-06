@@ -2,11 +2,12 @@ import request from './request'
 import type { Part, AnalysisReport, ReportTemplate } from '@/types'
 
 export interface PartListParams {
-  partNumber?: string
+  orderNumber?: string
   partCode?: string
   businessUnit?: string
   productPlatform?: string
   status?: string
+  qcCreated?: string
 }
 
 export const partApi = {
@@ -30,5 +31,8 @@ export const partApi = {
   },
   getMatchedTemplate(partId: string): Promise<ReportTemplate> {
     return request.get(`/parts/${partId}/templates`) as unknown as Promise<ReportTemplate>
+  },
+  updateQcNo(id: string, qcNo: string): Promise<Part> {
+    return request.put(`/parts/${id}/qc-no`, { qcNo }) as unknown as Promise<Part>
   },
 }

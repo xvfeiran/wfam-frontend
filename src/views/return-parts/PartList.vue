@@ -7,8 +7,8 @@
       <a-form :model="filters">
         <a-row :gutter="24">
           <a-col :span="12">
-            <a-form-item :label="t('returnPart.partNumber')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-              <a-input v-model:value="filters.partNumber" :placeholder="t('validation.required')" allowClear />
+            <a-form-item :label="t('returnOrder.orderNumber')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+              <a-input v-model:value="filters.orderNumber" :placeholder="t('validation.inputOrderNumber')" allowClear />
             </a-form-item>
           </a-col>
           <a-col :span="12">
@@ -40,6 +40,14 @@
                 <a-select-option v-for="(info, key) in PART_STATUS_MAP" :key="key" :value="key">
                   {{ getStatusLabel(key) }}
                 </a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item :label="t('returnPart.qcCreated')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+              <a-select v-model:value="filters.qcCreated" :placeholder="t('validation.pleaseSelect')" allowClear>
+                <a-select-option value="yes">{{ t('returnPart.qcCreatedYes') }}</a-select-option>
+                <a-select-option value="no">{{ t('returnPart.qcCreatedNo') }}</a-select-option>
               </a-select>
             </a-form-item>
           </a-col>
@@ -99,7 +107,7 @@
           <a @click="goToOrder(record.orderId)">{{ record.orderNumber }}</a>
         </template>
         <template v-else-if="column.key === 'status'">
-          <a-tag :color="PART_STATUS_MAP[record.status].color">
+          <a-tag :color="PART_STATUS_MAP[record.status]?.color || 'default'">
             {{ getStatusLabel(record.status) }}
           </a-tag>
         </template>
@@ -157,19 +165,20 @@ const statusKeyMap: Record<string, string> = {
 
 // 获取状态标签
 const getStatusLabel = (status?: string) => {
-  if (!status) return PART_STATUS_MAP['registered'].label
-  const i18nKey = statusKeyMap[status] || status
-  const fullKey = `status.${i18nKey}`
-  return t(fullKey) || PART_STATUS_MAP[status]?.label || status
+  if (!status) return PART_STATUS_MAP['registered']?.label || status
+  const i18nKey = statusKeyMap[status]
+  if (!i18nKey) return status  // 已是可读字符串（如中文状态），直接返回
+  return t(`status.${i18nKey}`) || PART_STATUS_MAP[status]?.label || status
 }
 
 // 筛选条件
 const filters = ref({
-  partNumber: '',
+  orderNumber: '',
   partCode: '',
   businessUnit: undefined as string | undefined,
   productPlatform: undefined as string | undefined,
   status: undefined as string | undefined,
+  qcCreated: undefined as string | undefined,
 })
 
 // 分页
@@ -199,8 +208,13 @@ const columns = computed(() => [
 // 筛选后的数据
 const filteredParts = computed(() => {
   let result = parts.value
-  if (filters.value.partNumber) {
-    result = result.filter(p => p.partNumber.includes(filters.value.partNumber))
+  if (filters.value.orderNumber) {
+    result = result.filter(p => p.orderNumber?.includes(filters.value.orderNumber))
+  }
+  if (filters.value.qcCreated === 'yes') {
+    result = result.filter(p => (p as any).qcNo)
+  } else if (filters.value.qcCreated === 'no') {
+    result = result.filter(p => !(p as any).qcNo)
   }
   if (filters.value.partCode) {
     result = result.filter(p => p.partCode.includes(filters.value.partCode))
@@ -225,11 +239,12 @@ const handleSearch = async () => {
   loading.value = true
   try {
     parts.value = await partApi.list({
-      partNumber: filters.value.partNumber || undefined,
+      orderNumber: filters.value.orderNumber || undefined,
       partCode: filters.value.partCode || undefined,
       businessUnit: filters.value.businessUnit,
       productPlatform: filters.value.productPlatform,
       status: filters.value.status,
+      qcCreated: filters.value.qcCreated,
     })
     message.success(t('message.searchComplete'))
   } finally {
@@ -239,11 +254,12 @@ const handleSearch = async () => {
 
 const handleReset = () => {
   filters.value = {
-    partNumber: '',
+    orderNumber: '',
     partCode: '',
     businessUnit: undefined,
     productPlatform: undefined,
     status: undefined,
+    qcCreated: undefined,
   }
 }
 

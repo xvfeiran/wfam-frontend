@@ -12,6 +12,15 @@
       </template>
     </a-page-header>
 
+    <!-- QC No. 录入区（精分析审批/完成及之后状态显示） -->
+    <a-card v-if="isQcVisible" class="qc-card" style="margin-bottom: 16px;">
+      <a-space>
+        <span>{{ t('partDetail.qcNo') }}</span>
+        <a-input v-model:value="qcNoInput" :placeholder="t('partDetail.qcNo')" style="width: 200px" />
+        <a-button type="primary" @click="handleSubmitQcNo">{{ t('common.submit') }}</a-button>
+      </a-space>
+    </a-card>
+
     <a-row :gutter="16">
       <!-- 左侧：基本信息 -->
       <a-col :span="16">
@@ -25,16 +34,20 @@
             <a-descriptions-item :label="t('returnPart.businessUnit')">{{ part?.businessUnit }}</a-descriptions-item>
             <a-descriptions-item :label="t('returnPart.productPlatform')">{{ part?.productPlatform }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.productionShift')">{{ part?.productionShift || '-' }}</a-descriptions-item>
+            <a-descriptions-item :label="t('partDetail.responsibleEngineer')">{{ (part as any)?.responsibleEngineer || '-' }}</a-descriptions-item>
+            <a-descriptions-item :label="t('partDetail.analyst')">{{ (part as any)?.analyst || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('common.status')" :span="2">
-              <a-tag :color="PART_STATUS_MAP[part?.status || 'registered'].color">
+              <a-tag :color="PART_STATUS_MAP[part?.status || 'registered']?.color || 'default'">
                 {{ getStatusLabel(part?.status) }}
               </a-tag>
             </a-descriptions-item>
           </a-descriptions>
         </a-card>
 
-        <a-card :title="t('partDetail.vehicleInfo')" class="vehicle-card">
+        <a-card :title="t('partDetail.complaintInfo')" class="vehicle-card">
           <a-descriptions :column="2" bordered>
+            <a-descriptions-item :label="t('partDetail.repairStation')">{{ (part as any)?.repairStation || '-' }}</a-descriptions-item>
+            <a-descriptions-item :label="t('partDetail.complaintLocation')">{{ (part as any)?.complaintLocation || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.vehicleProductionDate')">{{ part?.vehicleProductionDate || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.vehiclePurchaseDate')">{{ part?.vehiclePurchaseDate || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.vehicleFailureDate')">{{ part?.vehicleFailureDate || '-' }}</a-descriptions-item>
@@ -123,6 +136,19 @@ const part = ref<Part | null>(null)
 const report = ref<AnalysisReport | null>(null)
 const templates = ref<ReportTemplate[]>([])
 const analysisVisible = ref(false)
+const qcNoInput = ref('')
+
+const QC_VISIBLE_STATUSES = [PartStatus.ANALYSIS_COMPLETED, PartStatus.PENDING_SCRAP, PartStatus.SCRAPPED]
+const isQcVisible = computed(() => part.value ? QC_VISIBLE_STATUSES.includes(part.value.status) : false)
+
+const handleSubmitQcNo = async () => {
+  if (!qcNoInput.value.trim()) {
+    message.warning(t('partDetail.qcNo'))
+    return
+  }
+  await partApi.updateQcNo(partId.value, qcNoInput.value.trim())
+  message.success(t('message.saveSuccess'))
+}
 
 // 状态步骤映射
 const statusStepMap: Record<PartStatus, number> = {
@@ -170,9 +196,21 @@ const getReportStatusLabel = (status: string) => {
   return labelMap[status] || status
 }
 
+const partStatusI18nKeyMap: Record<string, string> = {
+  registered: 'registered',
+  pending_initial_analysis: 'pendingInitialAnalysis',
+  initial_analysis_completed: 'initialAnalysisCompleted',
+  pending_detailed_analysis: 'pendingDetailedAnalysis',
+  in_detailed_analysis: 'inDetailedAnalysis',
+  analysis_completed: 'analysisCompleted',
+  pending_scrap: 'pendingScrap',
+  scrapped: 'scrapped',
+}
+
 const getStatusLabel = (status?: string) => {
-  const key = status ? `status.${status}` : ''
-  return key ? t(key) || PART_STATUS_MAP[status || 'registered'].label : PART_STATUS_MAP['registered'].label
+  if (!status) return '-'
+  const i18nKey = partStatusI18nKeyMap[status]
+  return i18nKey ? t(`status.${i18nKey}`) : status
 }
 
 onMounted(async () => {
@@ -221,7 +259,7 @@ const handleExportReport = () => {
 .part-detail {
   padding: 24px;
 
-  .info-card, .vehicle-card, .image-card, .status-card, .report-card {
+  .qc-card, .info-card, .vehicle-card, .image-card, .status-card, .report-card {
     margin-bottom: 16px;
   }
 

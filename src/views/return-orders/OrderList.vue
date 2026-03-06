@@ -25,15 +25,6 @@
               <a-range-picker v-model:value="filters.receiveDate" style="width: 100%" />
             </a-form-item>
           </a-col>
-          <a-col :span="12">
-            <a-form-item :label="t('returnOrder.returnMethod')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-              <a-select v-model:value="filters.returnMethod" :placeholder="t('validation.pleaseSelect')" allowClear>
-                <a-select-option value="express">{{ t('returnOrder.methodExpress') }}</a-select-option>
-                <a-select-option value="pickup">{{ t('returnOrder.methodPickup') }}</a-select-option>
-                <a-select-option value="other">{{ t('returnOrder.methodOther') }}</a-select-option>
-              </a-select>
-            </a-form-item>
-          </a-col>
         </a-row>
         <a-row>
           <a-col :span="24" class="filter-buttons">
@@ -92,9 +83,6 @@
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'orderNumber'">
           <a @click="handleView(record.id)">{{ record.orderNumber }}</a>
-        </template>
-        <template v-else-if="column.key === 'returnMethod'">
-          {{ getReturnMethodLabel(record.returnMethod) }}
         </template>
         <template v-else-if="column.key === 'status'">
           <a-tag :color="ORDER_STATUS_MAP[record.status].color">
@@ -156,7 +144,6 @@ const filters = ref({
   orderNumber: '',
   customer: undefined as string | undefined,
   receiveDate: null as any,
-  returnMethod: undefined as string | undefined,
 })
 
 // 分页
@@ -200,19 +187,6 @@ const getStatusLabel = (status: string) => {
   return key ? t(key) : status
 }
 
-// 退回方式到i18n键的映射
-const returnMethodI18nKeyMap: Record<string, string> = {
-  express: 'returnOrder.methodExpress',
-  pickup: 'returnOrder.methodPickup',
-  other: 'returnOrder.methodOther',
-}
-
-// 获取翻译后的退回方式标签
-const getReturnMethodLabel = (method: string) => {
-  const key = returnMethodI18nKeyMap[method]
-  return key ? t(key) : method
-}
-
 // 状态过滤选项
 const statusFilters = computed(() =>
   Object.entries(ORDER_STATUS_MAP).map(([key]) => ({
@@ -235,18 +209,6 @@ const columns = computed(() => [
   },
   { title: t('returnOrder.receiveDate'), dataIndex: 'receiveDate', key: 'receiveDate', sorter: true },
   { title: t('returnOrder.complaintDate'), dataIndex: 'complaintDate', key: 'complaintDate', sorter: true },
-  {
-    title: t('returnOrder.returnMethod'),
-    dataIndex: 'returnMethod',
-    key: 'returnMethod',
-    filters: [
-      { text: t('returnOrder.methodExpress'), value: 'express' },
-      { text: t('returnOrder.methodPickup'), value: 'pickup' },
-      { text: t('returnOrder.methodOther'), value: 'other' },
-    ],
-    filteredValue: columnFilters.value.returnMethod || null,
-    onFilter: (value: string, record: ReturnOrder) => record.returnMethod === value,
-  },
   { title: t('returnOrder.returnQuantity'), dataIndex: 'returnQuantity', key: 'returnQuantity', sorter: true },
   {
     title: t('common.status'),
@@ -271,9 +233,6 @@ const filteredOrders = computed(() => {
   }
   if (filters.value.customer) {
     result = result.filter(o => o.customer === filters.value.customer)
-  }
-  if (filters.value.returnMethod) {
-    result = result.filter(o => o.returnMethod === filters.value.returnMethod)
   }
   return result
 })
@@ -311,7 +270,6 @@ const handleReset = () => {
     orderNumber: '',
     customer: undefined,
     receiveDate: null,
-    returnMethod: undefined,
   }
 }
 
