@@ -62,6 +62,7 @@ export default {
   },
   orderDetail: {
     title: '退货单详情 - {orderNumber}',
+    titleNew: '退货单详情',
     basicInfo: '基本信息',
     partsList: '售后件列表',
     statusFlow: '状态流程',
@@ -281,6 +282,7 @@ export default {
     formError: '请检查表单填写',
     pleaseSelect: '请选择',
     autoGenerateOnSave: '保存时自动生成',
+    unsubmitted: '未提交',
     inputTrackingNumber: '请输入快递单号',
     inputDescription: '请输入退货描述',
   },
@@ -400,6 +402,7 @@ export default {
   },
   partDetail: {
     title: '售后件详情 - {partNumber}',
+    titleNew: '售后件详情',
     edit: '编辑',
     analysis: '精分析',
     basicInfo: '基本信息',

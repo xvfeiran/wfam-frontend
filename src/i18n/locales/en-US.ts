@@ -62,6 +62,7 @@ export default {
   },
   orderDetail: {
     title: 'Return Order Detail - {orderNumber}',
+    titleNew: 'Return Order Detail',
     basicInfo: 'Basic Information',
     partsList: 'Parts List',
     statusFlow: 'Status Flow',
@@ -281,6 +282,7 @@ export default {
     formError: 'Please check form fields',
     pleaseSelect: 'Please select',
     autoGenerateOnSave: 'Auto-generated on save',
+    unsubmitted: 'Unsubmitted',
     inputTrackingNumber: 'Please enter tracking number',
     inputDescription: 'Please enter description',
   },
@@ -400,6 +402,7 @@ export default {
   },
   partDetail: {
     title: 'Part Detail - {partNumber}',
+    titleNew: 'Part Detail',
     edit: 'Edit',
     analysis: 'Analysis',
     basicInfo: 'Basic Information',

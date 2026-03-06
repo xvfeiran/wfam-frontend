@@ -98,15 +98,10 @@
       :pagination="pagination"
       row-key="id"
       :loading="loading"
+      :custom-row="customRow"
     >
       <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'partNumber'">
-          <a @click="handleView(record.id)">{{ record.partNumber }}</a>
-        </template>
-        <template v-else-if="column.key === 'orderNumber'">
-          <a @click="goToOrder(record.orderId)">{{ record.orderNumber }}</a>
-        </template>
-        <template v-else-if="column.key === 'status'">
+        <template v-if="column.key === 'status'">
           <a-tag :color="PART_STATUS_MAP[record.status]?.color || 'default'">
             {{ getStatusLabel(record.status) }}
           </a-tag>
@@ -124,7 +119,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
@@ -195,8 +190,42 @@ const currentPart = ref<Part | null>(null)
 
 // 表格列定义
 const columns = computed(() => [
-  { title: t('returnPart.partNumber'), dataIndex: 'partNumber', key: 'partNumber', sorter: true },
-  { title: t('returnPart.relatedOrder'), dataIndex: 'orderNumber', key: 'orderNumber' },
+  {
+    title: t('returnPart.partNumber'),
+    dataIndex: 'partNumber',
+    key: 'partNumber',
+    sorter: true,
+    customRender: ({ record }: { record: Part }) => {
+      const text = record.partNumber || t('validation.unsubmitted')
+      if (!record.partNumber) {
+        return h('span', { style: { color: '#999' } }, text)
+      }
+      return h('a', {
+        style: { color: '#1890ff' },
+        onClick: (e: Event) => {
+          e.stopPropagation()
+          handleView(record.id)
+        }
+      }, text)
+    }
+  },
+  {
+    title: t('returnPart.relatedOrder'),
+    dataIndex: 'orderNumber',
+    key: 'orderNumber',
+    customRender: ({ record }: { record: Part }) => {
+      if (!record.orderNumber) {
+        return h('span', { style: { color: '#999' } }, t('validation.unsubmitted'))
+      }
+      return h('a', {
+        style: { color: '#1890ff' },
+        onClick: (e: Event) => {
+          e.stopPropagation()
+          goToOrder(record.orderId)
+        }
+      }, record.orderNumber)
+    }
+  },
   { title: t('returnPart.partCode'), dataIndex: 'partCode', key: 'partCode', sorter: true },
   { title: t('returnPart.businessUnit'), dataIndex: 'businessUnit', key: 'businessUnit', sorter: true },
   { title: t('returnPart.productPlatform'), dataIndex: 'productPlatform', key: 'productPlatform' },
@@ -284,6 +313,12 @@ const handleView = (id: string) => {
   router.push(`/return-parts/${id}`)
 }
 
+// 整行点击进入详情
+const customRow = (record: Part) => ({
+  onClick: () => handleView(record.id),
+  style: { cursor: 'pointer' },
+})
+
 const handleEdit = (id: string) => {
   router.push(`/return-parts/${id}/edit`)
 }
@@ -352,6 +387,10 @@ const goToOrder = (orderId: string) => {
 
   .danger-link {
     color: #ff4d4f;
+  }
+
+  :deep(.ant-table-tbody > tr:hover > td) {
+    cursor: pointer;
   }
 }
 </style>

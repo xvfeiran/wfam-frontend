@@ -1,7 +1,7 @@
 <template>
   <div class="order-detail">
     <a-page-header
-      :title="t('orderDetail.title', { orderNumber: order?.orderNumber })"
+      :title="t('orderDetail.title', { orderNumber: order?.orderNumber || t('validation.unsubmitted') })"
       @back="handleBack"
     >
       <template #extra>
@@ -22,7 +22,10 @@
       <a-col :span="16">
         <a-card :title="t('orderDetail.basicInfo')" class="info-card">
           <a-descriptions :column="2" bordered>
-            <a-descriptions-item :label="t('returnOrder.orderNumber')">{{ order?.orderNumber }}</a-descriptions-item>
+            <a-descriptions-item :label="t('returnOrder.orderNumber')">
+              <span v-if="order?.orderNumber">{{ order.orderNumber }}</span>
+              <span v-else style="color: #999">{{ t('validation.unsubmitted') }}</span>
+            </a-descriptions-item>
             <a-descriptions-item :label="t('returnOrder.customer')">{{ order?.customer }}</a-descriptions-item>
             <a-descriptions-item :label="t('returnOrder.receiveDate')">{{ order?.receiveDate }}</a-descriptions-item>
             <a-descriptions-item :label="t('returnOrder.complaintDate')">{{ order?.complaintDate }}</a-descriptions-item>
@@ -48,14 +51,12 @@
             :data-source="parts"
             :pagination="{ pageSize: 10, showSizeChanger: true, showQuickJumper: true, showTotal: (total: number) => t('common.total', { total }) }"
             row-key="id"
+            :custom-row="customPartRow"
           >
             <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'partNumber'">
-                <a @click="goToPartDetail(record.id)">{{ record.partNumber }}</a>
-              </template>
-              <template v-else-if="column.key === 'status'">
+              <template v-if="column.key === 'status'">
                 <a-tag :color="PART_STATUS_MAP[record.status]?.color || 'default'">
-                  {{ getStatusLabel(record.status) }}
+                  {{ getPartStatusLabel(record.status) }}
                 </a-tag>
               </template>
             </template>
@@ -97,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
@@ -135,7 +136,24 @@ const currentStep = computed(() => {
 })
 
 const partColumns = computed(() => [
-  { title: t('returnPart.partNumber'), dataIndex: 'partNumber', key: 'partNumber' },
+  {
+    title: t('returnPart.partNumber'),
+    dataIndex: 'partNumber',
+    key: 'partNumber',
+    customRender: ({ record }: { record: Part }) => {
+      const text = record.partNumber || t('validation.unsubmitted')
+      if (!record.partNumber) {
+        return h('span', { style: { color: '#999' } }, text)
+      }
+      return h('a', {
+        style: { color: '#1890ff' },
+        onClick: (e: Event) => {
+          e.stopPropagation()
+          goToPartDetail(record.id)
+        }
+      }, text)
+    }
+  },
   { title: t('returnPart.partCode'), dataIndex: 'partCode', key: 'partCode' },
   { title: t('returnPart.businessUnit'), dataIndex: 'businessUnit', key: 'businessUnit' },
   { title: t('returnPart.productPlatform'), dataIndex: 'productPlatform', key: 'productPlatform' },
@@ -158,6 +176,29 @@ const getStatusLabel = (status?: string) => {
   const key = returnOrderStatusI18nKeyMap[status || order.value?.status || 'draft']
   return key ? t(key) : status || order.value?.status || ''
 }
+
+// 获取翻译后的状态标签（售后件）
+const getPartStatusLabel = (status?: string) => {
+  if (!status) return ''
+  const key = statusKeyMap[status]
+  return key ? t(`status.${key}`) : status
+}
+
+// 售后件状态映射
+const statusKeyMap: Record<string, string> = {
+  in_initial_analysis: 'inInitialAnalysis',
+  in_detailed_analysis: 'inDetailedAnalysis',
+  pending_approval: 'pendingApproval',
+  analysis_completed: 'analysisCompleted',
+  scrap_in_progress: 'scrapInProgress',
+  scrapped: 'scrapped',
+}
+
+// 整行点击进入售后件详情
+const customPartRow = (record: Part) => ({
+  onClick: () => goToPartDetail(record.id),
+  style: { cursor: 'pointer' },
+})
 
 // 退回方式到i18n键的映射
 const returnMethodI18nKeyMap: Record<string, string> = {
@@ -251,6 +292,10 @@ const goToPartDetail = (id: string) => {
 
   .info-card, .parts-card, .status-card {
     margin-bottom: 16px;
+  }
+
+  :deep(.parts-card .ant-table-tbody > tr:hover > td) {
+    cursor: pointer;
   }
 }
 </style>

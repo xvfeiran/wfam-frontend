@@ -1,7 +1,7 @@
 <template>
   <div class="part-detail">
     <a-page-header
-      :title="t('partDetail.title', { partNumber: part?.partNumber })"
+      :title="t('partDetail.title', { partNumber: part?.partNumber || t('validation.unsubmitted') })"
       @back="handleBack"
     >
       <template #extra>
@@ -26,9 +26,13 @@
       <a-col :span="16">
         <a-card :title="t('partDetail.basicInfo')" class="info-card">
           <a-descriptions :column="2" bordered>
-            <a-descriptions-item :label="t('returnPart.partNumber')">{{ part?.partNumber }}</a-descriptions-item>
+            <a-descriptions-item :label="t('returnPart.partNumber')">
+              <a v-if="part?.partNumber" style="color: #1890ff" @click="handleEdit">{{ part.partNumber }}</a>
+              <span v-else style="color: #999">{{ t('validation.unsubmitted') }}</span>
+            </a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.relatedOrder')">
-              <a @click="goToOrder">{{ part?.orderNumber }}</a>
+              <a v-if="part?.orderNumber" style="color: #1890ff; cursor: pointer; text-decoration: underline" @click="goToOrder($event)">{{ part.orderNumber }}</a>
+              <span v-else style="color: #999">{{ t('validation.unsubmitted') }}</span>
             </a-descriptions-item>
             <a-descriptions-item :label="t('returnPart.partCode')">{{ part?.partCode }}</a-descriptions-item>
             <a-descriptions-item :label="t('returnPart.businessUnit')">{{ part?.businessUnit }}</a-descriptions-item>
@@ -236,8 +240,9 @@ const handleAnalysisSuccess = () => {
   message.success(t('partDetail.reportSubmitSuccess'))
 }
 
-const goToOrder = () => {
-  if (part.value) {
+const goToOrder = (e?: Event) => {
+  e?.preventDefault()
+  if (part.value?.orderId) {
     router.push(`/return-orders/${part.value.orderId}`)
   }
 }

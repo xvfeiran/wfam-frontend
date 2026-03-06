@@ -78,13 +78,11 @@
       :pagination="paginationConfig"
       row-key="id"
       :loading="loading"
+      :custom-row="customRow"
       @change="handleTableChange"
     >
       <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'orderNumber'">
-          <a @click="handleView(record.id)">{{ record.orderNumber }}</a>
-        </template>
-        <template v-else-if="column.key === 'status'">
+        <template v-if="column.key === 'status'">
           <a-tag :color="ORDER_STATUS_MAP[record.status]?.color || 'default'">
             {{ getStatusLabel(record.status) }}
           </a-tag>
@@ -109,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
@@ -193,7 +191,25 @@ const statusFilters = computed(() =>
 
 // 表格列定义（带过滤功能）
 const columns = computed(() => [
-  { title: t('returnOrder.orderNumber'), dataIndex: 'orderNumber', key: 'orderNumber', sorter: true },
+  {
+    title: t('returnOrder.orderNumber'),
+    dataIndex: 'orderNumber',
+    key: 'orderNumber',
+    sorter: true,
+    customRender: ({ record }: { record: ReturnOrder }) => {
+      const text = record.orderNumber || t('validation.unsubmitted')
+      if (!record.orderNumber) {
+        return h('span', { style: { color: '#999' } }, text)
+      }
+      return h('a', {
+        style: { color: '#1890ff' },
+        onClick: (e: Event) => {
+          e.stopPropagation()
+          handleView(record.id)
+        }
+      }, text)
+    }
+  },
   {
     title: t('returnOrder.customer'),
     dataIndex: 'customer',
@@ -276,6 +292,12 @@ const handleCreate = () => {
 const handleView = (id: string) => {
   router.push(`/return-orders/${id}`)
 }
+
+// 整行点击进入详情
+const customRow = (record: ReturnOrder) => ({
+  onClick: () => handleView(record.id),
+  style: { cursor: 'pointer' },
+})
 
 const handleEdit = (id: string) => {
   router.push(`/return-orders/${id}/edit`)
@@ -385,6 +407,10 @@ const handleScrapSuccess = () => {
 
   .danger-link {
     color: #ff4d4f;
+  }
+
+  :deep(.ant-table-tbody > tr:hover > td) {
+    cursor: pointer;
   }
 }
 </style>
