@@ -55,6 +55,11 @@ export const reportsApi = {
       params: { productPlatform, failureType }
     }) as unknown as Promise<ReportTemplate>
   },
+  matchAllTemplates(productPlatform: string, failureType?: string): Promise<ReportTemplate[]> {
+    return request.get('/report-templates/match-all', {
+      params: { productPlatform, failureType }
+    }) as unknown as Promise<ReportTemplate[]>
+  },
   submitReport(data: Partial<AnalysisReport>): Promise<AnalysisReport> {
     return request.post('/analysis-reports', data) as unknown as Promise<AnalysisReport>
   },

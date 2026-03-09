@@ -130,6 +130,8 @@ export default {
     inputField: 'Please input {field}',
     selectField: 'Please select {field}',
     noTemplateMatched: 'No matching template found, please upload the corresponding detailed analysis template in settings first',
+    selectTemplate: 'Select Template',
+    matchConditions: 'Match Conditions',
   },
   reports: {
     title: 'Statistical Reports',
@@ -222,6 +224,7 @@ export default {
     uploadBy: 'Uploaded By',
     download: 'Download',
     confirmDeleteTemplate: 'Are you sure to delete this template?',
+    templateNamePlaceholder: 'Enter template name (leave blank to auto-generate)',
     uploadTemplateTitle: 'Upload Analysis Template',
     templateFile: 'Template File',
     selectExcelFile: 'Select Excel File',

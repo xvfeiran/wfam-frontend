@@ -130,6 +130,9 @@
       @cancel="templateModalVisible = false"
     >
       <a-form :model="templateForm" layout="vertical" ref="templateFormRef">
+        <a-form-item :label="t('settings.templateName')" name="name">
+          <a-input v-model:value="templateForm.name" :placeholder="t('settings.templateNamePlaceholder')" />
+        </a-form-item>
         <a-form-item :label="t('settings.productPlatform')" name="productPlatform" :rules="[{ required: true, message: t('settings.pleaseSelectPlatform') }]">
           <a-select v-model:value="templateForm.productPlatform" :placeholder="t('settings.pleaseSelectPlatform')">
             <a-select-option v-for="pp in productPlatformOptions" :key="pp" :value="pp">{{ pp }}</a-select-option>
@@ -294,6 +297,7 @@ const templateColumns = computed(() => [
 
 // 模板表单
 const templateForm = reactive({
+  name: undefined as string | undefined,
   productPlatform: undefined as string | undefined,
   failureType: undefined as string | undefined,
   fileList: [] as any[],
@@ -317,6 +321,7 @@ const syncInfo = ref<SyncInfo>({
 })
 
 const handleAddTemplate = () => {
+  templateForm.name = undefined
   templateForm.productPlatform = undefined
   templateForm.failureType = undefined
   templateForm.fileList = []
@@ -336,10 +341,15 @@ const handleTemplateUpload = async () => {
     formData.append('productPlatform', templateForm.productPlatform!)
     // 失效类型在表单中是必填的，所以总是有值
     formData.append('failureType', templateForm.failureType || '')
+    // 模板名称可选
+    if (templateForm.name) {
+      formData.append('name', templateForm.name)
+    }
 
     console.log('[Template Upload] Uploading with:', {
       productPlatform: templateForm.productPlatform,
       failureType: templateForm.failureType || '',
+      name: templateForm.name,
       fileName: templateForm.fileList[0].originFileObj.name
     })
 

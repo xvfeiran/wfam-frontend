@@ -130,6 +130,8 @@ export default {
     inputField: '请输入{field}',
     selectField: '请选择{field}',
     noTemplateMatched: '未找到匹配的模板，请先在配置中上传对应的精分析模板',
+    selectTemplate: '选择模板',
+    matchConditions: '匹配条件',
   },
   reports: {
     title: '统计报表',
@@ -222,6 +224,7 @@ export default {
     uploadBy: '上传人',
     download: '下载',
     confirmDeleteTemplate: '确定删除此模板？',
+    templateNamePlaceholder: '请输入模板名称（留空则自动生成）',
     uploadTemplateTitle: '上传精分析模板',
     templateFile: '模板文件',
     selectExcelFile: '选择Excel文件',
