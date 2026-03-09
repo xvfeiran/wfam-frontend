@@ -103,7 +103,8 @@ const handleSwitchUser = (user: DevUser) => {
 // 复制认证信息（用于调试）
 const handleCopyAuthHeader = () => {
   const header = devUserStore.authHeader
-  navigator.clipboard.writeText(header).then(() => {
+  const text = `x-authentication-header:\n${header}`
+  navigator.clipboard.writeText(text).then(() => {
     message.success('认证信息已复制到剪贴板')
   }).catch(() => {
     message.error('复制失败')

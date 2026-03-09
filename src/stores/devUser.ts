@@ -12,12 +12,12 @@ export type UserRole =
 
 // 角色显示名称映射
 export const ROLE_LABELS: Record<UserRole, string> = {
-  W_RBCC_AEP_WFAM_Customer_Quality_ENG: '客户质量工程师',
-  W_RBCC_AEP_WFAM_Analyst: '分析员',
-  W_RBCC_AEP_WFAM_QMC_Leader: '分析主管',
-  W_RBCC_AEP_WFAM_QMC_Manager: 'QMC 经理',
-  R_RBCC_AEP_WFAM_Visitor: '访客',
-  W_RBCC_AEP_WFAM_SystemAdmin: '系统管理员',
+  W_RBCC_AEP_WFAM_Customer_Quality_ENG: 'Customer Quality Engineer',
+  W_RBCC_AEP_WFAM_Analyst: 'Analyst',
+  W_RBCC_AEP_WFAM_QMC_Leader: 'QMC Leader',
+  W_RBCC_AEP_WFAM_QMC_Manager: 'QMC Manager',
+  R_RBCC_AEP_WFAM_Visitor: 'Visitor',
+  W_RBCC_AEP_WFAM_SystemAdmin: 'System Admin',
 }
 
 // 用户信息接口
@@ -73,12 +73,12 @@ function getRoleIds(role: UserRole): string {
   return roleIdsMap[role]
 }
 
-// 预定义的模拟用户
+// 预定义的模拟用户（使用纯英文避免 HTTP 请求头编码问题）
 export const MOCK_USERS: DevUser[] = [
   {
     id: '6181',
     username: 'zhangsan',
-    displayName: '张三',
+    displayName: 'Zhang San',
     email: 'zhangsan@cn.bosch.com',
     department: 'BD/SWD-FSB1',
     ntAccount: 'ZSAN',
@@ -87,7 +87,7 @@ export const MOCK_USERS: DevUser[] = [
   {
     id: '6182',
     username: 'lisi',
-    displayName: '李四',
+    displayName: 'Li Si',
     email: 'lisi@cn.bosch.com',
     department: 'BD/SWD-FSB2',
     ntAccount: 'LSI',
@@ -96,7 +96,7 @@ export const MOCK_USERS: DevUser[] = [
   {
     id: '6183',
     username: 'wangwu',
-    displayName: '王五',
+    displayName: 'Wang Wu',
     email: 'wangwu@cn.bosch.com',
     department: 'BD/SWD-QMC',
     ntAccount: 'WWU',
@@ -105,7 +105,7 @@ export const MOCK_USERS: DevUser[] = [
   {
     id: '6184',
     username: 'zhaoliu',
-    displayName: '赵六',
+    displayName: 'Zhao Liu',
     email: 'zhaoliu@cn.bosch.com',
     department: 'BD/SWD-QMC',
     ntAccount: 'ZLIU',
@@ -114,7 +114,7 @@ export const MOCK_USERS: DevUser[] = [
   {
     id: '6185',
     username: 'guest',
-    displayName: '访客',
+    displayName: 'Guest User',
     email: 'guest@cn.bosch.com',
     department: 'BD/SWD-GUEST',
     ntAccount: 'GUEST',
@@ -123,7 +123,7 @@ export const MOCK_USERS: DevUser[] = [
   {
     id: '6186',
     username: 'admin',
-    displayName: '管理员',
+    displayName: 'System Admin',
     email: 'admin@cn.bosch.com',
     department: 'IT/Admin',
     ntAccount: 'ADMIN',
@@ -142,6 +142,13 @@ function loadUserFromStorage(): DevUser {
       const parsed = JSON.parse(saved)
       // 验证解析后的数据是否是有效的 DevUser
       if (parsed && parsed.id && parsed.username && parsed.role) {
+        // 检查是否包含中文字符（旧数据），如果是则重置为默认用户
+        const jsonStr = JSON.stringify(parsed)
+        if (/[^\x00-\x7F]/.test(jsonStr)) {
+          console.warn('[DevUser] Detected non-ASCII characters in stored user data, resetting to default')
+          localStorage.removeItem(STORAGE_KEY)
+          return MOCK_USERS[1] // 默认分析员
+        }
         return parsed as DevUser
       }
     }

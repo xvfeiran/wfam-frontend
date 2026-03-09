@@ -3,92 +3,37 @@
     <a-page-header :title="t('returnOrder.title')" />
 
     <!-- 查询条件区 -->
-    <a-card class="filter-card">
-      <a-form :model="filters">
-        <a-row :gutter="24">
-          <a-col :span="12">
-            <a-form-item :label="t('returnOrder.orderNumber')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-              <a-input v-model:value="filters.orderNumber" :placeholder="t('validation.inputOrderNumber')" allowClear />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item :label="t('returnOrder.customer')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-              <a-select v-model:value="filters.customer" :placeholder="t('validation.selectCustomer')" allowClear>
-                <a-select-option v-for="c in customers" :key="c.id" :value="c.name">{{ c.name }}</a-select-option>
-              </a-select>
-            </a-form-item>
-          </a-col>
-        </a-row>
-        <a-row :gutter="24">
-          <a-col :span="12">
-            <a-form-item :label="t('returnOrder.receiveDate')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-              <a-range-picker v-model:value="filters.receiveDate" style="width: 100%" />
-            </a-form-item>
-          </a-col>
-        </a-row>
-        <a-row>
-          <a-col :span="24" class="filter-buttons">
-            <a-space>
-              <a-button type="primary" @click="handleSearch">
-                <SearchOutlined /> {{ t('common.search') }}
-              </a-button>
-              <a-button @click="handleReset">
-                <ReloadOutlined /> {{ t('common.reset') }}
-              </a-button>
-            </a-space>
-          </a-col>
-        </a-row>
-      </a-form>
-    </a-card>
+    <OrderListFilters
+      v-model:filters="filters"
+      :customers="customers"
+      @search="handleSearch"
+      @reset="handleReset"
+    />
 
     <!-- 操作区 -->
-    <div class="action-bar">
-      <a-space>
-        <a-button type="primary" @click="handleCreate">
-          <PlusOutlined /> {{ t('common.create') }}
-        </a-button>
-        <a-button @click="handleImport">
-          <UploadOutlined /> {{ t('common.import') }}
-        </a-button>
-        <a-button @click="handleExport">
-          <DownloadOutlined /> {{ t('common.export') }}
-        </a-button>
-        <a-button :disabled="selectedRowKeys.length !== 1" @click="handleEdit(selectedRowKeys[0])">
-          <EditOutlined /> {{ t('common.edit') }}
-        </a-button>
-        <a-popconfirm :title="t('returnOrder.confirmDelete')" @confirm="handleBatchDelete" :disabled="selectedRowKeys.length === 0">
-          <a-button danger :disabled="selectedRowKeys.length === 0">
-            <DeleteOutlined /> {{ t('common.delete') }}
-          </a-button>
-        </a-popconfirm>
-        <a-button :disabled="selectedRowKeys.length !== 1" @click="handleSampling">
-          <ExperimentOutlined /> {{ t('returnOrder.sampling') }}
-        </a-button>
-        <a-button danger :disabled="selectedRowKeys.length === 0" @click="handleScrap">
-          <StopOutlined /> {{ t('returnOrder.scrap') }}
-        </a-button>
-      </a-space>
-    </div>
+    <OrderListActions
+      :selected-count="selectedRowKeys.length"
+      @create="handleCreate"
+      @import="handleImport"
+      @export="handleExport"
+      @edit="handleEdit"
+      @delete="handleBatchDelete"
+      @sampling="handleSampling"
+      @scrap="handleScrap"
+    />
 
     <!-- 列表区 -->
-    <a-table
-      :columns="columns"
-      :data-source="filteredOrders"
-      :row-selection="{ selectedRowKeys, onChange: onSelectChange }"
+    <OrderTable
+      :orders="filteredOrders"
+      :selected-row-keys="selectedRowKeys"
       :pagination="paginationConfig"
-      row-key="id"
       :loading="loading"
-      :custom-row="customRow"
-      @change="handleTableChange"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'status'">
-          <a-tag :color="ORDER_STATUS_MAP[record.status]?.color || 'default'">
-            {{ getStatusLabel(record.status) }}
-          </a-tag>
-        </template>
-      </template>
-    </a-table>
+      :sort-state="sortState"
+      :customers="customers"
+      @selection-change="onSelectChange"
+      @table-change="handleTableChange"
+      @view="handleView"
+    />
 
     <!-- 抽样弹窗 -->
     <SamplingModal
@@ -107,201 +52,71 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, h } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
-
-const { t } = useI18n()
-import {
-  SearchOutlined,
-  ReloadOutlined,
-  PlusOutlined,
-  UploadOutlined,
-  DownloadOutlined,
-  ExperimentOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  StopOutlined,
-} from '@ant-design/icons-vue'
 import { returnOrderApi } from '@/services/returnOrderApi'
-import { lookupApi } from '@/services/lookupApi'
 import { customerApi } from '@/services/customerApi'
-import { ORDER_STATUS_MAP } from '@/types'
-import type { ReturnOrder } from '@/types'
 import type { Customer } from '@/services/customerApi'
+import type { ReturnOrder } from '@/types'
+import { useTableList } from '@/composables/useTableList'
+import OrderListFilters from './components/OrderListFilters.vue'
+import OrderListActions from './components/OrderListActions.vue'
+import OrderTable from './components/OrderTable.vue'
 import SamplingModal from './components/SamplingModal.vue'
 import ScrapModal from './components/ScrapModal.vue'
 
+const { t } = useI18n()
 const router = useRouter()
-const loading = ref(false)
-const orders = ref<ReturnOrder[]>([])
-const selectedRowKeys = ref<string[]>([])
-const customers = ref<Customer[]>([])
 
-// 筛选条件
+const customers = ref<Customer[]>([])
 const filters = ref({
   orderNumber: '',
   customer: undefined as string | undefined,
   receiveDate: null as any,
 })
 
-// 分页
-const paginationConfig = computed(() => ({
-  current: 1,
-  pageSize: 10,
-  total: filteredOrders.value.length,
-  showSizeChanger: true,
-  showQuickJumper: true,
-  showTotal: (total: number) => t('common.total', { total }),
-}))
-
-// 抽样弹窗
-const samplingVisible = ref(false)
-const currentOrder = ref<ReturnOrder | null>(null)
-
-// 报废弹窗
-const scrapVisible = ref(false)
-
-// 列过滤状态
-const columnFilters = ref<Record<string, string[] | null>>({})
-// 排序状态
-const sortState = ref<{ field?: string; order?: 'ascend' | 'descend' }>({})
-
-// 状态到i18n键的映射
-const statusI18nKeyMap: Record<string, string> = {
-  draft: 'status.draft',
-  in_initial_analysis: 'status.inInitialAnalysis',
-  in_detailed_analysis: 'status.inDetailedAnalysis',
-  pending_approval: 'status.pendingApproval',
-  analysis_completed: 'status.analysisCompleted',
-  scrap_in_progress: 'status.scrapInProgress',
-  scrapped: 'status.scrapped',
-}
-
-// 获取翻译后的状态标签
-const getStatusLabel = (status: string) => {
-  const key = statusI18nKeyMap[status]
-  return key ? t(key) : status
-}
-
-// 状态过滤选项
-const statusFilters = computed(() =>
-  Object.entries(ORDER_STATUS_MAP).map(([key]) => ({
-    text: getStatusLabel(key),
-    value: key,
-  }))
-)
-
-// 表格列定义（带过滤功能）
-const columns = computed(() => [
-  {
-    title: t('returnOrder.orderNumber'),
-    dataIndex: 'orderNumber',
-    key: 'orderNumber',
-    sorter: true,
-    customRender: ({ record }: { record: ReturnOrder }) => {
-      const text = record.orderNumber || t('validation.unsubmitted')
-      if (!record.orderNumber) {
-        return h('span', { style: { color: '#999' } }, text)
-      }
-      return h('a', {
-        style: { color: '#1890ff' },
-        onClick: (e: Event) => {
-          e.stopPropagation()
-          handleView(record.id)
-        }
-      }, text)
-    }
-  },
-  {
-    title: t('returnOrder.customer'),
-    dataIndex: 'customer',
-    key: 'customer',
-    sorter: true,
-    filters: customers.value.map(c => ({ text: c.name, value: c.name })),
-    filteredValue: columnFilters.value.customer || null,
-    onFilter: (value: string, record: ReturnOrder) => record.customer === value,
-  },
-  { title: t('returnOrder.receiveDate'), dataIndex: 'receiveDate', key: 'receiveDate', sorter: true },
-  { title: t('returnOrder.complaintDate'), dataIndex: 'complaintDate', key: 'complaintDate', sorter: true },
-  { title: t('returnOrder.returnQuantity'), dataIndex: 'returnQuantity', key: 'returnQuantity', sorter: true },
-  {
-    title: t('common.status'),
-    dataIndex: 'status',
-    key: 'status',
-    filters: statusFilters.value,
-    filteredValue: columnFilters.value.status || null,
-    onFilter: (value: string, record: ReturnOrder) => record.status === value,
-  },
-])
-
-// 表格变化处理（分页、筛选、排序）
-const handleTableChange = (_pagination: any, filters: Record<string, string[] | null>, sorter: any) => {
-  columnFilters.value = filters
-  sortState.value = {
-    field: sorter.field,
-    order: sorter.order,
-  }
-}
-
-// 筛选后的数据（用于表格列筛选）
-const filteredOrders = computed(() => {
-  let result = orders.value
-
-  // 应用表格列筛选
-  if (columnFilters.value.customer) {
-    result = result.filter(o => columnFilters.value.customer?.includes(o.customer))
-  }
-  if (columnFilters.value.status) {
-    result = result.filter(o => columnFilters.value.status?.includes(o.status))
-  }
-
-  // 应用排序
-  if (sortState.value.field && sortState.value.order) {
-    const field = sortState.value.field as keyof ReturnOrder
-    result = [...result].sort((a, b) => {
-      const aVal = a[field]
-      const bVal = b[field]
-      if (aVal === undefined || bVal === undefined) return 0
-      if (sortState.value.order === 'ascend') {
-        return aVal > bVal ? 1 : -1
-      } else {
-        return aVal < bVal ? 1 : -1
-      }
-    })
-  }
-
-  return result
+const {
+  loading,
+  items: orders,
+  selectedRowKeys,
+  filteredItems: filteredOrders,
+  pagination: paginationConfig,
+  onSelectChange,
+  handleTableChange,
+  loadData,
+  handleBatchDelete,
+  sortState,
+} = useTableList<ReturnOrder>(async () => {
+  const params: any = {}
+  if (filters.value.orderNumber) params.orderNumber = filters.value.orderNumber
+  if (filters.value.customer) params.customer = filters.value.customer
+  return await returnOrderApi.list(Object.keys(params).length > 0 ? params : undefined)
 })
 
-const onSelectChange = (keys: string[]) => {
-  selectedRowKeys.value = keys
-}
-
-const handleSearch = async () => {
-  loading.value = true
-  try {
-    const params: any = {}
-    if (filters.value.orderNumber) params.orderNumber = filters.value.orderNumber
-    if (filters.value.customer) params.customer = filters.value.customer
-
-    orders.value = await returnOrderApi.list(Object.keys(params).length > 0 ? params : undefined)
-    message.success(t('message.searchComplete'))
-  } finally {
-    loading.value = false
-  }
-}
+const samplingVisible = ref(false)
+const currentOrder = ref<ReturnOrder | null>(null)
+const scrapVisible = ref(false)
 
 onMounted(async () => {
   loading.value = true
   try {
-    orders.value = await returnOrderApi.list()
-    customers.value = await customerApi.list()
+    await Promise.all([
+      loadData(),
+      (async () => {
+        customers.value = await customerApi.list()
+      })(),
+    ])
   } finally {
     loading.value = false
   }
 })
+
+const handleSearch = async () => {
+  await loadData()
+  message.success(t('message.searchComplete'))
+}
 
 const handleReset = async () => {
   filters.value = {
@@ -310,13 +125,7 @@ const handleReset = async () => {
     receiveDate: null,
   }
   sortState.value = {}
-  columnFilters.value = {}
-  loading.value = true
-  try {
-    orders.value = await returnOrderApi.list()
-  } finally {
-    loading.value = false
-  }
+  await loadData()
 }
 
 const handleCreate = () => {
@@ -327,33 +136,8 @@ const handleView = (id: string) => {
   router.push(`/return-orders/${id}`)
 }
 
-// 整行点击进入详情
-const customRow = (record: ReturnOrder) => ({
-  onClick: () => handleView(record.id),
-  style: { cursor: 'pointer' },
-})
-
 const handleEdit = (id: string) => {
   router.push(`/return-orders/${id}/edit`)
-}
-
-const handleDelete = (id: string) => {
-  orders.value = orders.value.filter(o => o.id !== id)
-  message.success(t('message.deleteSuccess'))
-}
-
-const handleBatchDelete = async () => {
-  try {
-    for (const id of selectedRowKeys.value) {
-      await returnOrderApi.delete(id)
-    }
-    selectedRowKeys.value = []
-    orders.value = await returnOrderApi.list()
-    message.success(t('message.deleteSuccess'))
-  } catch {
-    message.error(t('message.deleteFailed'))
-    orders.value = await returnOrderApi.list()
-  }
 }
 
 const handleExport = async () => {
@@ -391,7 +175,7 @@ const handleImport = () => {
       if (!response.ok) throw new Error('Import failed')
       const result = await response.json()
       message.success(t('message.importSuccess', { success: result.success, fail: result.fail }))
-      orders.value = await returnOrderApi.list()
+      await loadData()
     } catch {
       message.error(t('message.importFailed'))
     }
@@ -425,26 +209,5 @@ const handleScrapSuccess = () => {
 <style lang="less" scoped>
 .order-list {
   padding: 24px;
-
-  .filter-card {
-    margin-bottom: 16px;
-
-    .filter-buttons {
-      text-align: right;
-      padding-top: 4px;
-    }
-  }
-
-  .action-bar {
-    margin-bottom: 16px;
-  }
-
-  .danger-link {
-    color: #ff4d4f;
-  }
-
-  :deep(.ant-table-tbody > tr:hover > td) {
-    cursor: pointer;
-  }
 }
 </style>

@@ -1,0 +1,163 @@
+<template>
+  <a-card :title="t('returnPart.basicInfo')" class="info-card">
+    <a-form
+      :model="form"
+      :rules="rules"
+      :label-col="{ span: 6 }"
+      :wrapper-col="{ span: 16 }"
+      ref="formRef"
+    >
+      <a-row :gutter="24">
+        <a-col :span="12">
+          <a-form-item :label="t('returnPart.partNumber')">
+            <a-input
+              v-model:value="form.partNumber"
+              disabled
+              :placeholder="!isEdit ? t('validation.autoGenerateOnSave') : ''"
+            />
+          </a-form-item>
+        </a-col>
+        <a-col :span="12">
+          <a-form-item :label="t('returnPart.relatedOrder')" name="orderId">
+            <a-select v-model:value="form.orderId" :placeholder="t('validation.selectOrder')" :disabled="hasPresetOrder">
+              <a-select-option v-for="o in orders" :key="o.id" :value="o.id">
+                {{ o.orderNumber }} - {{ o.customer }}
+              </a-select-option>
+            </a-select>
+            <div v-if="hasPresetOrder" class="preset-order-hint">{{ t('returnPart.presetOrderHint') }}</div>
+          </a-form-item>
+        </a-col>
+      </a-row>
+
+      <a-row :gutter="24">
+        <a-col :span="12">
+          <a-form-item :label="t('returnPart.partCode')" name="partCode">
+            <a-input v-model:value="form.partCode" :placeholder="t('validation.inputPartCode')" />
+          </a-form-item>
+        </a-col>
+        <a-col :span="12">
+          <a-form-item :label="t('returnPart.businessUnit')" name="businessUnit">
+            <a-select v-model:value="form.businessUnit" :placeholder="t('validation.selectBusinessUnit')">
+              <a-select-option v-for="bu in businessUnits" :key="bu" :value="bu">
+                {{ bu }}
+              </a-select-option>
+            </a-select>
+          </a-form-item>
+        </a-col>
+      </a-row>
+
+      <a-row :gutter="24">
+        <a-col :span="12">
+          <a-form-item :label="t('returnPart.productPlatform')" name="productPlatform">
+            <a-select v-model:value="form.productPlatform" :placeholder="t('validation.selectProductPlatform')">
+              <a-select-option v-for="pp in productPlatforms" :key="pp" :value="pp">
+                {{ pp }}
+              </a-select-option>
+            </a-select>
+          </a-form-item>
+        </a-col>
+        <a-col :span="12">
+          <a-form-item :label="t('returnPart.productionShift')">
+            <a-input v-model:value="form.productionShift" />
+          </a-form-item>
+        </a-col>
+      </a-row>
+
+      <a-row :gutter="24">
+        <a-col :span="12">
+          <a-form-item :label="t('returnPart.returnType')" name="complaintType">
+            <a-select v-model:value="form.complaintType" :placeholder="t('validation.pleaseSelect')">
+              <a-select-option v-for="ct in complaintTypes" :key="ct.value" :value="ct.value">
+                {{ ct.label }}
+              </a-select-option>
+            </a-select>
+          </a-form-item>
+        </a-col>
+        <a-col :span="12">
+          <a-form-item :label="t('returnPart.failureType')" name="failureType">
+            <a-select v-model:value="form.failureType" :placeholder="t('validation.selectFailureType')">
+              <a-select-option v-for="ft in failureTypes" :key="ft" :value="ft">
+                {{ ft }}
+              </a-select-option>
+            </a-select>
+          </a-form-item>
+        </a-col>
+      </a-row>
+
+      <a-row :gutter="24">
+        <a-col :span="12">
+          <a-form-item :label="t('partDetail.responsibleEngineer')">
+            <a-select v-model:value="form.responsibleEngineer" :placeholder="t('validation.pleaseSelect')" allowClear>
+              <a-select-option v-for="u in users" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
+            </a-select>
+          </a-form-item>
+        </a-col>
+        <a-col :span="12">
+          <a-form-item :label="t('partDetail.analyst')">
+            <a-select v-model:value="form.analyst" :placeholder="t('validation.pleaseSelect')" allowClear>
+              <a-select-option v-for="u in users" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
+            </a-select>
+          </a-form-item>
+        </a-col>
+      </a-row>
+    </a-form>
+  </a-card>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { COMPLAINT_TYPES } from '@/constants/complaintTypes'
+
+interface Form {
+  partNumber: string
+  orderId?: string
+  partCode: string
+  businessUnit?: string
+  productPlatform?: string
+  productionShift: string
+  complaintType?: string
+  failureType?: string
+  responsibleEngineer?: string
+  analyst?: string
+}
+
+interface Props {
+  form: Form
+  isEdit: boolean
+  hasPresetOrder: boolean
+  orders: any[]
+  businessUnits: string[]
+  productPlatforms: string[]
+  failureTypes: string[]
+  users: { id: string; loginName: string; displayName: string }[]
+  rules: Record<string, any[]>
+}
+
+const props = defineProps<Props>()
+
+const { t } = useI18n()
+
+const complaintTypes = COMPLAINT_TYPES
+
+defineExpose({
+  rules: computed(() => ({
+    orderId: [{ required: true, message: t('validation.selectOrder') }],
+    partCode: [{ required: true, message: t('validation.inputPartCode') }],
+    businessUnit: [{ required: true, message: t('validation.selectBusinessUnit') }],
+    productPlatform: [{ required: true, message: t('validation.selectProductPlatform') }],
+  }))
+})
+</script>
+
+<style lang="less" scoped>
+.info-card {
+  margin-bottom: 16px;
+
+  .preset-order-hint {
+    margin-top: 4px;
+    color: #999;
+    font-size: 12px;
+  }
+}
+</style>
