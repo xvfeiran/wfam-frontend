@@ -14,7 +14,7 @@
           <a-col :span="12">
             <a-form-item :label="t('returnOrder.customer')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
               <a-select v-model:value="filters.customer" :placeholder="t('validation.selectCustomer')" allowClear>
-                <a-select-option v-for="c in customers" :key="c" :value="c">{{ c }}</a-select-option>
+                <a-select-option v-for="c in customers" :key="c.id" :value="c.name">{{ c.name }}</a-select-option>
               </a-select>
             </a-form-item>
           </a-col>
@@ -126,8 +126,10 @@ import {
 } from '@ant-design/icons-vue'
 import { returnOrderApi } from '@/services/returnOrderApi'
 import { lookupApi } from '@/services/lookupApi'
+import { customerApi } from '@/services/customerApi'
 import { ORDER_STATUS_MAP } from '@/types'
 import type { ReturnOrder } from '@/types'
+import type { Customer } from '@/services/customerApi'
 import SamplingModal from './components/SamplingModal.vue'
 import ScrapModal from './components/ScrapModal.vue'
 
@@ -135,7 +137,7 @@ const router = useRouter()
 const loading = ref(false)
 const orders = ref<ReturnOrder[]>([])
 const selectedRowKeys = ref<string[]>([])
-const customers = ref<string[]>([])
+const customers = ref<Customer[]>([])
 
 // 筛选条件
 const filters = ref({
@@ -163,6 +165,8 @@ const scrapVisible = ref(false)
 
 // 列过滤状态
 const columnFilters = ref<Record<string, string[] | null>>({})
+// 排序状态
+const sortState = ref<{ field?: string; order?: 'ascend' | 'descend' }>({})
 
 // 状态到i18n键的映射
 const statusI18nKeyMap: Record<string, string> = {
@@ -215,7 +219,7 @@ const columns = computed(() => [
     dataIndex: 'customer',
     key: 'customer',
     sorter: true,
-    filters: customers.value.map(c => ({ text: c, value: c })),
+    filters: customers.value.map(c => ({ text: c.name, value: c.name })),
     filteredValue: columnFilters.value.customer || null,
     onFilter: (value: string, record: ReturnOrder) => record.customer === value,
   },
@@ -233,19 +237,41 @@ const columns = computed(() => [
 ])
 
 // 表格变化处理（分页、筛选、排序）
-const handleTableChange = (_pagination: any, filters: Record<string, string[] | null>) => {
+const handleTableChange = (_pagination: any, filters: Record<string, string[] | null>, sorter: any) => {
   columnFilters.value = filters
+  sortState.value = {
+    field: sorter.field,
+    order: sorter.order,
+  }
 }
 
-// 筛选后的数据
+// 筛选后的数据（用于表格列筛选）
 const filteredOrders = computed(() => {
   let result = orders.value
-  if (filters.value.orderNumber) {
-    result = result.filter(o => o.orderNumber.includes(filters.value.orderNumber))
+
+  // 应用表格列筛选
+  if (columnFilters.value.customer) {
+    result = result.filter(o => columnFilters.value.customer?.includes(o.customer))
   }
-  if (filters.value.customer) {
-    result = result.filter(o => o.customer === filters.value.customer)
+  if (columnFilters.value.status) {
+    result = result.filter(o => columnFilters.value.status?.includes(o.status))
   }
+
+  // 应用排序
+  if (sortState.value.field && sortState.value.order) {
+    const field = sortState.value.field as keyof ReturnOrder
+    result = [...result].sort((a, b) => {
+      const aVal = a[field]
+      const bVal = b[field]
+      if (aVal === undefined || bVal === undefined) return 0
+      if (sortState.value.order === 'ascend') {
+        return aVal > bVal ? 1 : -1
+      } else {
+        return aVal < bVal ? 1 : -1
+      }
+    })
+  }
+
   return result
 })
 
@@ -256,10 +282,11 @@ const onSelectChange = (keys: string[]) => {
 const handleSearch = async () => {
   loading.value = true
   try {
-    orders.value = await returnOrderApi.list({
-      orderNumber: filters.value.orderNumber || undefined,
-      customer: filters.value.customer || undefined,
-    })
+    const params: any = {}
+    if (filters.value.orderNumber) params.orderNumber = filters.value.orderNumber
+    if (filters.value.customer) params.customer = filters.value.customer
+
+    orders.value = await returnOrderApi.list(Object.keys(params).length > 0 ? params : undefined)
     message.success(t('message.searchComplete'))
   } finally {
     loading.value = false
@@ -270,18 +297,25 @@ onMounted(async () => {
   loading.value = true
   try {
     orders.value = await returnOrderApi.list()
-    const lookups = await lookupApi.getAll()
-    customers.value = lookups.customers
+    customers.value = await customerApi.list()
   } finally {
     loading.value = false
   }
 })
 
-const handleReset = () => {
+const handleReset = async () => {
   filters.value = {
     orderNumber: '',
     customer: undefined,
     receiveDate: null,
+  }
+  sortState.value = {}
+  columnFilters.value = {}
+  loading.value = true
+  try {
+    orders.value = await returnOrderApi.list()
+  } finally {
+    loading.value = false
   }
 }
 

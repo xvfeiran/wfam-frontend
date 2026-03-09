@@ -99,6 +99,7 @@
       row-key="id"
       :loading="loading"
       :custom-row="customRow"
+      @change="handleTableChange"
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'status'">
@@ -174,6 +175,9 @@ const filters = ref({
   qcCreated: undefined as string | undefined,
 })
 
+// 排序状态
+const sortState = ref<{ field?: string; order?: 'ascend' | 'descend' }>({})
+
 // 分页
 const pagination = computed(() => ({
   current: 1,
@@ -213,6 +217,7 @@ const columns = computed(() => [
     title: t('returnPart.relatedOrder'),
     dataIndex: 'orderNumber',
     key: 'orderNumber',
+    sorter: true,
     customRender: ({ record }: { record: Part }) => {
       if (!record.orderNumber) {
         return h('span', { style: { color: '#999' } }, t('validation.unsubmitted'))
@@ -228,33 +233,29 @@ const columns = computed(() => [
   },
   { title: t('returnPart.partCode'), dataIndex: 'partCode', key: 'partCode', sorter: true },
   { title: t('returnPart.businessUnit'), dataIndex: 'businessUnit', key: 'businessUnit', sorter: true },
-  { title: t('returnPart.productPlatform'), dataIndex: 'productPlatform', key: 'productPlatform' },
-  { title: t('common.status'), dataIndex: 'status', key: 'status' },
+  { title: t('returnPart.productPlatform'), dataIndex: 'productPlatform', key: 'productPlatform', sorter: true },
+  { title: t('common.status'), dataIndex: 'status', key: 'status', sorter: true },
 ])
 
-// 筛选后的数据
+// 筛选后的数据（用于表格列筛选）
 const filteredParts = computed(() => {
   let result = parts.value
-  if (filters.value.orderNumber) {
-    result = result.filter(p => p.orderNumber?.includes(filters.value.orderNumber))
+
+  // 应用排序
+  if (sortState.value.field && sortState.value.order) {
+    const field = sortState.value.field as keyof Part
+    result = [...result].sort((a, b) => {
+      const aVal = a[field]
+      const bVal = b[field]
+      if (aVal === undefined || bVal === undefined) return 0
+      if (sortState.value.order === 'ascend') {
+        return aVal > bVal ? 1 : -1
+      } else {
+        return aVal < bVal ? 1 : -1
+      }
+    })
   }
-  if (filters.value.qcCreated === 'yes') {
-    result = result.filter(p => (p as any).qcNo)
-  } else if (filters.value.qcCreated === 'no') {
-    result = result.filter(p => !(p as any).qcNo)
-  }
-  if (filters.value.partCode) {
-    result = result.filter(p => p.partCode.includes(filters.value.partCode))
-  }
-  if (filters.value.businessUnit) {
-    result = result.filter(p => p.businessUnit === filters.value.businessUnit)
-  }
-  if (filters.value.productPlatform) {
-    result = result.filter(p => p.productPlatform === filters.value.productPlatform)
-  }
-  if (filters.value.status) {
-    result = result.filter(p => p.status === filters.value.status)
-  }
+
   return result
 })
 
@@ -262,24 +263,40 @@ const onSelectChange = (keys: string[]) => {
   selectedRowKeys.value = keys
 }
 
+// 表格变化处理（分页、筛选、排序）
+const handleTableChange = (_pagination: any, _filters: Record<string, string[] | null>, sorter: any) => {
+  sortState.value = {
+    field: sorter.field,
+    order: sorter.order,
+  }
+}
+
 const handleSearch = async () => {
   loading.value = true
   try {
-    parts.value = await partApi.list({
-      orderNumber: filters.value.orderNumber || undefined,
-      partCode: filters.value.partCode || undefined,
-      businessUnit: filters.value.businessUnit,
-      productPlatform: filters.value.productPlatform,
-      status: filters.value.status,
-      qcCreated: filters.value.qcCreated,
-    })
+    const params: any = {}
+    if (filters.value.orderNumber) params.orderNumber = filters.value.orderNumber
+    if (filters.value.partCode) params.partCode = filters.value.partCode
+    if (filters.value.businessUnit) params.businessUnit = filters.value.businessUnit
+    if (filters.value.productPlatform) params.productPlatform = filters.value.productPlatform
+    if (filters.value.status) params.status = filters.value.status
+
+    parts.value = await partApi.list(Object.keys(params).length > 0 ? params : undefined)
+
+    // QC创建状态在前端筛选
+    if (filters.value.qcCreated === 'yes') {
+      parts.value = parts.value.filter(p => (p as any).qcNo)
+    } else if (filters.value.qcCreated === 'no') {
+      parts.value = parts.value.filter(p => !(p as any).qcNo)
+    }
+
     message.success(t('message.searchComplete'))
   } finally {
     loading.value = false
   }
 }
 
-const handleReset = () => {
+const handleReset = async () => {
   filters.value = {
     orderNumber: '',
     partCode: '',
@@ -287,6 +304,13 @@ const handleReset = () => {
     productPlatform: undefined,
     status: undefined,
     qcCreated: undefined,
+  }
+  sortState.value = {}
+  loading.value = true
+  try {
+    parts.value = await partApi.list()
+  } finally {
+    loading.value = false
   }
 }
 

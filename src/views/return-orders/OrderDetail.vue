@@ -45,7 +45,15 @@
         </a-card>
 
         <!-- 售后件列表 -->
-        <a-card :title="t('orderDetail.partsList')" class="parts-card">
+        <a-card class="parts-card">
+          <template #title>
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+              <span>{{ t('orderDetail.partsList') }}</span>
+              <a-button type="primary" size="small" @click="handleAddPart">
+                <PlusOutlined /> {{ t('common.create') }}
+              </a-button>
+            </div>
+          </template>
           <a-table
             :columns="partColumns"
             :data-source="parts"
@@ -102,8 +110,9 @@ import { ref, computed, onMounted, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
-import { StopOutlined } from '@ant-design/icons-vue'
+import { StopOutlined, PlusOutlined } from '@ant-design/icons-vue'
 import { returnOrderApi } from '@/services/returnOrderApi'
+import { partApi } from '@/services/partApi'
 import { ORDER_STATUS_MAP, PART_STATUS_MAP, RETURN_METHOD_MAP, OrderStatus } from '@/types'
 import type { ReturnOrder, Part } from '@/types'
 import SamplingModal from './components/SamplingModal.vue'
@@ -158,6 +167,34 @@ const partColumns = computed(() => [
   { title: t('returnPart.businessUnit'), dataIndex: 'businessUnit', key: 'businessUnit' },
   { title: t('returnPart.productPlatform'), dataIndex: 'productPlatform', key: 'productPlatform' },
   { title: t('common.status'), dataIndex: 'status', key: 'status' },
+  {
+    title: t('common.operation'),
+    key: 'action',
+    width: 150,
+    customRender: ({ record }: { record: Part }) => {
+      // 未提交的售后件显示编辑和删除按钮
+      if (!record.partNumber) {
+        return h('span', { style: { fontSize: '12px' } }, [
+          h('a', {
+            style: { color: '#1890ff', marginRight: '8px' },
+            onClick: (e: Event) => {
+              e.stopPropagation()
+              handleEditPart(record.id)
+            }
+          }, t('common.edit')),
+          h('a', {
+            style: { color: '#ff4d4f' },
+            onClick: (e: Event) => {
+              e.stopPropagation()
+              // 直接删除，不需要确认
+              handleDeletePart(record.id)
+            }
+          }, t('common.delete'))
+        ])
+      }
+      return h('span', { style: { color: '#999' } }, '-')
+    }
+  },
 ])
 
 // 状态到i18n键的映射
@@ -281,6 +318,28 @@ const handleWorkonConfirm = async () => {
   }
 }
 
+const handleAddPart = () => {
+  router.push({
+    path: '/return-parts/new',
+    query: { orderId: orderId.value }
+  })
+}
+
+const handleEditPart = (partId: string) => {
+  router.push(`/return-parts/${partId}/edit`)
+}
+
+const handleDeletePart = async (partId: string) => {
+  try {
+    await partApi.delete(partId)
+    message.success(t('message.deleteSuccess'))
+    // 重新加载售后件列表
+    parts.value = await returnOrderApi.getParts(orderId.value)
+  } catch {
+    message.error(t('message.deleteFailed'))
+  }
+}
+
 const goToPartDetail = (id: string) => {
   router.push(`/return-parts/${id}`)
 }
@@ -296,6 +355,10 @@ const goToPartDetail = (id: string) => {
 
   :deep(.parts-card .ant-table-tbody > tr:hover > td) {
     cursor: pointer;
+  }
+
+  :deep(.parts-card .ant-card-head-title) {
+    width: 100%;
   }
 }
 </style>

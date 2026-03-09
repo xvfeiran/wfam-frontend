@@ -26,8 +26,8 @@
           <a-col :span="12">
             <a-form-item :label="t('returnOrder.customer')" name="customer">
               <a-select v-model:value="form.customer" :placeholder="t('validation.selectCustomer')">
-                <a-select-option v-for="c in customers" :key="c" :value="c">
-                  {{ c }}
+                <a-select-option v-for="c in customers" :key="c.id" :value="c.name">
+                  {{ c.name }}
                 </a-select-option>
               </a-select>
             </a-form-item>
@@ -81,39 +81,41 @@
         </a-row>
       </a-form>
 
-      <!-- 售后件列表区 -->
-      <a-divider>{{ t('returnOrder.partsList') }}</a-divider>
-      <div class="parts-section">
-        <div class="parts-header">
-          <a-button type="primary" @click="handleAddPart">
-            <PlusOutlined /> {{ t('returnOrder.addPart') }}
-          </a-button>
-        </div>
-        <a-table
-          :columns="partColumns"
-          :data-source="parts"
-          :pagination="partsPagination"
-          row-key="id"
-          size="small"
-        >
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'partNumber'">
-              <a @click="handleViewPart(record)">{{ record.partNumber }}</a>
-            </template>
-            <template v-else-if="column.key === 'action'">
-              <a-space>
-                <a @click="handleViewPart(record)">{{ t('common.view') }}</a>
-                <a-divider type="vertical" />
-                <a @click="handleEditPart(record)">{{ t('common.edit') }}</a>
-                <a-divider type="vertical" />
-                <a-popconfirm :title="t('returnOrder.confirmDeletePart')" @confirm="handleDeletePart(record.id)">
-                  <a class="danger-link">{{ t('common.delete') }}</a>
+      <!-- 售后件列表区（仅在新建模式下显示） -->
+      <template v-if="!isEdit">
+        <a-divider>{{ t('returnOrder.partsList') }}</a-divider>
+        <div class="parts-section">
+          <div class="parts-header">
+            <a-button type="primary" @click="handleAddPart">
+              <PlusOutlined /> {{ t('returnOrder.addPart') }}
+            </a-button>
+          </div>
+          <a-table
+            :columns="partColumns"
+            :data-source="parts"
+            :pagination="partsPagination"
+            row-key="id"
+            size="small"
+          >
+            <template #bodyCell="{ column, record }">
+              <template v-if="column.key === 'partNumber'">
+                <a @click="handleViewPart(record)">{{ record.partNumber }}</a>
+              </template>
+              <template v-else-if="column.key === 'action'">
+                <a-space>
+                  <a @click="handleViewPart(record)">{{ t('common.view') }}</a>
+                  <a-divider type="vertical" />
+                  <a @click="handleEditPart(record)">{{ t('common.edit') }}</a>
+                  <a-divider type="vertical" />
+                  <a-popconfirm :title="t('returnOrder.confirmDeletePart')" @confirm="handleDeletePart(record.id)">
+                    <a class="danger-link">{{ t('common.delete') }}</a>
                 </a-popconfirm>
-              </a-space>
+                </a-space>
+              </template>
             </template>
-          </template>
-        </a-table>
-      </div>
+          </a-table>
+        </div>
+      </template>
     </a-card>
 
     <!-- 底部操作栏 -->
@@ -138,7 +140,9 @@ import type { Dayjs } from 'dayjs'
 import { PlusOutlined } from '@ant-design/icons-vue'
 import { returnOrderApi } from '@/services/returnOrderApi'
 import { lookupApi } from '@/services/lookupApi'
+import { customerApi } from '@/services/customerApi'
 import type { Part } from '@/types'
+import type { Customer } from '@/services/customerApi'
 
 const { t } = useI18n()
 
@@ -149,7 +153,7 @@ const formRef = ref()
 const isEdit = computed(() => !!route.params.id)
 const orderId = computed(() => route.params.id as string)
 
-const customers = ref<string[]>([])
+const customers = ref<Customer[]>([])
 const parts = ref<Part[]>([])
 
 const form = reactive({
@@ -192,8 +196,7 @@ const disabledFutureDate = (current: Dayjs) => {
 
 onMounted(async () => {
   // 加载客户列表
-  const lookups = await lookupApi.getAll()
-  customers.value = lookups.customers
+  customers.value = await customerApi.list()
 
   if (isEdit.value) {
     // 加载退货单数据

@@ -93,6 +93,33 @@
           </div>
         </a-card>
       </a-tab-pane>
+
+      <!-- 数据字典 -->
+      <a-tab-pane key="dictionary" :tab="t('settings.dataDictionary')">
+        <a-card :title="t('settings.customerManagement')">
+          <template #extra>
+            <a-button type="primary" @click="handleAddCustomer">
+              <PlusOutlined /> {{ t('settings.addCustomer') }}
+            </a-button>
+          </template>
+          <a-table :columns="customerColumns" :data-source="customers" :pagination="false" row-key="id">
+            <template #bodyCell="{ column, record }">
+              <template v-if="column.key === 'customerCode'">
+                <a-tag color="blue">{{ record.code }}</a-tag>
+              </template>
+              <template v-else-if="column.key === 'action'">
+                <a-space>
+                  <a @click="handleEditCustomer(record)">{{ t('common.edit') }}</a>
+                  <a-divider type="vertical" />
+                  <a-popconfirm :title="t('settings.confirmDeleteCustomer')" @confirm="handleDeleteCustomer(record.id)">
+                    <a class="danger-link">{{ t('common.delete') }}</a>
+                  </a-popconfirm>
+                </a-space>
+              </template>
+            </template>
+          </a-table>
+        </a-card>
+      </a-tab-pane>
     </a-tabs>
 
     <!-- 上传模板弹窗 -->
@@ -128,6 +155,23 @@
         </a-form-item>
       </a-form>
     </a-modal>
+
+    <!-- 客户编辑弹窗 -->
+    <a-modal
+      v-model:open="customerModalVisible"
+      :title="customerForm.id ? t('settings.editCustomer') : t('settings.addCustomer')"
+      @ok="handleSaveCustomer"
+      @cancel="customerModalVisible = false"
+    >
+      <a-form :model="customerForm" layout="vertical" ref="customerFormRef">
+        <a-form-item :label="t('settings.customerName')" name="name" :rules="[{ required: true, message: t('settings.pleaseInputCustomerName') }]">
+          <a-input v-model:value="customerForm.name" :placeholder="t('settings.pleaseInputCustomerName')" />
+        </a-form-item>
+        <a-form-item :label="t('settings.customerCode')" name="code" :rules="[{ required: true, message: t('settings.pleaseInputCustomerCode') }]">
+          <a-input v-model:value="customerForm.code" :placeholder="t('settings.pleaseInputCustomerCode')" />
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
@@ -137,11 +181,13 @@ import { useI18n } from 'vue-i18n'
 import { message, Modal } from 'ant-design-vue'
 import { PlusOutlined, UploadOutlined, SyncOutlined } from '@ant-design/icons-vue'
 import { lookupApi } from '@/services/lookupApi'
+import { customerApi } from '@/services/customerApi'
+import type { Customer } from '@/services/customerApi'
 
 const { t } = useI18n()
 
 // 配置模块的Tab类型
-type SettingsTab = 'templates' | 'notifications' | 'sync'
+type SettingsTab = 'templates' | 'notifications' | 'sync' | 'dictionary'
 
 // 同步状态类型
 type SyncStatus = 'success' | 'failed' | 'idle'
@@ -179,6 +225,9 @@ onMounted(async () => {
   const lookups = await lookupApi.getAll()
   productPlatformOptions.value = lookups.productPlatforms
   failureTypeOptions.value = lookups.failureTypes
+
+  // 加载客户列表
+  customers.value = await customerApi.list()
 })
 
 // 用户选项
@@ -188,6 +237,24 @@ const userOptions = ref([
   { value: 'user3', label: '王五' },
   { value: 'user4', label: '赵六' },
 ])
+
+// 客户列表
+const customers = ref<Customer[]>([])
+
+const customerColumns = computed(() => [
+  { title: t('settings.customerName'), dataIndex: 'name', key: 'name' },
+  { title: t('settings.customerCode'), dataIndex: 'code', key: 'customerCode' },
+  { title: t('common.operation'), key: 'action', width: 150 },
+])
+
+// 客户表单
+const customerModalVisible = ref(false)
+const customerFormRef = ref()
+const customerForm = reactive({
+  id: '',
+  name: '',
+  code: '',
+})
 
 // 模板列表
 const templates = ref<TemplateItem[]>([
@@ -271,6 +338,75 @@ const handleDeleteTemplate = (id: string) => {
 
 const handleSaveNotificationConfig = () => {
   message.success(t('message.configSaveSuccess'))
+}
+
+// 客户管理相关函数
+const handleAddCustomer = () => {
+  customerForm.id = ''
+  customerForm.name = ''
+  customerForm.code = ''
+  customerModalVisible.value = true
+}
+
+const handleEditCustomer = (record: Customer) => {
+  customerForm.id = record.id
+  customerForm.name = record.name
+  customerForm.code = record.code
+  customerModalVisible.value = true
+}
+
+const handleDeleteCustomer = async (id: string) => {
+  try {
+    await customerApi.delete(id)
+    customers.value = await customerApi.list()
+    message.success(t('message.deleteSuccess'))
+  } catch {
+    message.error(t('message.deleteFailed'))
+  }
+}
+
+const handleSaveCustomer = async () => {
+  try {
+    await customerFormRef.value?.validate()
+
+    // 检查名称是否重复
+    const nameExists = customers.value.some(
+      c => c.name === customerForm.name && c.id !== customerForm.id
+    )
+    if (nameExists) {
+      message.error(t('settings.customerNameExists'))
+      return
+    }
+
+    // 检查代码是否重复
+    const codeExists = customers.value.some(
+      c => c.code === customerForm.code && c.id !== customerForm.id
+    )
+    if (codeExists) {
+      message.error(t('settings.customerCodeExists'))
+      return
+    }
+
+    if (customerForm.id) {
+      // 编辑
+      await customerApi.update(customerForm.id, {
+        name: customerForm.name,
+        code: customerForm.code,
+      })
+    } else {
+      // 新增
+      await customerApi.create({
+        name: customerForm.name,
+        code: customerForm.code,
+      })
+    }
+
+    customers.value = await customerApi.list()
+    customerModalVisible.value = false
+    message.success(t('settings.saveSuccess'))
+  } catch {
+    // 表单验证失败或API错误
+  }
 }
 
 const handleSync = () => {
