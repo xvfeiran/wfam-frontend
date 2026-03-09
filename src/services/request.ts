@@ -3,34 +3,8 @@ import type { AxiosResponse } from 'axios'
 import { message } from 'ant-design-vue'
 import { useDevMode } from '@/composables/useDevMode'
 import { useUserInfoStore } from '@/stores/userInfo'
+import { useDevUserStore } from '@/stores/devUser'
 import i18n from '@/i18n'
-
-// 开发期间写死的请求头（上线后由中转网关添加）
-const DEV_AUTH_HEADER = JSON.stringify({
-  loginType: 2,
-  createUserName: 'SYSTEM',
-  expiresIn: 2051222400000,
-  id: 6181,
-  email: 'Raven.ZHENG@cn.bosch.com',
-  departmentName: 'BD/SWD-FSB2',
-  isStatementRead: 1,
-  isAdmin: 1,
-  userId: 6181,
-  version: 0,
-  companyId: 1,
-  roleIds: '99,241,81,242,41,321,365,368,326,366,85,84,405,4,444,4',
-  createTime: 1721982699347,
-  passwordPeriod: 2051222400000,
-  name: 'ZHENG Raven (BD/SWD-FSB2)',
-  ntAccount: 'ZRN7SZH',
-  grantType: 'authorization_code',
-  roleNames: 'R_RBCC_AEP_Flow_DataReader,W_RBCC_AEP_BDSupport,R_RBCC_AEP_Catalog_DataReader',
-  username: 'ZRN7SZH',
-  status: 1,
-  sub: 'ZRN7SZH',
-  iat: 1728462541,
-  exp: 2051222400,
-})
 
 const { isDevMode } = useDevMode()
 
@@ -48,8 +22,9 @@ const request = axios.create({
 request.interceptors.request.use(
   (config) => {
     if (isDevMode.value) {
-      // 调试模式：使用写死的认证头直接访问后端
-      config.headers['x-authentication-header'] = DEV_AUTH_HEADER
+      // 调试模式：使用 devUserStore 中选中的用户
+      const { authHeader } = useDevUserStore()
+      config.headers['x-authentication-header'] = authHeader
     } else {
       // 子应用模式：从 Pinia store 读取父应用传入的 token，通过网关鉴权
       const { accessToken } = useUserInfoStore()

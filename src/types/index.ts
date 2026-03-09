@@ -147,21 +147,6 @@ export const APPROVAL_STATUS_MAP: Record<ApprovalStatus, { label: string; color:
   [ApprovalStatus.REJECTED]: { label: '已驳回', color: 'error' },
 }
 
-// 报废申请接口
-export interface ScrapApplication {
-  id: string
-  orderNumber: string
-  partNumbers: string
-  quantity: number
-  applicant?: string
-  approver?: string
-  applyTime: string
-  approveTime?: string
-  status: ApprovalStatus
-  reason: string
-  rejectReason?: string
-}
-
 // 精分析申请接口
 export interface AnalysisApplication {
   id: string

@@ -5,156 +5,83 @@
     <a-tabs v-model:activeKey="mainTab" type="card" class="main-tabs">
       <!-- 我的申请 - 我提交的申请待别人审批 -->
       <a-tab-pane key="myApplications" :tab="t('approval.myApplications')">
-        <a-tabs v-model:activeKey="mySubTab" tab-position="left" class="sub-tabs">
-          <!-- 我的报废申请 -->
-          <a-tab-pane key="scrap" :tab="t('approval.scrapApplication')">
-            <a-card>
-              <a-table
-                :columns="myScrapColumns"
-                :data-source="myScrapApplications"
-                :pagination="tablePagination"
-                row-key="id"
-              >
-                <template #bodyCell="{ column, record }">
-                  <template v-if="column.key === 'status'">
-                    <a-tag :color="getStatusColor(record.status)">
-                      {{ getStatusLabel(record.status) }}
-                    </a-tag>
-                  </template>
-                  <template v-else-if="column.key === 'action'">
-                    <a-button
-                      v-if="record.status === ApprovalStatus.PENDING"
-                      type="link"
-                      size="small"
-                      danger
-                      @click="handleCancelApplication(record, 'scrap')"
-                    >
-                      {{ t('common.withdraw') }}
-                    </a-button>
-                    <span v-else>-</span>
-                  </template>
-                </template>
-              </a-table>
-            </a-card>
-          </a-tab-pane>
-
-          <!-- 我的精分析申请 -->
-          <a-tab-pane key="analysis" :tab="t('approval.analysisReport')">
-            <a-card>
-              <a-table
-                :columns="myAnalysisColumns"
-                :data-source="myAnalysisApplications"
-                :pagination="tablePagination"
-                row-key="id"
-              >
-                <template #bodyCell="{ column, record }">
-                  <template v-if="column.key === 'status'">
-                    <a-tag :color="getStatusColor(record.status)">
-                      {{ getStatusLabel(record.status) }}
-                    </a-tag>
-                  </template>
-                  <template v-else-if="column.key === 'action'">
-                    <a-space>
-                      <a-button type="link" size="small" @click="handleViewReport(record)">
-                        <EyeOutlined /> {{ t('common.view') }}
-                      </a-button>
-                      <a-button
-                        v-if="record.status === ApprovalStatus.PENDING"
-                        type="link"
-                        size="small"
-                        danger
-                        @click="handleCancelApplication(record, 'analysis')"
-                      >
-                        {{ t('common.withdraw') }}
-                      </a-button>
-                    </a-space>
-                  </template>
-                </template>
-              </a-table>
-            </a-card>
-          </a-tab-pane>
-        </a-tabs>
+        <a-card>
+          <a-table
+            :columns="myAnalysisColumns"
+            :data-source="myAnalysisApplications"
+            :pagination="tablePagination"
+            row-key="id"
+          >
+            <template #bodyCell="{ column, record }">
+              <template v-if="column.key === 'status'">
+                <a-tag :color="getStatusColor(record.status)">
+                  {{ getStatusLabel(record.status) }}
+                </a-tag>
+              </template>
+              <template v-else-if="column.key === 'action'">
+                <a-space>
+                  <a-button type="link" size="small" @click="handleViewReport(record)">
+                    <EyeOutlined /> {{ t('common.view') }}
+                  </a-button>
+                  <a-button
+                    v-if="record.status === ApprovalStatus.PENDING"
+                    type="link"
+                    size="small"
+                    danger
+                    @click="handleCancelApplication(record)"
+                  >
+                    {{ t('common.withdraw') }}
+                  </a-button>
+                </a-space>
+              </template>
+            </template>
+          </a-table>
+        </a-card>
       </a-tab-pane>
 
       <!-- 待我审批 - 别人提交的申请待我审批 -->
       <a-tab-pane key="pendingApproval" :tab="t('approval.pendingApproval')">
-        <a-tabs v-model:activeKey="approvalSubTab" tab-position="left" class="sub-tabs">
-          <!-- 待审批的报废申请 -->
-          <a-tab-pane key="scrap" :tab="t('approval.scrapApplication')">
-            <a-card>
-              <a-table
-                :columns="approvalScrapColumns"
-                :data-source="pendingScrapApprovals"
-                :pagination="tablePagination"
-                row-key="id"
-              >
-                <template #bodyCell="{ column, record }">
-                  <template v-if="column.key === 'status'">
-                    <a-tag :color="getStatusColor(record.status)">
-                      {{ getStatusLabel(record.status) }}
-                    </a-tag>
-                  </template>
-                  <template v-else-if="column.key === 'action'">
-                    <a-space v-if="record.status === ApprovalStatus.PENDING">
-                      <a-button type="link" size="small" @click="handleApprove(record, 'scrap')">
-                        <CheckOutlined /> {{ t('common.approve') }}
-                      </a-button>
-                      <a-button type="link" size="small" danger @click="handleReject(record, 'scrap')">
-                        <CloseOutlined /> {{ t('common.reject') }}
-                      </a-button>
-                    </a-space>
-                    <span v-else>-</span>
-                  </template>
-                </template>
-              </a-table>
-            </a-card>
-          </a-tab-pane>
-
-          <!-- 待审批的精分析报告 -->
-          <a-tab-pane key="analysis" :tab="t('approval.analysisReport')">
-            <a-card>
-              <a-table
-                :columns="approvalAnalysisColumns"
-                :data-source="pendingAnalysisApprovals"
-                :pagination="tablePagination"
-                row-key="id"
-              >
-                <template #bodyCell="{ column, record }">
-                  <template v-if="column.key === 'status'">
-                    <a-tag :color="getStatusColor(record.status)">
-                      {{ getStatusLabel(record.status) }}
-                    </a-tag>
-                  </template>
-                  <template v-else-if="column.key === 'action'">
-                    <template v-if="record.status === ApprovalStatus.PENDING">
-                      <a-dropdown>
-                        <a-button type="link" size="small">
-                          {{ t('approval.operation') }} <DownOutlined />
-                        </a-button>
-                        <template #overlay>
-                          <a-menu>
-                            <a-menu-item key="view" @click="handleViewReport(record)">
-                              <EyeOutlined /> {{ t('common.view') }}
-                            </a-menu-item>
-                            <a-menu-item key="approve" @click="handleApprove(record, 'analysis')">
-                              <CheckOutlined /> {{ t('common.approve') }}
-                            </a-menu-item>
-                            <a-menu-item key="reject" danger @click="handleReject(record, 'analysis')">
-                              <CloseOutlined /> {{ t('common.reject') }}
-                            </a-menu-item>
-                          </a-menu>
-                        </template>
-                      </a-dropdown>
-                    </template>
-                    <a-button v-else type="link" size="small" @click="handleViewReport(record)">
-                      <EyeOutlined /> {{ t('common.view') }}
+        <a-card>
+          <a-table
+            :columns="approvalAnalysisColumns"
+            :data-source="pendingAnalysisApprovals"
+            :pagination="tablePagination"
+            row-key="id"
+          >
+            <template #bodyCell="{ column, record }">
+              <template v-if="column.key === 'status'">
+                <a-tag :color="getStatusColor(record.status)">
+                  {{ getStatusLabel(record.status) }}
+                </a-tag>
+              </template>
+              <template v-else-if="column.key === 'action'">
+                <template v-if="record.status === ApprovalStatus.PENDING">
+                  <a-dropdown>
+                    <a-button type="link" size="small">
+                      {{ t('approval.operation') }} <DownOutlined />
                     </a-button>
-                  </template>
+                    <template #overlay>
+                      <a-menu>
+                        <a-menu-item key="view" @click="handleViewReport(record)">
+                          <EyeOutlined /> {{ t('common.view') }}
+                        </a-menu-item>
+                        <a-menu-item key="approve" @click="handleApprove(record)">
+                          <CheckOutlined /> {{ t('common.approve') }}
+                        </a-menu-item>
+                        <a-menu-item key="reject" danger @click="handleReject(record)">
+                          <CloseOutlined /> {{ t('common.reject') }}
+                        </a-menu-item>
+                      </a-menu>
+                    </template>
+                  </a-dropdown>
                 </template>
-              </a-table>
-            </a-card>
-          </a-tab-pane>
-        </a-tabs>
+                <a-button v-else type="link" size="small" @click="handleViewReport(record)">
+                  <EyeOutlined /> {{ t('common.view') }}
+                </a-button>
+              </template>
+            </template>
+          </a-table>
+        </a-card>
       </a-tab-pane>
     </a-tabs>
 
@@ -215,7 +142,6 @@ import {
   ApprovalStatus,
   APPROVAL_STATUS_MAP,
   ANALYSIS_FIELD_LABELS,
-  type ScrapApplication,
   type AnalysisApplication,
 } from '@/types'
 import { approvalApi } from '@/services/approvalApi'
@@ -223,19 +149,14 @@ import { useApprovalColumns } from '@/composables/useApprovalColumns'
 
 const { t } = useI18n()
 
-type ApplicationType = 'scrap' | 'analysis'
-
 // Tab状态
 const mainTab = ref('myApplications')
-const mySubTab = ref<ApplicationType>('scrap')
-const approvalSubTab = ref<ApplicationType>('scrap')
 
 // 弹窗状态
 const rejectModalVisible = ref(false)
 const reportModalVisible = ref(false)
 const rejectReason = ref('')
-const currentRejectRecord = ref<ScrapApplication | AnalysisApplication | null>(null)
-const currentRejectType = ref<ApplicationType>('scrap')
+const currentRejectRecord = ref<AnalysisApplication | null>(null)
 const currentReport = ref<AnalysisApplication | null>(null)
 
 // 通用分页配置
@@ -245,32 +166,22 @@ const tablePagination = {
   showTotal: (total: number) => t('common.total', { total }),
 }
 
-// 我的报废申请（我提交的）
-const myScrapApplications = ref<ScrapApplication[]>([])
-
 // 我的精分析申请（我提交的）
 const myAnalysisApplications = ref<AnalysisApplication[]>([])
-
-// 待我审批的报废申请（别人提交的）
-const pendingScrapApprovals = ref<ScrapApplication[]>([])
 
 // 待我审批的精分析报告（别人提交的）
 const pendingAnalysisApprovals = ref<AnalysisApplication[]>([])
 
 onMounted(async () => {
-  const [myScrap, myAnalysis, pendingScrap, pendingAnalysis] = await Promise.all([
-    approvalApi.getMyScrapApplications(),
-    approvalApi.getMyAnalysisApplications(),
-    approvalApi.getPendingScrapApprovals(),
-    approvalApi.getPendingAnalysisApprovals(),
+  const [myAnalysis, pendingAnalysis] = await Promise.all([
+    approvalApi.getMyApplications(),
+    approvalApi.getPendingApprovals(),
   ])
-  myScrapApplications.value = myScrap
   myAnalysisApplications.value = myAnalysis
-  pendingScrapApprovals.value = pendingScrap
   pendingAnalysisApprovals.value = pendingAnalysis
 })
 
-const { myScrapColumns, myAnalysisColumns, approvalScrapColumns, approvalAnalysisColumns } = useApprovalColumns()
+const { myAnalysisColumns, approvalAnalysisColumns } = useApprovalColumns()
 
 // 状态到i18n键的映射
 const statusI18nKeyMap: Record<ApprovalStatus, string> = {
@@ -296,17 +207,13 @@ const getFieldLabel = (key: string) => {
 }
 
 // 撤回申请
-const handleCancelApplication = (record: ScrapApplication | AnalysisApplication, type: ApplicationType) => {
+const handleCancelApplication = (record: AnalysisApplication) => {
   Modal.confirm({
     title: t('approval.confirmWithdrawApplication'),
     content: t('approval.confirmWithdraw'),
     onOk: async () => {
       await approvalApi.withdraw(record.id)
-      if (type === 'scrap') {
-        myScrapApplications.value = myScrapApplications.value.filter(a => a.id !== record.id)
-      } else {
-        myAnalysisApplications.value = myAnalysisApplications.value.filter(a => a.id !== record.id)
-      }
+      myAnalysisApplications.value = myAnalysisApplications.value.filter(a => a.id !== record.id)
       message.success(t('message.approvalComplete') + ': ' + t('status.withdrawn'))
     },
   })
@@ -319,29 +226,22 @@ const handleViewReport = (record: AnalysisApplication) => {
 }
 
 // 审批通过
-const handleApprove = (record: ScrapApplication | AnalysisApplication, type: ApplicationType) => {
-  const typeName = type === 'scrap' ? t('approval.scrapApplication') : t('approval.analysisReport')
+const handleApprove = (record: AnalysisApplication) => {
   Modal.confirm({
     title: t('approval.confirmApprove'),
-    content: t('approval.confirmApprove').replace('{type}', typeName),
+    content: t('approval.confirmApprove').replace('{type}', t('approval.analysisReport')),
     onOk: async () => {
-      await approvalApi.approve(record.id, type)
-      if (type === 'scrap') {
-        const item = pendingScrapApprovals.value.find(a => a.id === record.id)
-        if (item) item.status = ApprovalStatus.APPROVED
-      } else {
-        const item = pendingAnalysisApprovals.value.find(a => a.id === record.id)
-        if (item) item.status = ApprovalStatus.APPROVED
-      }
+      await approvalApi.approve(record.id)
+      const item = pendingAnalysisApprovals.value.find(a => a.id === record.id)
+      if (item) item.status = ApprovalStatus.APPROVED
       message.success(t('message.approvalComplete'))
     },
   })
 }
 
 // 驳回
-const handleReject = (record: ScrapApplication | AnalysisApplication, type: ApplicationType) => {
+const handleReject = (record: AnalysisApplication) => {
   currentRejectRecord.value = record
-  currentRejectType.value = type
   rejectReason.value = ''
   rejectModalVisible.value = true
 }
@@ -355,15 +255,10 @@ const handleConfirmReject = async () => {
 
   if (!currentRejectRecord.value) return
 
-  await approvalApi.reject(currentRejectRecord.value.id, currentRejectType.value, rejectReason.value)
+  await approvalApi.reject(currentRejectRecord.value.id, rejectReason.value)
 
-  if (currentRejectType.value === 'scrap') {
-    const item = pendingScrapApprovals.value.find(a => a.id === currentRejectRecord.value!.id)
-    if (item) item.status = ApprovalStatus.REJECTED
-  } else {
-    const item = pendingAnalysisApprovals.value.find(a => a.id === currentRejectRecord.value!.id)
-    if (item) item.status = ApprovalStatus.REJECTED
-  }
+  const item = pendingAnalysisApprovals.value.find(a => a.id === currentRejectRecord.value!.id)
+  if (item) item.status = ApprovalStatus.REJECTED
 
   rejectModalVisible.value = false
   message.success(t('message.rejectComplete'))
@@ -377,22 +272,6 @@ const handleConfirmReject = async () => {
   .main-tabs {
     :deep(.ant-tabs-nav) {
       margin-bottom: 16px;
-    }
-  }
-
-  .sub-tabs {
-    :deep(.ant-tabs-nav) {
-      width: 120px;
-    }
-
-    :deep(.ant-tabs-content-holder) {
-      border-left: 1px solid #f0f0f0;
-      padding-left: 16px;
-    }
-
-    :deep(.ant-tabs-tab) {
-      padding: 12px 16px;
-      justify-content: flex-start;
     }
   }
 }

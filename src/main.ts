@@ -4,16 +4,22 @@ import Antd from 'ant-design-vue'
 import App from './App.vue'
 import router from './router'
 import i18n from './i18n'
+import { setupDevUserPersistence } from './stores/devUser'
 import 'ant-design-vue/dist/reset.css'
 import './styles/global.less'
 import './plugins/echarts'
 
 function mountApp(): VueApp {
+  const pinia = createPinia()
   const app = createApp(App)
-  app.use(createPinia())
+  app.use(pinia)
   app.use(router)
   app.use(Antd)
   app.use(i18n)
+
+  // 设置开发用户持久化（仅在 dev 模式下生效）
+  setupDevUserPersistence()
+
   app.mount('#app')
   return app
 }

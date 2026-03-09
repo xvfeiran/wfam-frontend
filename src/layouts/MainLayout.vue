@@ -73,28 +73,7 @@
             <a-badge :count="37" :offset="[0, 4]">
               <BellOutlined class="header-icon" />
             </a-badge>
-            <a-dropdown>
-              <a-space class="user-info">
-                <a-avatar style="background-color: #0066B2">
-                  <template #icon><UserOutlined /></template>
-                </a-avatar>
-                <span class="username">Admin</span>
-              </a-space>
-              <template #overlay>
-                <a-menu>
-                  <a-menu-item key="profile">
-                    <UserOutlined /> Profile
-                  </a-menu-item>
-                  <a-menu-item key="settings">
-                    <SettingOutlined /> Settings
-                  </a-menu-item>
-                  <a-menu-divider />
-                  <a-menu-item key="logout">
-                    <LogoutOutlined /> Logout
-                  </a-menu-item>
-                </a-menu>
-              </template>
-            </a-dropdown>
+            <UserSwitcher />
           </a-space>
         </div>
       </a-layout-header>
@@ -126,6 +105,7 @@ import {
   LogoutOutlined,
 } from '@ant-design/icons-vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
+import UserSwitcher from '@/components/UserSwitcher.vue'
 
 const { t } = useI18n()
 const { isDevMode } = useDevMode()
