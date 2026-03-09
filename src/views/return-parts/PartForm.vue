@@ -257,7 +257,7 @@
           <a-button @click="handleSave">{{ t('common.save') }}</a-button>
           <a-button type="primary" @click="handleSubmit">{{ t('common.submit') }}</a-button>
         </template>
-        <!-- 已提交状态且有数据校订权限：只显示提交按钮（用于更新） -->
+        <!-- 已提交状态且有权限：只显示提交按钮（不允许暂存） -->
         <template v-else-if="canEditSubmittedPart">
           <a-button type="primary" @click="handleSubmit">{{ t('common.submit') }}</a-button>
         </template>

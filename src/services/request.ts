@@ -57,6 +57,12 @@ request.interceptors.request.use(
         config.headers['Authorization'] = `Bearer ${accessToken}`
       }
     }
+
+    // 处理 FormData 上传 - 删除默认的 Content-Type，让浏览器自动设置
+    if (config.data instanceof FormData && config.headers['Content-Type']) {
+      delete config.headers['Content-Type']
+    }
+
     return config
   },
   (error) => Promise.reject(error),

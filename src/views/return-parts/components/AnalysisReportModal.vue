@@ -78,6 +78,7 @@ import { useI18n } from 'vue-i18n'
 import { UploadOutlined, DownloadOutlined } from '@ant-design/icons-vue'
 import { reportsApi } from '@/services/reportsApi'
 import type { Part, ReportTemplate } from '@/types'
+import dayjs from 'dayjs'
 
 const { t } = useI18n()
 
@@ -90,6 +91,8 @@ const emit = defineEmits(['update:visible', 'success'])
 
 const formRef = ref()
 const templates = ref<ReportTemplate[]>([])
+const reportId = ref<string>()
+const loading = ref(false)
 
 const form = reactive({
   templateId: undefined as string | undefined,
@@ -104,16 +107,22 @@ const selectedTemplate = computed(() => {
 
   const { productPlatform, failureType } = props.part
 
+  console.log('[Template Match] Part info:', { productPlatform, failureType })
+  console.log('[Template Match] Available templates:', templates.value)
+
   // 首先尝试精确匹配（产品平台 + 失效类型）
   let template = templates.value.find(
     t => t.productPlatform === productPlatform && t.failureType === failureType
   )
+
+  console.log('[Template Match] Exact match result:', template)
 
   // 如果没有精确匹配，尝试只匹配产品平台
   if (!template) {
     template = templates.value.find(
       t => t.productPlatform === productPlatform && !t.failureType
     )
+    console.log('[Template Match] Platform match result:', template)
   }
 
   // 如果还是没有，尝试只匹配失效类型
@@ -121,26 +130,53 @@ const selectedTemplate = computed(() => {
     template = templates.value.find(
       t => !t.productPlatform && t.failureType === failureType
     )
+    console.log('[Template Match] Failure type match result:', template)
   }
 
   // 最后使用默认模板
   if (!template) {
     template = templates.value.find(t => !t.productPlatform && !t.failureType)
+    console.log('[Template Match] Default template:', template)
   }
 
   return template || null
 })
 
-// 当弹窗打开时加载模板
+// 当弹窗打开时加载模板和现有报告
 watch(() => props.visible, async (val) => {
-  if (val && templates.value.length === 0) {
-    templates.value = await reportsApi.getTemplates()
+  if (val) {
+    console.log('[Template Modal] Opening modal, loading templates...')
+    if (templates.value.length === 0) {
+      try {
+        templates.value = await reportsApi.getTemplates()
+        console.log('[Template Modal] Templates loaded:', templates.value)
+      } catch (error) {
+        console.error('[Template Modal] Failed to load templates:', error)
+      }
+    } else {
+      console.log('[Template Modal] Using cached templates:', templates.value)
+    }
+    // 加载现有报告
+    if (props.part?.id) {
+      try {
+        const existingReport = await reportsApi.getLatestReportByPart(props.part.id)
+        if (existingReport) {
+          reportId.value = existingReport.id
+          form.templateId = existingReport.templateId
+          form.content = existingReport.content || {}
+          form.summary = existingReport.summary || ''
+        }
+      } catch {
+        // 没有现有报告，使用新表单
+        reportId.value = undefined
+      }
+    }
   }
 })
 
 // 当模板变化时重置表单内容
 watch(selectedTemplate, (newTemplate) => {
-  if (newTemplate) {
+  if (newTemplate && !reportId.value) {
     form.templateId = newTemplate.id
     form.content = {}
   }
@@ -150,23 +186,90 @@ const handleCancel = () => {
   emit('update:visible', false)
 }
 
-const handleSaveDraft = () => {
-  message.success(t('message.draftSaved'))
+const handleSaveDraft = async () => {
+  if (!props.part?.id || !selectedTemplate.value) return
+  try {
+    loading.value = true
+    await formRef.value?.validate()
+
+    // 格式化日期字段
+    const formattedContent: Record<string, any> = {}
+    for (const [key, value] of Object.entries(form.content)) {
+      if (dayjs.isDayjs(value)) {
+        formattedContent[key] = value.format('YYYY-MM-DD')
+      } else {
+        formattedContent[key] = value
+      }
+    }
+
+    const report = await reportsApi.saveReport({
+      partId: props.part.id,
+      templateId: selectedTemplate.value.id,
+      content: formattedContent,
+      summary: form.summary,
+      status: 'draft',
+    })
+    reportId.value = report.id
+    message.success(t('message.draftSaved'))
+  } catch {
+    message.error(t('validation.formError'))
+  } finally {
+    loading.value = false
+  }
 }
 
-const handleDownload = () => {
-  message.success(t('message.generatingReport'))
-  setTimeout(() => {
-    message.success(t('message.reportDownloadSuccess'))
-  }, 1000)
+const handleDownload = async () => {
+  if (!reportId.value) {
+    message.warning(t('analysisForm.pleaseSaveFirst'))
+    return
+  }
+  try {
+    loading.value = true
+    const blob = await reportsApi.exportReport(reportId.value)
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `report_${props.part?.partNumber}_${Date.now()}.xlsx`
+    a.click()
+    window.URL.revokeObjectURL(url)
+    message.success(t('message.downloadSuccess'))
+  } catch {
+    message.error(t('message.exportFailed'))
+  } finally {
+    loading.value = false
+  }
 }
 
 const handleSubmit = async () => {
+  if (!props.part?.id || !selectedTemplate.value) return
   try {
+    loading.value = true
     await formRef.value?.validate()
+
+    // 格式化日期字段
+    const formattedContent: Record<string, any> = {}
+    for (const [key, value] of Object.entries(form.content)) {
+      if (dayjs.isDayjs(value)) {
+        formattedContent[key] = value.format('YYYY-MM-DD')
+      } else {
+        formattedContent[key] = value
+      }
+    }
+
+    const report = await reportsApi.saveReport({
+      partId: props.part.id,
+      templateId: selectedTemplate.value.id,
+      content: formattedContent,
+      summary: form.summary,
+      status: 'submitted',
+    })
+    reportId.value = report.id
     emit('success')
+    message.success(t('message.submitSuccess'))
   } catch {
     message.error(t('validation.formError'))
+  } finally {
+    loading.value = false
   }
 }
 </script>

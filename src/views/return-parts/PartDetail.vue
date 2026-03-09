@@ -6,7 +6,7 @@
     >
       <template #extra>
         <a-space>
-          <a-button @click="handleEdit">{{ t('common.edit') }}</a-button>
+          <a-button v-if="canEditPart" @click="handleEdit">{{ t('common.edit') }}</a-button>
           <a-button type="primary" @click="handleAnalysis">{{ t('partDetail.analysis') }}</a-button>
         </a-space>
       </template>
@@ -27,7 +27,8 @@
         <a-card :title="t('partDetail.basicInfo')" class="info-card">
           <a-descriptions :column="2" bordered>
             <a-descriptions-item :label="t('returnPart.partNumber')">
-              <a v-if="part?.partNumber" style="color: #1890ff" @click="handleEdit">{{ part.partNumber }}</a>
+              <a v-if="canEditPart && part?.partNumber" style="color: #1890ff" @click="handleEdit">{{ part.partNumber }}</a>
+              <span v-else-if="part?.partNumber" style="color: #1890ff">{{ part.partNumber }}</span>
               <span v-else style="color: #999">{{ t('validation.unsubmitted') }}</span>
             </a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.relatedOrder')">
@@ -144,6 +145,39 @@ const qcNoInput = ref('')
 
 const QC_VISIBLE_STATUSES = [PartStatus.ANALYSIS_COMPLETED, PartStatus.SCRAP_IN_PROGRESS, PartStatus.SCRAPPED]
 const isQcVisible = computed(() => part.value ? QC_VISIBLE_STATUSES.includes(part.value.status) : false)
+
+/**
+ * 检查当前用户是否有权限编辑已提交的售后件
+ *
+ * 权限角色：
+ * - W_RBCC_AEP_WFAM_QMC_Manager（QMC 经理）
+ * - W_RBCC_AEP_WFAM_SystemAdmin（系统管理员）
+ *
+ * @returns {boolean} 是否有权限编辑已提交的售后件
+ */
+const canEditPart = computed(() => {
+  if (!part.value) return false
+  // 未提交的单据所有人都可以编辑
+  if (!part.value.partNumber) return true
+  // 已提交的单据需要检查权限（当前写死返回true）
+  return canEditSubmittedPart()
+})
+
+/**
+ * 检查当前用户是否有"编辑已提交单据"的权限
+ * TODO: 根据实际角色信息返回结果
+ */
+const canEditSubmittedPart = (): boolean => {
+  // TODO: 实现角色权限检查逻辑
+  // 示例实现（需要根据实际认证头格式调整）：
+  // const authHeader = getAuthHeader() // 从请求拦截器或 store 获取
+  // const roleNames = authHeader?.roleNames || ''
+  // const hasPermission = roleNames.includes('W_RBCC_AEP_WFAM_QMC_Manager') ||
+  //                       roleNames.includes('W_RBCC_AEP_WFAM_SystemAdmin')
+  // return hasPermission
+
+  return true // 当前写死返回 true
+}
 
 const handleSubmitQcNo = async () => {
   if (!qcNoInput.value.trim()) {

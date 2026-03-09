@@ -140,7 +140,7 @@
             <a-select-option v-for="ft in failureTypeOptions" :key="ft" :value="ft">{{ ft }}</a-select-option>
           </a-select>
         </a-form-item>
-        <a-form-item :label="t('settings.templateFile')" name="file" :rules="[{ required: true, message: t('settings.pleaseUploadTemplateFile') }]">
+        <a-form-item :label="t('settings.templateFile')">
           <a-upload
             v-model:file-list="templateForm.fileList"
             :before-upload="() => false"
@@ -182,7 +182,9 @@ import { message, Modal } from 'ant-design-vue'
 import { PlusOutlined, UploadOutlined, SyncOutlined } from '@ant-design/icons-vue'
 import { lookupApi } from '@/services/lookupApi'
 import { customerApi } from '@/services/customerApi'
+import { reportsApi } from '@/services/reportsApi'
 import type { Customer } from '@/services/customerApi'
+import type { ReportTemplate } from '@/types'
 
 const { t } = useI18n()
 
@@ -200,6 +202,7 @@ interface TemplateItem {
   failureType: string
   uploadTime: string
   uploadBy: string
+  fields?: any[]
 }
 
 // 同步信息接口
@@ -228,7 +231,28 @@ onMounted(async () => {
 
   // 加载客户列表
   customers.value = await customerApi.list()
+
+  // 加载模板列表
+  await loadTemplates()
 })
+
+// 加载模板列表
+const loadTemplates = async () => {
+  try {
+    const data = await reportsApi.getAllTemplates()
+    templates.value = data.map(t => ({
+      id: t.id,
+      name: t.name,
+      productPlatform: t.productPlatform || '-',
+      failureType: t.failureType || '-',
+      uploadTime: t.createdAt || '-',
+      uploadBy: t.createdBy || '-',
+      fields: t.fields
+    }))
+  } catch {
+    message.error(t('message.loadFailed'))
+  }
+}
 
 // 用户选项
 const userOptions = ref([
@@ -257,11 +281,7 @@ const customerForm = reactive({
 })
 
 // 模板列表
-const templates = ref<TemplateItem[]>([
-  { id: '1', name: 'PLT1-噪音分析模板.xlsx', productPlatform: 'PLT1', failureType: '噪音', uploadTime: '2026-01-20 10:00', uploadBy: '管理员' },
-  { id: '2', name: 'PLT1-断裂分析模板.xlsx', productPlatform: 'PLT1', failureType: '断裂', uploadTime: '2026-01-21 14:30', uploadBy: '管理员' },
-  { id: '3', name: 'PLT2-渗漏分析模板.xlsx', productPlatform: 'PLT2', failureType: '渗漏', uploadTime: '2026-01-22 09:15', uploadBy: '管理员' },
-])
+const templates = ref<TemplateItem[]>([])
 
 const templateColumns = computed(() => [
   { title: t('settings.templateName'), dataIndex: 'name', key: 'name' },
@@ -310,30 +330,54 @@ const handleTemplateUpload = async () => {
       message.error(t('settings.pleaseUploadTemplateFile'))
       return
     }
-    // 模拟上传
-    const newTemplate = {
-      id: String(templates.value.length + 1),
-      name: `${templateForm.productPlatform}-${templateForm.failureType}分析模板.xlsx`,
-      productPlatform: templateForm.productPlatform!,
-      failureType: templateForm.failureType!,
-      uploadTime: new Date().toLocaleString(),
-      uploadBy: '管理员',
-    }
-    templates.value.push(newTemplate)
+
+    const formData = new FormData()
+    formData.append('file', templateForm.fileList[0].originFileObj)
+    formData.append('productPlatform', templateForm.productPlatform!)
+    // 失效类型在表单中是必填的，所以总是有值
+    formData.append('failureType', templateForm.failureType || '')
+
+    console.log('[Template Upload] Uploading with:', {
+      productPlatform: templateForm.productPlatform,
+      failureType: templateForm.failureType || '',
+      fileName: templateForm.fileList[0].originFileObj.name
+    })
+
+    const result = await reportsApi.uploadTemplate(formData)
+    console.log('[Template Upload] Upload result:', result)
+
+    await loadTemplates()
     templateModalVisible.value = false
     message.success(t('message.templateUploadSuccess'))
-  } catch {
-    message.error(t('settings.checkFormFields'))
+  } catch (error) {
+    console.error('[Template Upload] Upload failed:', error)
+    message.error(t('message.uploadFailed'))
   }
 }
 
-const handleDownloadTemplate = (record: TemplateItem) => {
-  message.success(t('message.downloadTemplate', { name: record.name }))
+const handleDownloadTemplate = async (record: TemplateItem) => {
+  try {
+    const blob = await reportsApi.downloadTemplate(record.id)
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = record.name
+    a.click()
+    window.URL.revokeObjectURL(url)
+    message.success(t('message.downloadSuccess'))
+  } catch {
+    message.error(t('message.downloadFailed'))
+  }
 }
 
-const handleDeleteTemplate = (id: string) => {
-  templates.value = templates.value.filter(t => t.id !== id)
-  message.success(t('message.deleteSuccess'))
+const handleDeleteTemplate = async (id: string) => {
+  try {
+    await reportsApi.deleteTemplate(id)
+    await loadTemplates()
+    message.success(t('message.deleteSuccess'))
+  } catch {
+    message.error(t('message.deleteFailed'))
+  }
 }
 
 const handleSaveNotificationConfig = () => {
