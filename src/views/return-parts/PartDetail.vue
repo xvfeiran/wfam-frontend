@@ -39,8 +39,9 @@
             <a-descriptions-item :label="t('returnPart.businessUnit')">{{ part?.businessUnit }}</a-descriptions-item>
             <a-descriptions-item :label="t('returnPart.productPlatform')">{{ part?.productPlatform }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.productionShift')">{{ part?.productionShift || '-' }}</a-descriptions-item>
-            <a-descriptions-item :label="t('partDetail.responsibleEngineer')">{{ (part as any)?.responsibleEngineer || '-' }}</a-descriptions-item>
-            <a-descriptions-item :label="t('partDetail.analyst')">{{ (part as any)?.analyst || '-' }}</a-descriptions-item>
+            <a-descriptions-item :label="t('partDetail.failureType')">{{ part?.failureType || '-' }}</a-descriptions-item>
+            <a-descriptions-item :label="t('partDetail.responsibleEngineer')">{{ part?.responsibleEngineer || '-' }}</a-descriptions-item>
+            <a-descriptions-item :label="t('partDetail.analyst')">{{ part?.analyst || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('common.status')" :span="2">
               <a-tag :color="PART_STATUS_MAP[part?.status || 'in_initial_analysis']?.color || 'default'">
                 {{ getStatusLabel(part?.status) }}
@@ -51,8 +52,8 @@
 
         <a-card :title="t('partDetail.complaintInfo')" class="vehicle-card">
           <a-descriptions :column="2" bordered>
-            <a-descriptions-item :label="t('partDetail.repairStation')">{{ (part as any)?.repairStation || '-' }}</a-descriptions-item>
-            <a-descriptions-item :label="t('partDetail.complaintLocation')">{{ (part as any)?.complaintLocation || '-' }}</a-descriptions-item>
+            <a-descriptions-item :label="t('partDetail.repairStation')">{{ part?.repairStation || '-' }}</a-descriptions-item>
+            <a-descriptions-item :label="t('partDetail.complaintLocation')">{{ part?.complaintLocation || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.vehicleProductionDate')">{{ part?.vehicleProductionDate || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.vehiclePurchaseDate')">{{ part?.vehiclePurchaseDate || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.vehicleFailureDate')">{{ part?.vehicleFailureDate || '-' }}</a-descriptions-item>

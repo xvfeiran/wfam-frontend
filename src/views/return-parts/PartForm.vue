@@ -420,6 +420,12 @@ onMounted(async () => {
       form.businessUnit = part.businessUnit
       form.productPlatform = part.productPlatform
       form.productionShift = part.productionShift || ''
+      form.complaintType = part.complaintType || undefined
+      form.failureType = part.failureType || undefined
+      form.responsibleEngineer = part.responsibleEngineer || undefined
+      form.analyst = part.analyst || undefined
+      form.repairStation = part.repairStation || ''
+      form.complaintLocation = part.complaintLocation || ''
       form.vehicleProductionDate = part.vehicleProductionDate ? dayjs(part.vehicleProductionDate) : null
       form.vehiclePurchaseDate = part.vehiclePurchaseDate ? dayjs(part.vehiclePurchaseDate) : null
       form.vehicleFailureDate = part.vehicleFailureDate ? dayjs(part.vehicleFailureDate) : null
@@ -447,6 +453,7 @@ const buildPartPayload = () => ({
   productPlatform: form.productPlatform,
   productionShift: form.productionShift || undefined,
   complaintType: form.complaintType || undefined,
+  failureType: form.failureType || undefined,
   responsibleEngineer: form.responsibleEngineer || undefined,
   analyst: form.analyst || undefined,
   repairStation: form.repairStation || undefined,

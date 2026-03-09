@@ -59,7 +59,12 @@ export interface Part {
   businessUnit: string
   productPlatform: string
   productionShift?: string
+  complaintType?: string
   failureType?: string
+  responsibleEngineer?: string
+  analyst?: string
+  repairStation?: string
+  complaintLocation?: string
   vehicleProductionDate?: string
   vehiclePurchaseDate?: string
   vehicleFailureDate?: string
