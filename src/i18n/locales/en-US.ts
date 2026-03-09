@@ -299,6 +299,7 @@ export default {
     unsubmitted: 'Unsubmitted',
     inputTrackingNumber: 'Please enter tracking number',
     inputDescription: 'Please enter description',
+    submittedCannotEdit: 'Submitted form cannot be edited',
   },
   message: {
     searchComplete: 'Search completed',

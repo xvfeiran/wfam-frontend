@@ -252,8 +252,19 @@
     <div class="form-footer">
       <a-space>
         <a-button @click="handleBack">{{ t('common.cancel') }}</a-button>
-        <a-button @click="handleSave">{{ t('common.save') }}</a-button>
-        <a-button type="primary" @click="handleSubmit">{{ t('common.submit') }}</a-button>
+        <!-- 草稿状态：显示保存和提交按钮 -->
+        <template v-if="!isSubmitted">
+          <a-button @click="handleSave">{{ t('common.save') }}</a-button>
+          <a-button type="primary" @click="handleSubmit">{{ t('common.submit') }}</a-button>
+        </template>
+        <!-- 已提交状态且有数据校订权限：只显示提交按钮（用于更新） -->
+        <template v-else-if="canEditSubmittedPart">
+          <a-button type="primary" @click="handleSubmit">{{ t('common.submit') }}</a-button>
+        </template>
+        <!-- 已提交状态且无权限：显示不可编辑提示 -->
+        <template v-else>
+          <a-tag color="default">{{ t('validation.submittedCannotEdit') }}</a-tag>
+        </template>
       </a-space>
     </div>
 
@@ -308,6 +319,33 @@ const formRef = ref()
 
 const isEdit = computed(() => !!route.params.id)
 const partId = computed(() => route.params.id as string)
+// 是否已提交（有零件编号表示已提交）
+const isSubmitted = computed(() => !!form.partNumber)
+
+/**
+ * 检查当前用户是否有修改已提交表单的权限（数据校订权）
+ *
+ * 权限角色：
+ * - W_RBCC_AEP_WFAM_QMC_Manager（QMC 经理）
+ * - W_RBCC_AEP_WFAM_SystemAdmin（系统管理员）
+ *
+ * @returns {boolean} 是否有权限修改已提交的表单
+ *
+ * TODO: 当前返回 true 用于测试，正式环境需要从 HTTP 请求头解析角色信息
+ * 实现方式：从 x-authentication-header 或 Authorization 中解析 roleNames 字段，
+ * 判断是否包含上述角色之一
+ */
+const canEditSubmittedPart = computed(() => {
+  // TODO: 实现角色权限检查逻辑
+  // 示例实现（需要根据实际认证头格式调整）：
+  // const authHeader = getAuthHeader() // 从请求拦截器或 store 获取
+  // const roleNames = authHeader?.roleNames || ''
+  // const hasPermission = roleNames.includes('W_RBCC_AEP_WFAM_QMC_Manager') ||
+  //                       roleNames.includes('W_RBCC_AEP_WFAM_SystemAdmin')
+  // return hasPermission
+
+  return true // 当前始终返回 true，提供编辑入口用于测试
+})
 
 const orders = ref<any[]>([])
 const businessUnits = ref<string[]>([])

@@ -299,6 +299,7 @@ export default {
     unsubmitted: '未提交',
     inputTrackingNumber: '请输入快递单号',
     inputDescription: '请输入退货描述',
+    submittedCannotEdit: '已提交的表单无法编辑',
   },
   message: {
     searchComplete: '查询完成',
