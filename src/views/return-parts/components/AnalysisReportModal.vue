@@ -358,7 +358,6 @@ const handleSubmit = async () => {
     })
     reportId.value = report.id
     emit('success')
-    message.success(t('message.submitSuccess'))
   } catch {
     message.error(t('validation.formError'))
   } finally {
