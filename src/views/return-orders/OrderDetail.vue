@@ -6,7 +6,7 @@
     >
       <template #extra>
         <a-space>
-          <a-button @click="handleEdit">{{ t('common.edit') }}</a-button>
+          <a-button v-if="canShowEditButton" @click="handleEdit">{{ t('common.edit') }}</a-button>
           <a-button v-if="order?.status === 'draft'" type="primary" @click="handleSubmit">{{ t('common.submit') }}</a-button>
           <a-button v-if="order?.status === 'in_initial_analysis'" type="primary" @click="handleSampling">{{ t('returnOrder.sampling') }}</a-button>
           <a-button v-if="order?.status === 'analysis_completed'" danger @click="handleScrap">
@@ -117,6 +117,7 @@ import { ORDER_STATUS_MAP, PART_STATUS_MAP, RETURN_METHOD_MAP, OrderStatus } fro
 import type { ReturnOrder, Part } from '@/types'
 import SamplingModal from './components/SamplingModal.vue'
 import ScrapModal from './components/ScrapModal.vue'
+import { usePermissions } from '@/composables/usePermissions'
 
 const { t } = useI18n()
 
@@ -142,6 +143,19 @@ const statusStepMap: Record<OrderStatus, number> = {
 
 const currentStep = computed(() => {
   return order.value ? statusStepMap[order.value.status] : 0
+})
+
+// Permission check for edit button
+const { isQMCManager } = usePermissions()
+
+// Edit button visibility logic:
+// - Draft orders (no orderNumber): visible to everyone
+// - Submitted orders (has orderNumber): only visible to QMC Manager
+const canShowEditButton = computed(() => {
+  // Draft orders can be edited by everyone
+  if (!order.value?.orderNumber) return true
+  // Submitted orders only visible to QMC Manager
+  return isQMCManager.value
 })
 
 const partColumns = computed(() => [

@@ -13,6 +13,7 @@
     <!-- 操作区 -->
     <OrderListActions
       :selected-count="selectedRowKeys.length"
+      :can-edit="canEditSelectedOrder"
       @create="handleCreate"
       @import="handleImport"
       @export="handleExport"
@@ -52,13 +53,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
 import { returnOrderApi } from '@/services/returnOrderApi'
 import { customerApi } from '@/services/customerApi'
+import { usePermissions } from '@/composables/usePermissions'
 import type { Customer } from '@/services/customerApi'
 import type { ReturnOrder } from '@/types'
 import { useTableList } from '@/composables/useTableList'
@@ -70,6 +72,7 @@ import ScrapModal from './components/ScrapModal.vue'
 
 const { t } = useI18n()
 const router = useRouter()
+const { canEditSubmittedForm } = usePermissions()
 
 const customers = ref<Customer[]>([])
 const filters = ref({
@@ -106,6 +109,19 @@ const {
 const samplingVisible = ref(false)
 const currentOrder = ref<ReturnOrder | null>(null)
 const scrapVisible = ref(false)
+
+// Check if the selected order can be edited
+// Draft orders (no orderNumber) can be edited by anyone
+// Submitted orders (has orderNumber) can only be edited by QMC Manager or System Admin
+const canEditSelectedOrder = computed(() => {
+  if (selectedRowKeys.value.length !== 1) return false
+  const selectedOrder = orders.value.find(o => o.id === selectedRowKeys.value[0])
+  if (!selectedOrder) return false
+  // Draft orders can be edited by anyone
+  if (!selectedOrder.orderNumber) return true
+  // Submitted orders require data correction permission
+  return canEditSubmittedForm.value
+})
 
 onMounted(async () => {
   loading.value = true
@@ -146,8 +162,20 @@ const handleView = (id: string) => {
   router.push(`/return-orders/${id}`)
 }
 
-const handleEdit = (id: string) => {
-  router.push(`/return-orders/${id}/edit`)
+const handleEdit = () => {
+  if (selectedRowKeys.value.length !== 1) return
+
+  const selectedId = selectedRowKeys.value[0]
+  const selectedOrder = orders.value.find(o => o.id === selectedId)
+  if (!selectedOrder) return
+
+  // Check permission for editing submitted orders
+  if (selectedOrder.orderNumber && !canEditSubmittedForm.value) {
+    message.warning(t('validation.noPermissionToEdit'))
+    return
+  }
+
+  router.push(`/return-orders/${selectedId}/edit`)
 }
 
 const handleExport = async () => {

@@ -18,8 +18,8 @@
             <a-form-item :label="t('returnOrder.orderNumber')" name="orderNumber">
               <a-input
                 v-model:value="form.orderNumber"
-                :disabled="!isEdit"
-                :placeholder="!isEdit ? t('validation.autoGenerateOnSave') : t('validation.inputOrderNumber')"
+                disabled
+                :placeholder="t('validation.autoGenerateOnSave')"
               />
             </a-form-item>
           </a-col>
@@ -141,7 +141,7 @@
         </template>
         <!-- 已提交状态且有数据校订权限：只显示提交按钮（用于更新） -->
         <template v-else-if="canEditSubmittedOrder">
-          <a-button type="primary" @click="handleSubmit">{{ t('common.submit') }}</a-button>
+          <a-button type="primary" @click="handleSaveForSubmitted">{{ t('common.submit') }}</a-button>
         </template>
         <!-- 已提交状态且无权限：显示不可编辑提示 -->
         <template v-else>
@@ -154,7 +154,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
@@ -164,6 +164,7 @@ import { PlusOutlined } from '@ant-design/icons-vue'
 import { returnOrderApi } from '@/services/returnOrderApi'
 import { lookupApi } from '@/services/lookupApi'
 import { customerApi } from '@/services/customerApi'
+import { usePermissions } from '@/composables/usePermissions'
 import type { Part } from '@/types'
 import type { Customer } from '@/services/customerApi'
 
@@ -178,29 +179,13 @@ const orderId = computed(() => route.params.id as string)
 // 是否已提交（有订单编号表示已提交）
 const isSubmitted = computed(() => !!form.orderNumber)
 
-/**
- * 检查当前用户是否有修改已提交表单的权限（数据校订权）
- *
- * 权限角色：
- * - W_RBCC_AEP_WFAM_QMC_Manager（QMC 经理）
- * - W_RBCC_AEP_WFAM_SystemAdmin（系统管理员）
- *
- * @returns {boolean} 是否有权限修改已提交的表单
- *
- * TODO: 当前返回 true 用于测试，正式环境需要从 HTTP 请求头解析角色信息
- * 实现方式：从 x-authentication-header 或 Authorization 中解析 roleNames 字段，
- * 判断是否包含上述角色之一
- */
+// Permission check for editing submitted orders
+const { isQMCManager } = usePermissions()
 const canEditSubmittedOrder = computed(() => {
-  // TODO: 实现角色权限检查逻辑
-  // 示例实现（需要根据实际认证头格式调整）：
-  // const authHeader = getAuthHeader() // 从请求拦截器或 store 获取
-  // const roleNames = authHeader?.roleNames || ''
-  // const hasPermission = roleNames.includes('W_RBCC_AEP_WFAM_QMC_Manager') ||
-  //                       roleNames.includes('W_RBCC_AEP_WFAM_SystemAdmin')
-  // return hasPermission
-
-  return true // 当前始终返回 true，提供编辑入口用于测试
+  // Draft orders can be edited by anyone
+  if (!isSubmitted.value) return true
+  // Submitted orders can only be edited by QMC Manager
+  return isQMCManager.value
 })
 
 const customers = ref<Customer[]>([])
@@ -216,8 +201,15 @@ const form = reactive({
   returnQuantity: 1,
 })
 
+// Watch returnMethod changes - clear trackingNumber when switching from express to pickup
+watch(() => form.returnMethod, (newValue, oldValue) => {
+  if (oldValue === 'express' && newValue === 'pickup') {
+    form.trackingNumber = ''
+  }
+})
+
 const rules = computed(() => ({
-  ...(isEdit.value ? { orderNumber: [{ required: true, message: t('validation.inputOrderNumber') }] } : {}),
+  // orderNumber is auto-generated and not editable, no validation needed
   customer: [{ required: true, message: t('validation.selectCustomer') }],
   receiveDate: [{ required: true, message: t('validation.selectReceiveDate') }],
   complaintDate: [{ required: true, message: t('validation.selectComplaintDate') }],
@@ -259,12 +251,20 @@ onMounted(async () => {
     // 加载退货单数据
     const order = await returnOrderApi.getById(orderId.value)
     if (order) {
+      // 权限检查：已提交的订单只能由有数据校订权的用户编辑
+      if (order.orderNumber && !canEditSubmittedOrder.value) {
+        message.warning(t('validation.noPermissionToEdit'))
+        router.push('/return-orders')
+        return
+      }
+
       form.orderNumber = order.orderNumber
       form.customer = order.customer
       form.receiveDate = dayjs(order.receiveDate)
       form.complaintDate = dayjs(order.complaintDate)
       form.returnMethod = order.returnMethod
-      form.trackingNumber = order.trackingNumber || ''
+      // Only load trackingNumber for express delivery
+      form.trackingNumber = (order.returnMethod === 'express' && order.trackingNumber) ? order.trackingNumber : ''
       form.returnQuantity = order.returnQuantity
 
       // 加载关联的售后件
@@ -298,14 +298,20 @@ const handleDeletePart = (id: string) => {
   message.success(t('message.deleteSuccess'))
 }
 
-const buildPayload = () => ({
-  customer: form.customer,
-  receiveDate: form.receiveDate ? form.receiveDate.format('YYYY-MM-DD') : undefined,
-  complaintDate: form.complaintDate ? form.complaintDate.format('YYYY-MM-DD') : undefined,
-  returnMethod: form.returnMethod,
-  trackingNumber: form.trackingNumber || undefined,
-  returnQuantity: form.returnQuantity,
-})
+const buildPayload = () => {
+  const payload: any = {
+    customer: form.customer,
+    receiveDate: form.receiveDate ? form.receiveDate.format('YYYY-MM-DD') : undefined,
+    complaintDate: form.complaintDate ? form.complaintDate.format('YYYY-MM-DD') : undefined,
+    returnMethod: form.returnMethod,
+    returnQuantity: form.returnQuantity,
+  }
+  // Only include trackingNumber for express delivery
+  if (form.returnMethod === 'express' && form.trackingNumber) {
+    payload.trackingNumber = form.trackingNumber
+  }
+  return payload
+}
 
 const handleSave = async () => {
   try {
@@ -317,6 +323,22 @@ const handleSave = async () => {
     }
     message.success(t('message.saveSuccess'))
     router.push('/return-orders')
+  } catch (error: any) {
+    if (error?.errorFields) {
+      message.error(t('validation.formError'))
+    } else {
+      message.error(t('message.saveFailed'))
+    }
+  }
+}
+
+// Save handler for submitted orders - only updates, does not call submit again
+const handleSaveForSubmitted = async () => {
+  try {
+    await formRef.value?.validate()
+    await returnOrderApi.update(orderId.value, buildPayload())
+    message.success(t('message.saveSuccess'))
+    router.push(`/return-orders/${orderId.value}`)
   } catch (error: any) {
     if (error?.errorFields) {
       message.error(t('validation.formError'))

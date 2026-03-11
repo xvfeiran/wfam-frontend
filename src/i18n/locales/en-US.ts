@@ -300,6 +300,7 @@ export default {
     submittedCannotEdit: 'Submitted form cannot be edited',
     returnQuantityRange: 'Return quantity must be between {min} and {max}',
     trackingNumberMaxLength: 'Tracking number cannot exceed {max} characters',
+    noPermissionToEdit: 'You do not have permission to edit this return order',
   },
   message: {
     searchComplete: 'Search completed',

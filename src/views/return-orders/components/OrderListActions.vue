@@ -10,7 +10,8 @@
       <a-button @click="$emit('export')">
         <DownloadOutlined /> {{ t('common.export') }}
       </a-button>
-      <a-button :disabled="selectedCount !== 1" @click="$emit('edit')">
+      <!-- Edit button: only visible when user has permission -->
+      <a-button v-if="canEdit" :disabled="selectedCount !== 1" @click="$emit('edit')">
         <EditOutlined /> {{ t('common.edit') }}
       </a-button>
       <a-popconfirm :title="t('returnOrder.confirmDelete')" @confirm="$emit('delete')" :disabled="selectedCount === 0">
@@ -42,6 +43,7 @@ import {
 
 interface Props {
   selectedCount: number
+  canEdit?: boolean
 }
 
 defineProps<Props>()
