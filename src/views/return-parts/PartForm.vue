@@ -98,6 +98,11 @@ const hasPresetOrder = computed(() => {
   return !!route.query.orderNumber && !isEdit.value
 })
 
+// 检查是否从退货单详情页进入（用于返回逻辑）
+const fromOrderDetail = computed(() => {
+  return !!route.query.fromOrderDetail
+})
+
 const form = reactive({
   partNumber: '',
   orderId: undefined as string | undefined,
@@ -133,13 +138,13 @@ const { ocrLoading, ocrResults, hasOCRResults, handleOCRUpload, stopOCR, applyAl
 onMounted(async () => {
   const [lookups, ordersData, usersData] = await Promise.all([
     lookupApi.getAll(),
-    returnOrderApi.list(),
+    returnOrderApi.list({ pageSize: 1000 }), // 获取足够多的订单用于下拉选择
     userApi.list(),
   ])
   businessUnits.value = lookups.businessUnits
   productPlatforms.value = lookups.productPlatforms
   failureTypes.value = lookups.failureTypes
-  orders.value = ordersData
+  orders.value = ordersData.data // 提取 data 数组
   users.value = usersData
 
   if (isEdit.value) {
@@ -207,7 +212,13 @@ const handleSave = async () => {
       await partApi.create(buildPartPayload())
     }
     message.success(t('message.saveSuccess'))
-    router.push('/return-parts')
+
+    // 如果是从退货单详情页进入，返回到退货单详情页
+    if (fromOrderDetail.value && form.orderId) {
+      router.push(`/return-orders/${form.orderId}`)
+    } else {
+      router.push('/return-parts')
+    }
   } catch (error: any) {
     if (error?.errorFields) {
       message.error(t('validation.formError'))
@@ -228,7 +239,13 @@ const handleSubmit = async () => {
     }
     await partApi.submit(savedId)
     message.success(t('message.submitSuccess'))
-    router.push(`/return-parts/${savedId}`)
+
+    // 如果是从退货单详情页进入，返回到退货单详情页
+    if (fromOrderDetail.value && form.orderId) {
+      router.push(`/return-orders/${form.orderId}`)
+    } else {
+      router.push(`/return-parts/${savedId}`)
+    }
   } catch (error: any) {
     if (error?.errorFields) {
       message.error(t('validation.formError'))

@@ -56,10 +56,11 @@
           </template>
           <a-table
             :columns="partColumns"
-            :data-source="parts"
-            :pagination="{ pageSize: 10, showSizeChanger: true, showQuickJumper: true, showTotal: (total: number) => t('common.total', { total }) }"
+            :data-source="paginatedParts"
+            :pagination="partsPagination"
             row-key="id"
             :custom-row="customPartRow"
+            @change="handlePartsTableChange"
           >
             <template #bodyCell="{ column, record }">
               <template v-if="column.key === 'status'">
@@ -106,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, h } from 'vue'
+import { ref, computed, onMounted, watch, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
@@ -129,6 +130,98 @@ const order = ref<ReturnOrder | null>(null)
 const parts = ref<Part[]>([])
 const samplingVisible = ref(false)
 const scrapVisible = ref(false)
+
+// 售后件列表分页配置
+const partsPagination = ref({
+  current: 1,
+  pageSize: 10,
+  total: parts.value.length,
+  showSizeChanger: true,
+  showQuickJumper: true,
+  showTotal: (total: number) => t('common.total', { total }),
+})
+
+// 售后件列表排序配置
+const partsSorter = ref<{
+  columnKey?: string
+  order?: 'ascend' | 'descend' | null
+}>({
+  columnKey: undefined,
+  order: null,
+})
+
+// 排序后的售后件数据
+const sortedParts = computed(() => {
+  if (!partsSorter.value.columnKey || !partsSorter.value.order) {
+    return parts.value
+  }
+
+  const { columnKey, order } = partsSorter.value
+  const sorted = [...parts.value].sort((a: any, b: any) => {
+    const aVal = a[columnKey] || ''
+    const bVal = b[columnKey] || ''
+
+    // 处理特殊字段
+    if (columnKey === 'partNumber') {
+      // 未提交的排在最后
+      const aHasNumber = !!a.partNumber
+      const bHasNumber = !!b.partNumber
+      if (!aHasNumber && bHasNumber) return 1
+      if (aHasNumber && !bHasNumber) return -1
+    }
+
+    const result = String(aVal).localeCompare(String(bVal))
+    return order === 'ascend' ? result : -result
+  })
+
+  return sorted
+})
+
+// 分页后的售后件数据（前端分页）
+const paginatedParts = computed(() => {
+  const { current, pageSize } = partsPagination.value
+  const start = (current - 1) * pageSize
+  const end = start + pageSize
+  return sortedParts.value.slice(start, end)
+})
+
+// 售后件表格变化处理
+const handlePartsTableChange = (pagination: any, filters: any, sorter: any) => {
+  partsPagination.value.pageSize = pagination.pageSize
+
+  // 检查排序是否发生变化
+  const sortChanged = (sorter.columnKey !== partsSorter.value.columnKey) ||
+                      (sorter.order !== partsSorter.value.order)
+
+  // 更新排序状态
+  partsSorter.value = {
+    columnKey: sorter.columnKey,
+    order: sorter.order,
+  }
+
+  // 如果排序发生变化，重置到第一页；否则使用传入的页码
+  if (sortChanged) {
+    partsPagination.value.current = 1
+  } else {
+    partsPagination.value.current = pagination.current
+  }
+}
+
+// 刷新数据的函数（用于从子页面返回时调用）
+const refreshData = async () => {
+  if (orderId.value) {
+    order.value = await returnOrderApi.getById(orderId.value)
+    if (order.value) {
+      parts.value = await returnOrderApi.getParts(orderId.value)
+      partsPagination.value.total = parts.value.length
+      // 检查当前页是否超出范围
+      const maxPage = Math.ceil(partsPagination.value.total / partsPagination.value.pageSize) || 1
+      if (partsPagination.value.current > maxPage) {
+        partsPagination.value.current = maxPage
+      }
+    }
+  }
+}
 
 // 状态步骤映射
 const statusStepMap: Record<OrderStatus, number> = {
@@ -163,6 +256,11 @@ const partColumns = computed(() => [
     title: t('returnPart.partNumber'),
     dataIndex: 'partNumber',
     key: 'partNumber',
+    sorter: (a: Part, b: Part) => {
+      const aVal = a.partNumber || ''
+      const bVal = b.partNumber || ''
+      return aVal.localeCompare(bVal)
+    },
     customRender: ({ record }: { record: Part }) => {
       const text = record.partNumber || t('validation.unsubmitted')
       if (!record.partNumber) {
@@ -177,10 +275,30 @@ const partColumns = computed(() => [
       }, text)
     }
   },
-  { title: t('returnPart.partCode'), dataIndex: 'partCode', key: 'partCode' },
-  { title: t('returnPart.businessUnit'), dataIndex: 'businessUnit', key: 'businessUnit' },
-  { title: t('returnPart.productPlatform'), dataIndex: 'productPlatform', key: 'productPlatform' },
-  { title: t('common.status'), dataIndex: 'status', key: 'status' },
+  {
+    title: t('returnPart.partCode'),
+    dataIndex: 'partCode',
+    key: 'partCode',
+    sorter: (a: Part, b: Part) => (a.partCode || '').localeCompare(b.partCode || ''),
+  },
+  {
+    title: t('returnPart.businessUnit'),
+    dataIndex: 'businessUnit',
+    key: 'businessUnit',
+    sorter: (a: Part, b: Part) => (a.businessUnit || '').localeCompare(b.businessUnit || ''),
+  },
+  {
+    title: t('returnPart.productPlatform'),
+    dataIndex: 'productPlatform',
+    key: 'productPlatform',
+    sorter: (a: Part, b: Part) => (a.productPlatform || '').localeCompare(b.productPlatform || ''),
+  },
+  {
+    title: t('common.status'),
+    dataIndex: 'status',
+    key: 'status',
+    sorter: (a: Part, b: Part) => (a.status || '').localeCompare(b.status || ''),
+  },
   {
     title: t('common.operation'),
     key: 'action',
@@ -279,6 +397,26 @@ onMounted(async () => {
   order.value = await returnOrderApi.getById(orderId.value)
   if (order.value) {
     parts.value = await returnOrderApi.getParts(orderId.value)
+    // 更新分页总数
+    partsPagination.value.total = parts.value.length
+  }
+})
+
+// 监听路由变化，从新建售后件页面返回时刷新数据
+watch(orderId, async () => {
+  order.value = await returnOrderApi.getById(orderId.value)
+  if (order.value) {
+    parts.value = await returnOrderApi.getParts(orderId.value)
+    partsPagination.value.total = parts.value.length
+    // 重置分页到第一页
+    partsPagination.value.current = 1
+  }
+})
+
+// 监听路由参数变化（如从新建售后件返回）
+watch(() => route.fullPath, async () => {
+  if (route.name === 'ReturnOrderDetail') {
+    await refreshData()
   }
 })
 
@@ -306,11 +444,17 @@ const handleSampling = () => {
 const handleSamplingSuccess = async () => {
   message.success(t('message.samplingComplete'))
   order.value = await returnOrderApi.getById(orderId.value)
+  // 更新售后件列表和分页
+  parts.value = await returnOrderApi.getParts(orderId.value)
+  partsPagination.value.total = parts.value.length
 }
 
 const handleNoSamplingSuccess = async () => {
   message.success(t('message.noSamplingSuccess'))
   order.value = await returnOrderApi.getById(orderId.value)
+  // 更新售后件列表和分页
+  parts.value = await returnOrderApi.getParts(orderId.value)
+  partsPagination.value.total = parts.value.length
 }
 
 const handleScrap = () => {
@@ -335,7 +479,7 @@ const handleWorkonConfirm = async () => {
 const handleAddPart = () => {
   router.push({
     path: '/return-parts/new',
-    query: { orderId: orderId.value }
+    query: { orderId: orderId.value, fromOrderDetail: 'true' }
   })
 }
 
@@ -349,6 +493,7 @@ const handleDeletePart = async (partId: string) => {
     message.success(t('message.deleteSuccess'))
     // 重新加载售后件列表
     parts.value = await returnOrderApi.getParts(orderId.value)
+    partsPagination.value.total = parts.value.length
   } catch {
     message.error(t('message.deleteFailed'))
   }

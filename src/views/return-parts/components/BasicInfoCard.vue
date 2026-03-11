@@ -19,9 +19,16 @@
         </a-col>
         <a-col :span="12">
           <a-form-item :label="t('returnPart.relatedOrder')" name="orderId">
-            <a-select v-model:value="form.orderId" :placeholder="t('validation.selectOrder')" :disabled="hasPresetOrder">
+            <a-select
+              v-model:value="form.orderId"
+              :placeholder="t('validation.selectOrder')"
+              :disabled="hasPresetOrder"
+              :filter-option="filterOrderOption"
+              show-search
+            >
               <a-select-option v-for="o in orders" :key="o.id" :value="o.id">
-                {{ o.orderNumber }} - {{ o.customer }}
+                <span style="font-weight: 500">{{ o.orderNumber || `(${t('validation.unsubmitted')})` }}</span>
+                <span style="color: #999; margin-left: 8px">{{ o.customer }}</span>
               </a-select-option>
             </a-select>
             <div v-if="hasPresetOrder" class="preset-order-hint">{{ t('returnPart.presetOrderHint') }}</div>
@@ -130,7 +137,7 @@ interface Props {
   businessUnits: string[]
   productPlatforms: string[]
   failureTypes: string[]
-  users: { id: string; loginName: string; displayName: string }[]
+  users: { id: string; loginName; displayName: string }[]
   rules: Record<string, any[]>
 }
 
@@ -139,6 +146,22 @@ const props = defineProps<Props>()
 const { t } = useI18n()
 
 const complaintTypes = COMPLAINT_TYPES
+
+// 订单搜索过滤
+const filterOrderOption = (input: string, option: any) => {
+  const order = props.orders.find((o) => o.id === option.value)
+  if (!order) return false
+
+  const searchText = input.toLowerCase()
+  const orderNumber = (order.orderNumber || '').toLowerCase()
+  const customer = (order.customer || '').toLowerCase()
+  const unsubmitted = t('validation.unsubmitted').toLowerCase()
+
+  // 搜索单号、客户名称或"未提交"
+  return orderNumber.includes(searchText) ||
+         customer.includes(searchText) ||
+         (unsubmitted.includes(searchText) && !order.orderNumber)
+}
 
 defineExpose({
   rules: computed(() => ({
