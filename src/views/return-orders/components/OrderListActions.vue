@@ -14,11 +14,10 @@
       <a-button v-if="canEdit" :disabled="selectedCount !== 1" @click="$emit('edit')">
         <EditOutlined /> {{ t('common.edit') }}
       </a-button>
-      <a-popconfirm :title="t('returnOrder.confirmDelete')" @confirm="$emit('delete')" :disabled="selectedCount === 0">
-        <a-button danger :disabled="selectedCount === 0">
-          <DeleteOutlined /> {{ t('common.delete') }}
-        </a-button>
-      </a-popconfirm>
+      <!-- Delete button: only visible when user has permission - popconfirm removed for cascade handling -->
+      <a-button v-if="canDelete" danger :disabled="selectedCount === 0" @click="$emit('delete')">
+        <DeleteOutlined /> {{ t('common.delete') }}
+      </a-button>
       <a-button :disabled="selectedCount !== 1" @click="$emit('sampling')">
         <ExperimentOutlined /> {{ t('returnOrder.sampling') }}
       </a-button>
@@ -44,6 +43,7 @@ import {
 interface Props {
   selectedCount: number
   canEdit?: boolean
+  canDelete?: boolean
 }
 
 defineProps<Props>()

@@ -54,8 +54,12 @@ export const returnOrderApi = {
   update(id: string, data: Partial<ReturnOrder>): Promise<ReturnOrder> {
     return request.put(`/return-orders/${id}`, data) as unknown as Promise<ReturnOrder>
   },
-  delete(id: string): Promise<void> {
-    return request.delete(`/return-orders/${id}`) as unknown as Promise<void>
+  delete(id: string, cascade?: boolean): Promise<void> {
+    const params = cascade ? { cascade: 'true' } : {}
+    return request.delete(`/return-orders/${id}`, { params }) as unknown as Promise<void>
+  },
+  getPartsCount(orderId: string): Promise<{ partsCount: number }> {
+    return request.get(`/return-orders/${orderId}/parts-count`) as unknown as Promise<{ partsCount: number }>
   },
   getParts(orderId: string): Promise<Part[]> {
     return request.get(`/return-orders/${orderId}/parts`) as unknown as Promise<Part[]>

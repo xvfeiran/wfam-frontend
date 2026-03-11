@@ -14,11 +14,12 @@
     <OrderListActions
       :selected-count="selectedRowKeys.length"
       :can-edit="canEditSelectedOrder"
+      :can-delete="canDeleteSelectedOrder"
       @create="handleCreate"
       @import="handleImport"
       @export="handleExport"
       @edit="handleEdit"
-      @delete="handleBatchDelete"
+      @delete="handleBatchDeleteWrapper"
       @sampling="handleSampling"
       @scrap="handleScrap"
     />
@@ -53,10 +54,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
+import { ExclamationCircleOutlined } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
 import { returnOrderApi } from '@/services/returnOrderApi'
 import { customerApi } from '@/services/customerApi'
@@ -72,7 +74,7 @@ import ScrapModal from './components/ScrapModal.vue'
 
 const { t } = useI18n()
 const router = useRouter()
-const { canEditSubmittedForm } = usePermissions()
+const { isQMCManager } = usePermissions()
 
 const customers = ref<Customer[]>([])
 const filters = ref({
@@ -112,15 +114,31 @@ const scrapVisible = ref(false)
 
 // Check if the selected order can be edited
 // Draft orders (no orderNumber) can be edited by anyone
-// Submitted orders (has orderNumber) can only be edited by QMC Manager or System Admin
+// Submitted orders (has orderNumber) can only be edited by QMC Manager
 const canEditSelectedOrder = computed(() => {
   if (selectedRowKeys.value.length !== 1) return false
   const selectedOrder = orders.value.find(o => o.id === selectedRowKeys.value[0])
   if (!selectedOrder) return false
   // Draft orders can be edited by anyone
   if (!selectedOrder.orderNumber) return true
-  // Submitted orders require data correction permission
-  return canEditSubmittedForm.value
+  // Submitted orders require QMC Manager role
+  return isQMCManager.value
+})
+
+// Check if the selected order can be deleted
+// Draft orders (no orderNumber) can be deleted by anyone
+// Submitted orders (has orderNumber) can only be deleted by QMC Manager
+const canDeleteSelectedOrder = computed(() => {
+  if (selectedRowKeys.value.length === 0) return false
+  // Check if any selected order is submitted
+  const hasSubmittedOrder = selectedRowKeys.value.some(id => {
+    const order = orders.value.find(o => o.id === id)
+    return order?.orderNumber
+  })
+  // If all are draft orders, anyone can delete
+  if (!hasSubmittedOrder) return true
+  // If any submitted order is selected, only QMC Manager can delete
+  return isQMCManager.value
 })
 
 onMounted(async () => {
@@ -170,7 +188,7 @@ const handleEdit = () => {
   if (!selectedOrder) return
 
   // Check permission for editing submitted orders
-  if (selectedOrder.orderNumber && !canEditSubmittedForm.value) {
+  if (selectedOrder.orderNumber && !isQMCManager.value) {
     message.warning(t('validation.noPermissionToEdit'))
     return
   }
@@ -246,6 +264,109 @@ const handleScrapSuccess = () => {
   scrapVisible.value = false
   selectedRowKeys.value = []
   message.success(t('message.scrapSubmitted'))
+}
+
+const handleBatchDeleteWrapper = async () => {
+  if (selectedRowKeys.value.length === 0) return
+
+  const idsToDelete = [...selectedRowKeys.value]
+
+  // Step 1: Pre-check parts count for all orders
+  const ordersWithParts: Array<{ orderId: string; orderNumber: string; partsCount: number }> = []
+
+  for (const id of idsToDelete) {
+    try {
+      const response = await returnOrderApi.getPartsCount(id)
+      if (response.partsCount > 0) {
+        const order = orders.value.find((o) => o.id === id)
+        ordersWithParts.push({
+          orderId: id,
+          orderNumber: order?.orderNumber || t('common.unknown'),
+          partsCount: response.partsCount,
+        })
+      }
+    } catch (error) {
+      console.error('Failed to check parts count for order:', id, error)
+    }
+  }
+
+  // Step 2: Show appropriate confirmation dialog
+  if (ordersWithParts.length === 0) {
+    showSimpleDeleteConfirm(idsToDelete)
+  } else {
+    showCascadeDeleteConfirm(idsToDelete, ordersWithParts)
+  }
+}
+
+const showSimpleDeleteConfirm = (ids: string[]) => {
+  Modal.confirm({
+    title: t('returnOrder.confirmDelete'),
+    content: t('returnOrder.confirmDeleteSimple', { count: ids.length }),
+    okText: t('common.confirm'),
+    okType: 'danger',
+    cancelText: t('common.cancel'),
+    onOk: async () => {
+      await executeDelete(ids, false)
+    },
+  })
+}
+
+const showCascadeDeleteConfirm = (
+  allIds: string[],
+  ordersWithParts: Array<{ orderId: string; orderNumber: string; partsCount: number }>,
+) => {
+  const totalParts = ordersWithParts.reduce((sum, item) => sum + item.partsCount, 0)
+
+  // Build detailed content
+  let content = t('returnOrder.cascadeDeleteWarning')
+  content += '\n\n'
+  content += t('returnOrder.ordersWithParts', { count: ordersWithParts.length })
+  content += '\n'
+
+  if (ordersWithParts.length <= 5) {
+    ordersWithParts.forEach((item) => {
+      content += `\n• ${item.orderNumber}: ${t('returnOrder.partsCount', { count: item.partsCount })}`
+    })
+  } else {
+    content += t('returnOrder.totalPartsCount', { count: totalParts })
+  }
+
+  Modal.confirm({
+    title: t('returnOrder.confirmDeleteWithParts'),
+    content,
+    okButtonProps: { style: { display: 'none' } },
+    cancelText: t('common.cancel'),
+    icon: () => h(ExclamationCircleOutlined),
+    width: 500,
+  })
+}
+
+const executeDelete = async (ids: string[], cascade: boolean) => {
+  let successCount = 0
+  let failCount = 0
+
+  for (const id of ids) {
+    try {
+      await returnOrderApi.delete(id, cascade)
+      successCount++
+    } catch (error: any) {
+      failCount++
+      const order = orders.value.find((o) => o.id === id)
+      const orderNumber = order?.orderNumber || id
+      message.error(t('message.deleteFailed', { orderNumber }))
+    }
+  }
+
+  selectedRowKeys.value = []
+  await loadData()
+
+  if (failCount === 0) {
+    message.success(t('message.deleteSuccess'))
+  } else if (successCount === 0) {
+    message.error(t('message.deleteAllFailed'))
+  } else {
+    message.warning(t('message.deletePartialSuccess', { success: successCount, fail: failCount }))
+  }
 }
 </script>
 
