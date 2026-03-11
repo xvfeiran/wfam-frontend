@@ -81,10 +81,7 @@ const columns = computed(() => [
     title: t('common.status'),
     dataIndex: 'status',
     key: 'status',
-    filters: Object.keys(ORDER_STATUS_MAP).map(key => ({
-      text: getStatusLabel(key),
-      value: key,
-    })),
+    sorter: true,
   },
 ])
 

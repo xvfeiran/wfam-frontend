@@ -56,6 +56,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
+import dayjs from 'dayjs'
 import { returnOrderApi } from '@/services/returnOrderApi'
 import { customerApi } from '@/services/customerApi'
 import type { Customer } from '@/services/customerApi'
@@ -88,11 +89,18 @@ const {
   loadData,
   handleBatchDelete,
   sortState,
-} = useTableList<ReturnOrder>(async () => {
-  const params: any = {}
-  if (filters.value.orderNumber) params.orderNumber = filters.value.orderNumber
-  if (filters.value.customer) params.customer = filters.value.customer
-  return await returnOrderApi.list(Object.keys(params).length > 0 ? params : undefined)
+} = useTableList<ReturnOrder>(async (params) => {
+  const apiParams: any = {
+    ...params,
+  }
+  if (filters.value.orderNumber) apiParams.orderNumber = filters.value.orderNumber
+  if (filters.value.customer) apiParams.customer = filters.value.customer
+  // Handle date range - convert array to start/end parameters and format to ISO
+  if (filters.value.receiveDate && Array.isArray(filters.value.receiveDate)) {
+    apiParams.receiveDateStart = dayjs(filters.value.receiveDate[0]).format('YYYY-MM-DD')
+    apiParams.receiveDateEnd = dayjs(filters.value.receiveDate[1]).format('YYYY-MM-DD')
+  }
+  return await returnOrderApi.list(apiParams)
 })
 
 const samplingVisible = ref(false)
@@ -114,6 +122,7 @@ onMounted(async () => {
 })
 
 const handleSearch = async () => {
+  paginationConfig.current = 1 // Reset to first page when searching
   await loadData()
   message.success(t('message.searchComplete'))
 }
@@ -125,6 +134,7 @@ const handleReset = async () => {
     receiveDate: null,
   }
   sortState.value = {}
+  paginationConfig.current = 1 // Reset to first page
   await loadData()
 }
 
@@ -145,6 +155,11 @@ const handleExport = async () => {
     const params = new URLSearchParams()
     if (filters.value.orderNumber) params.append('orderNumber', filters.value.orderNumber)
     if (filters.value.customer) params.append('customer', filters.value.customer)
+    // Handle date range - convert array to start/end parameters and format to ISO
+    if (filters.value.receiveDate && Array.isArray(filters.value.receiveDate)) {
+      params.append('receiveDateStart', dayjs(filters.value.receiveDate[0]).format('YYYY-MM-DD'))
+      params.append('receiveDateEnd', dayjs(filters.value.receiveDate[1]).format('YYYY-MM-DD'))
+    }
     const url = `/api/v1/return-orders/export${params.toString() ? '?' + params.toString() : ''}`
     const response = await fetch(url)
     if (!response.ok) throw new Error('Export failed')
