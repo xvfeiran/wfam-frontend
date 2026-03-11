@@ -298,6 +298,8 @@ export default {
     inputTrackingNumber: '请输入快递单号',
     inputDescription: '请输入退货描述',
     submittedCannotEdit: '已提交的表单无法编辑',
+    returnQuantityRange: '退货数量必须在 {min} 到 {max} 之间',
+    trackingNumberMaxLength: '快递单号长度不能超过{max}个字符',
   },
   message: {
     searchComplete: '查询完成',

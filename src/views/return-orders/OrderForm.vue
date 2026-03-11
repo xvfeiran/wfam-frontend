@@ -61,13 +61,17 @@
               <a-radio-group v-model:value="form.returnMethod">
                 <a-radio value="express">{{ t('returnOrder.methodExpress') }}</a-radio>
                 <a-radio value="pickup">{{ t('returnOrder.methodPickup') }}</a-radio>
-                <a-radio value="other">{{ t('returnOrder.methodOther') }}</a-radio>
               </a-radio-group>
             </a-form-item>
           </a-col>
           <a-col :span="12" v-if="form.returnMethod === 'express'">
             <a-form-item :label="t('returnOrder.trackingNumber')" name="trackingNumber">
-              <a-input v-model:value="form.trackingNumber" :placeholder="t('validation.inputOrderNumber')" />
+              <a-input
+                v-model:value="form.trackingNumber"
+                :placeholder="t('validation.inputTrackingNumber')"
+                :maxlength="50"
+                show-count
+              />
             </a-form-item>
           </a-col>
         </a-row>
@@ -75,7 +79,15 @@
         <a-row :gutter="24">
           <a-col :span="12">
             <a-form-item :label="t('returnOrder.returnQuantity')" name="returnQuantity">
-              <a-input-number v-model:value="form.returnQuantity" :min="1" style="width: 100%" />
+              <a-input-number
+                v-model:value="form.returnQuantity"
+                :min="1"
+                :max="9999"
+                :precision="0"
+                :controls="true"
+                style="width: 100%"
+                :placeholder="t('validation.inputReturnQuantity')"
+              />
             </a-form-item>
           </a-col>
         </a-row>
@@ -210,7 +222,14 @@ const rules = computed(() => ({
   receiveDate: [{ required: true, message: t('validation.selectReceiveDate') }],
   complaintDate: [{ required: true, message: t('validation.selectComplaintDate') }],
   returnMethod: [{ required: true, message: t('validation.selectReturnMethod') }],
-  returnQuantity: [{ required: true, message: t('validation.inputReturnQuantity') }],
+  trackingNumber: form.returnMethod === 'express' ? [
+    { required: true, message: t('validation.inputTrackingNumber') },
+    { max: 50, message: t('validation.trackingNumberMaxLength', { max: 50 }) }
+  ] : [],
+  returnQuantity: [
+    { required: true, message: t('validation.inputReturnQuantity') },
+    { type: 'number', min: 1, max: 9999, message: t('validation.returnQuantityRange', { min: 1, max: 9999 }) }
+  ],
 }))
 
 const partColumns = computed(() => [

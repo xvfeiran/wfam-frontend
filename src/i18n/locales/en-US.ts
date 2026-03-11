@@ -298,6 +298,8 @@ export default {
     inputTrackingNumber: 'Please enter tracking number',
     inputDescription: 'Please enter description',
     submittedCannotEdit: 'Submitted form cannot be edited',
+    returnQuantityRange: 'Return quantity must be between {min} and {max}',
+    trackingNumberMaxLength: 'Tracking number cannot exceed {max} characters',
   },
   message: {
     searchComplete: 'Search completed',
