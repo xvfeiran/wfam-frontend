@@ -42,7 +42,7 @@
             <a-descriptions-item :label="t('orderDetail.detailedAnalysisQuantity')">{{ order?.detailedAnalysisQuantity }}</a-descriptions-item>
             <a-descriptions-item :label="t('orderDetail.scrappedQuantity')">{{ order?.scrappedQuantity }}</a-descriptions-item>
             <a-descriptions-item :label="t('orderDetail.qcCreatedQuantity')">{{ order?.qcCreatedQuantity }}</a-descriptions-item>
-            <a-descriptions-item :label="t('orderDetail.qcNotCreatedQuantity')">{{ order?.qcNotCreatedQuantity }}</a-descriptions-item>
+            <a-descriptions-item :label="t('orderDetail.qcNotCreatedQuantity')" :span="2">{{ order?.qcNotCreatedQuantity }}</a-descriptions-item>
             <a-descriptions-item :label="t('common.status')" :span="2">
               <a-tag :color="ORDER_STATUS_MAP[order?.status || 'draft']?.color || 'default'">
                 {{ getStatusLabel() }}
@@ -61,10 +61,74 @@
               </a-button>
             </div>
           </template>
+          <!-- 搜索区域 -->
+          <div class="parts-search">
+            <a-row :gutter="12" align="middle">
+              <a-col :span="5">
+                <a-input
+                  v-model:value="partSearch.partNumber"
+                  :placeholder="t('returnPart.partNumber')"
+                  allow-clear
+                />
+              </a-col>
+              <a-col :span="4">
+                <a-select
+                  v-model:value="partSearch.businessUnit"
+                  :placeholder="t('returnPart.businessUnit')"
+                  allow-clear
+                  style="width: 100%"
+                  :loading="loadingLookup"
+                >
+                  <a-select-option v-for="bu in lookupData.businessUnits" :key="bu" :value="bu">
+                    {{ bu }}
+                  </a-select-option>
+                </a-select>
+              </a-col>
+              <a-col :span="4">
+                <a-select
+                  v-model:value="partSearch.productPlatform"
+                  :placeholder="t('returnPart.productPlatform')"
+                  allow-clear
+                  style="width: 100%"
+                  :loading="loadingLookup"
+                >
+                  <a-select-option v-for="pp in lookupData.productPlatforms" :key="pp" :value="pp">
+                    {{ pp }}
+                  </a-select-option>
+                </a-select>
+              </a-col>
+              <a-col :span="4">
+                <a-select
+                  v-model:value="partSearch.status"
+                  :placeholder="t('common.status')"
+                  allow-clear
+                  style="width: 100%"
+                >
+                  <a-select-option value="in_initial_analysis">{{ t('status.inInitialAnalysis') }}</a-select-option>
+                  <a-select-option value="in_detailed_analysis">{{ t('status.inDetailedAnalysis') }}</a-select-option>
+                  <a-select-option value="pending_approval">{{ t('status.pendingApproval') }}</a-select-option>
+                  <a-select-option value="analysis_completed">{{ t('status.analysisCompleted') }}</a-select-option>
+                  <a-select-option value="scrap_in_progress">{{ t('status.scrapInProgress') }}</a-select-option>
+                  <a-select-option value="scrapped">{{ t('status.scrapped') }}</a-select-option>
+                </a-select>
+              </a-col>
+              <a-col :span="4">
+                <a-space>
+                  <a-button type="primary" :loading="loadingParts" @click="handlePartSearch">
+                    {{ t('common.search') }}
+                  </a-button>
+                  <a-button @click="handlePartReset">
+                    {{ t('common.reset') }}
+                  </a-button>
+                </a-space>
+              </a-col>
+            </a-row>
+          </div>
           <a-table
             :columns="partColumns"
             :data-source="paginatedParts"
             :pagination="partsPagination"
+            :loading="loadingParts"
             row-key="id"
             :custom-row="customPartRow"
             @change="handlePartsTableChange"
@@ -115,13 +179,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, h } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import { StopOutlined, PlusOutlined } from '@ant-design/icons-vue'
 import { returnOrderApi } from '@/services/returnOrderApi'
 import { partApi } from '@/services/partApi'
+import { lookupApi } from '@/services/lookupApi'
 import { ORDER_STATUS_MAP, PART_STATUS_MAP, RETURN_METHOD_MAP, OrderStatus } from '@/types'
 import type { ReturnOrder, Part } from '@/types'
 import SamplingModal from './components/SamplingModal.vue'
@@ -139,6 +204,23 @@ const parts = ref<Part[]>([])
 const samplingVisible = ref(false)
 const scrapVisible = ref(false)
 const samplingReadOnly = ref(false) // 抽样只读模式标志
+const loadingParts = ref(false) // 加载售后件列表的loading状态
+const loadingLookup = ref(false) // 加载字典数据的loading状态
+const isMounted = ref(true) // 组件是否已挂载标志，用于防止异步操作在组件卸载后更新状态
+
+// 字典数据
+const lookupData = ref({
+  businessUnits: [] as string[],
+  productPlatforms: [] as string[]
+})
+
+// 售后件搜索条件
+const partSearch = ref({
+  partNumber: '',
+  businessUnit: undefined as string | undefined,
+  productPlatform: undefined as string | undefined,
+  status: undefined as string | undefined
+})
 
 // 售后件列表分页配置
 const partsPagination = ref({
@@ -158,6 +240,64 @@ const partsSorter = ref<{
   columnKey: undefined,
   order: null,
 })
+
+// 加载订单的售后件列表
+const loadParts = async () => {
+  if (!orderId.value) return
+  loadingParts.value = true
+  try {
+    // 构建搜索参数，只包含有值的字段
+    const params: any = {}
+    if (partSearch.value.partNumber) {
+      params.partNumber = partSearch.value.partNumber
+    }
+    if (partSearch.value.businessUnit) {
+      params.businessUnit = partSearch.value.businessUnit
+    }
+    if (partSearch.value.productPlatform) {
+      params.productPlatform = partSearch.value.productPlatform
+    }
+    if (partSearch.value.status) {
+      params.status = partSearch.value.status
+    }
+    const result = await returnOrderApi.getParts(orderId.value, Object.keys(params).length > 0 ? params : undefined)
+    if (isMounted.value) {
+      parts.value = result
+      partsPagination.value.total = result.length
+      // 搜索时重置到第一页
+      partsPagination.value.current = 1
+    }
+  } catch (error) {
+    if (isMounted.value) {
+      console.error('Failed to load parts:', error)
+      message.error(t('message.loadFailed'))
+    }
+  } finally {
+    if (isMounted.value) {
+      loadingParts.value = false
+    }
+  }
+}
+
+// 搜索处理函数
+const handlePartSearch = () => {
+  loadParts().catch(error => {
+    console.error('Search failed:', error)
+  })
+}
+
+// 重置搜索条件
+const handlePartReset = () => {
+  partSearch.value = {
+    partNumber: '',
+    businessUnit: undefined,
+    productPlatform: undefined,
+    status: undefined
+  }
+  loadParts().catch(error => {
+    console.error('Reset failed:', error)
+  })
+}
 
 // 排序后的售后件数据
 const sortedParts = computed(() => {
@@ -218,16 +358,16 @@ const handlePartsTableChange = (pagination: any, filters: any, sorter: any) => {
 
 // 刷新数据的函数（用于从子页面返回时调用）
 const refreshData = async () => {
-  if (orderId.value) {
-    order.value = await returnOrderApi.getById(orderId.value)
-    if (order.value) {
-      parts.value = await returnOrderApi.getParts(orderId.value)
-      partsPagination.value.total = parts.value.length
-      // 检查当前页是否超出范围
-      const maxPage = Math.ceil(partsPagination.value.total / partsPagination.value.pageSize) || 1
-      if (partsPagination.value.current > maxPage) {
-        partsPagination.value.current = maxPage
+  try {
+    if (orderId.value && isMounted.value) {
+      order.value = await returnOrderApi.getById(orderId.value)
+      if (order.value && isMounted.value) {
+        await loadParts()
       }
+    }
+  } catch (error) {
+    if (isMounted.value) {
+      console.error('Failed to refresh data:', error)
     }
   }
 }
@@ -308,34 +448,6 @@ const partColumns = computed(() => [
     key: 'status',
     sorter: (a: Part, b: Part) => (a.status || '').localeCompare(b.status || ''),
   },
-  {
-    title: t('common.operation'),
-    key: 'action',
-    width: 150,
-    customRender: ({ record }: { record: Part }) => {
-      // 未提交的售后件显示编辑和删除按钮
-      if (!record.partNumber) {
-        return h('span', { style: { fontSize: '12px' } }, [
-          h('a', {
-            style: { color: '#1890ff', marginRight: '8px' },
-            onClick: (e: Event) => {
-              e.stopPropagation()
-              handleEditPart(record.id)
-            }
-          }, t('common.edit')),
-          h('a', {
-            style: { color: '#ff4d4f' },
-            onClick: (e: Event) => {
-              e.stopPropagation()
-              // 直接删除，不需要确认
-              handleDeletePart(record.id)
-            }
-          }, t('common.delete'))
-        ])
-      }
-      return h('span', { style: { color: '#999' } }, '-')
-    }
-  },
 ])
 
 // 状态到i18n键的映射
@@ -402,29 +514,66 @@ const getStepDescription = (step: number) => {
 }
 
 onMounted(async () => {
-  // 加载退货单数据
-  order.value = await returnOrderApi.getById(orderId.value)
-  if (order.value) {
-    parts.value = await returnOrderApi.getParts(orderId.value)
-    // 更新分页总数
-    partsPagination.value.total = parts.value.length
+  try {
+    // 加载退货单数据
+    order.value = await returnOrderApi.getById(orderId.value)
+    if (order.value) {
+      await loadParts()
+    }
+    // 加载字典数据
+    await loadLookupData()
+  } catch (error) {
+    console.error('Error during component mount:', error)
   }
 })
 
+onUnmounted(() => {
+  isMounted.value = false
+})
+
+// 加载字典数据
+const loadLookupData = async () => {
+  loadingLookup.value = true
+  try {
+    // 使用 partApi.list 获取所有售后件，从中提取业务单元和产品平台
+    const allParts = await partApi.list({})
+    if (isMounted.value) {
+      if (Array.isArray(allParts)) {
+        const businessUnits = new Set(allParts.map(p => p.businessUnit).filter(Boolean))
+        const productPlatforms = new Set(allParts.map(p => p.productPlatform).filter(Boolean))
+        lookupData.value.businessUnits = Array.from(businessUnits).sort()
+        lookupData.value.productPlatforms = Array.from(productPlatforms).sort()
+      } else {
+        lookupData.value.businessUnits = []
+        lookupData.value.productPlatforms = []
+      }
+    }
+  } catch (error) {
+    if (isMounted.value) {
+      console.error('Failed to load lookup data:', error)
+      // 失败时使用空数组，不影响主要功能
+      lookupData.value.businessUnits = []
+      lookupData.value.productPlatforms = []
+    }
+  } finally {
+    if (isMounted.value) {
+      loadingLookup.value = false
+    }
+  }
+}
+
 // 监听路由变化，从新建售后件页面返回时刷新数据
 watch(orderId, async () => {
+  if (!isMounted.value) return
   order.value = await returnOrderApi.getById(orderId.value)
-  if (order.value) {
-    parts.value = await returnOrderApi.getParts(orderId.value)
-    partsPagination.value.total = parts.value.length
-    // 重置分页到第一页
-    partsPagination.value.current = 1
+  if (order.value && isMounted.value) {
+    await loadParts()
   }
 })
 
 // 监听路由参数变化（如从新建售后件返回）
 watch(() => route.fullPath, async () => {
-  if (route.name === 'ReturnOrderDetail') {
+  if (isMounted.value && route.name === 'ReturnOrderDetail') {
     await refreshData()
   }
 })
@@ -456,17 +605,15 @@ const handleSampling = () => {
 const handleSamplingSuccess = async () => {
   message.success(t('message.samplingComplete'))
   order.value = await returnOrderApi.getById(orderId.value)
-  // 更新售后件列表和分页
-  parts.value = await returnOrderApi.getParts(orderId.value)
-  partsPagination.value.total = parts.value.length
+  // 更新售后件列表
+  await loadParts()
 }
 
 const handleNoSamplingSuccess = async () => {
   message.success(t('message.noSamplingSuccess'))
   order.value = await returnOrderApi.getById(orderId.value)
-  // 更新售后件列表和分页
-  parts.value = await returnOrderApi.getParts(orderId.value)
-  partsPagination.value.total = parts.value.length
+  // 更新售后件列表
+  await loadParts()
 }
 
 const handleScrap = () => {
@@ -504,8 +651,7 @@ const handleDeletePart = async (partId: string) => {
     await partApi.delete(partId)
     message.success(t('message.deleteSuccess'))
     // 重新加载售后件列表
-    parts.value = await returnOrderApi.getParts(orderId.value)
-    partsPagination.value.total = parts.value.length
+    await loadParts()
   } catch {
     message.error(t('message.deleteFailed'))
   }
@@ -530,6 +676,10 @@ const goToPartDetail = (id: string) => {
 
   :deep(.parts-card .ant-card-head-title) {
     width: 100%;
+  }
+
+  .parts-search {
+    margin-bottom: 16px;
   }
 }
 </style>

@@ -35,9 +35,16 @@
       <a-tab-pane key="dictionary" :tab="t('settings.dataDictionary')">
         <CustomerManagement
           :customers="customers"
+          :loading="loadingCustomers"
+          :total="customerTotal"
+          :current-page="customerCurrentPage"
+          :page-size="customerPageSize"
           @add-customer="handleAddCustomer"
           @edit-customer="handleEditCustomer"
-          @delete-customer="handleDeleteCustomer"
+          @search="handleCustomerSearch"
+          @reset="handleCustomerReset"
+          @page-change="handleCustomerPageChange"
+          @sort-change="handleCustomerSortChange"
         />
       </a-tab-pane>
     </a-tabs>
@@ -114,7 +121,7 @@ onMounted(async () => {
   productPlatformOptions.value = lookups.productPlatforms
   failureTypeOptions.value = lookups.failureTypes
 
-  customers.value = await customerApi.list()
+  await loadCustomers()
   await loadTemplates()
 })
 
@@ -142,7 +149,16 @@ const userOptions = ref([
   { value: 'user4', label: '赵六' },
 ])
 
+// Customer pagination state
 const customers = ref<Customer[]>([])
+const loadingCustomers = ref(false)
+const customerTotal = ref(0)
+const customerCurrentPage = ref(1)
+const customerPageSize = ref(10)
+const customerSearchName = ref('')
+const customerSearchCode = ref('')
+const customerSortBy = ref<string | undefined>(undefined)
+const customerSortOrder = ref<'ascend' | 'descend' | undefined>(undefined)
 
 const templates = ref<TemplateItem[]>([])
 
@@ -173,6 +189,26 @@ const customerForm = reactive({
   name: '',
   code: '',
 })
+
+const loadCustomers = async () => {
+  loadingCustomers.value = true
+  try {
+    const result = await customerApi.page({
+      name: customerSearchName.value,
+      code: customerSearchCode.value,
+      page: customerCurrentPage.value,
+      pageSize: customerPageSize.value,
+      sortBy: customerSortBy.value,
+      sortOrder: customerSortOrder.value,
+    })
+    customers.value = result.data
+    customerTotal.value = result.total
+  } catch {
+    message.error(t('message.loadFailed'))
+  } finally {
+    loadingCustomers.value = false
+  }
+}
 
 const handleAddTemplate = () => {
   templateForm.name = undefined
@@ -243,20 +279,38 @@ const handleAddCustomer = () => {
 }
 
 const handleEditCustomer = (record: Customer) => {
-  customerForm.id = record.id
+  customerForm.id = record.id || ''
   customerForm.name = record.name
-  customerForm.code = record.code
+  customerForm.code = record.code || ''
   customerModalVisible.value = true
 }
 
-const handleDeleteCustomer = async (id: string) => {
-  try {
-    await customerApi.delete(id)
-    customers.value = await customerApi.list()
-    message.success(t('message.deleteSuccess'))
-  } catch {
-    message.error(t('message.deleteFailed'))
-  }
+const handleCustomerSearch = async (name: string, code: string) => {
+  customerSearchName.value = name
+  customerSearchCode.value = code
+  customerCurrentPage.value = 1
+  await loadCustomers()
+}
+
+const handleCustomerReset = async () => {
+  customerSearchName.value = ''
+  customerSearchCode.value = ''
+  customerSortBy.value = undefined
+  customerSortOrder.value = undefined
+  customerCurrentPage.value = 1
+  await loadCustomers()
+}
+
+const handleCustomerPageChange = async (page: number, pageSize: number) => {
+  customerCurrentPage.value = page
+  customerPageSize.value = pageSize
+  await loadCustomers()
+}
+
+const handleCustomerSortChange = async (sortBy: string, sortOrder: 'ascend' | 'descend' | null) => {
+  customerSortBy.value = sortBy
+  customerSortOrder.value = sortOrder || undefined
+  await loadCustomers()
 }
 
 const handleSaveCustomer = async () => {
@@ -264,16 +318,19 @@ const handleSaveCustomer = async () => {
     c => c.name === customerForm.name && c.id !== customerForm.id
   )
   if (nameExists) {
-    message.error(t('settings.customerNameExists'))
+    message.error(t('settings.customerExists'))
     return
   }
 
-  const codeExists = customers.value.some(
-    c => c.code === customerForm.code && c.id !== customerForm.id
-  )
-  if (codeExists) {
-    message.error(t('settings.customerCodeExists'))
-    return
+  // 检查代码是否已存在（仅当代码非空时）
+  if (customerForm.code && customerForm.code.trim()) {
+    const codeExists = customers.value.some(
+      c => c.code === customerForm.code && c.id !== customerForm.id
+    )
+    if (codeExists) {
+      message.error(t('settings.customerCodeExists'))
+      return
+    }
   }
 
   try {
@@ -289,7 +346,7 @@ const handleSaveCustomer = async () => {
       })
     }
 
-    customers.value = await customerApi.list()
+    await loadCustomers()
     customerModalVisible.value = false
     message.success(t('settings.saveSuccess'))
   } catch {

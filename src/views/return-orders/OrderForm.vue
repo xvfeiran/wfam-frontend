@@ -24,9 +24,9 @@
             </a-form-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item :label="t('returnOrder.customer')" name="customer">
-              <a-select v-model:value="form.customer" :placeholder="t('validation.selectCustomer')">
-                <a-select-option v-for="c in customers" :key="c.id" :value="c.name">
+            <a-form-item :label="t('returnOrder.customer')" name="customerId">
+              <a-select v-model:value="form.customerId" :placeholder="t('validation.selectCustomer')">
+                <a-select-option v-for="c in customers" :key="c.id" :value="c.id">
                   {{ c.name }}
                 </a-select-option>
               </a-select>
@@ -193,7 +193,8 @@ const parts = ref<Part[]>([])
 
 const form = reactive({
   orderNumber: '',
-  customer: undefined as string | undefined,
+  customerId: undefined as string | undefined,
+  customer: undefined as string | undefined, // 用于显示
   receiveDate: null as Dayjs | null,
   complaintDate: null as Dayjs | null,
   returnMethod: 'express',
@@ -210,7 +211,7 @@ watch(() => form.returnMethod, (newValue, oldValue) => {
 
 const rules = computed(() => ({
   // orderNumber is auto-generated and not editable, no validation needed
-  customer: [{ required: true, message: t('validation.selectCustomer') }],
+  customerId: [{ required: true, message: t('validation.selectCustomer') }],
   receiveDate: [{ required: true, message: t('validation.selectReceiveDate') }],
   complaintDate: [{ required: true, message: t('validation.selectComplaintDate') }],
   returnMethod: [{ required: true, message: t('validation.selectReturnMethod') }],
@@ -259,7 +260,8 @@ onMounted(async () => {
       }
 
       form.orderNumber = order.orderNumber
-      form.customer = order.customer
+      form.customerId = order.customerId
+      form.customer = order.customer // 保留用于显示
       form.receiveDate = dayjs(order.receiveDate)
       form.complaintDate = dayjs(order.complaintDate)
       form.returnMethod = order.returnMethod
@@ -300,7 +302,7 @@ const handleDeletePart = (id: string) => {
 
 const buildPayload = () => {
   const payload: any = {
-    customer: form.customer,
+    customerId: form.customerId,
     receiveDate: form.receiveDate ? form.receiveDate.format('YYYY-MM-DD') : undefined,
     complaintDate: form.complaintDate ? form.complaintDate.format('YYYY-MM-DD') : undefined,
     returnMethod: form.returnMethod,

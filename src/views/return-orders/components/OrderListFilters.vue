@@ -9,8 +9,8 @@
         </a-col>
         <a-col :span="12">
           <a-form-item :label="t('returnOrder.customer')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-            <a-select v-model:value="localFilters.customer" :placeholder="t('validation.selectCustomer')" allowClear>
-              <a-select-option v-for="c in customers" :key="c.id" :value="c.name">{{ c.name }}</a-select-option>
+            <a-select v-model:value="localFilters.customerId" :placeholder="t('validation.selectCustomer')" allowClear>
+              <a-select-option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</a-select-option>
             </a-select>
           </a-form-item>
         </a-col>
@@ -46,7 +46,7 @@ import type { Customer } from '@/services/customerApi'
 
 interface Filters {
   orderNumber: string
-  customer?: string
+  customerId?: string
   receiveDate: any
 }
 

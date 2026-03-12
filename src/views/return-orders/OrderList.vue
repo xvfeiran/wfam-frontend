@@ -79,7 +79,7 @@ const { isQMCManager } = usePermissions()
 const customers = ref<Customer[]>([])
 const filters = ref({
   orderNumber: '',
-  customer: undefined as string | undefined,
+  customerId: undefined as string | undefined,
   receiveDate: null as any,
 })
 
@@ -99,7 +99,7 @@ const {
     ...params,
   }
   if (filters.value.orderNumber) apiParams.orderNumber = filters.value.orderNumber
-  if (filters.value.customer) apiParams.customer = filters.value.customer
+  if (filters.value.customerId) apiParams.customer = filters.value.customerId
   // Handle date range - convert array to start/end parameters and format to ISO
   if (filters.value.receiveDate && Array.isArray(filters.value.receiveDate)) {
     apiParams.receiveDateStart = dayjs(filters.value.receiveDate[0]).format('YYYY-MM-DD')
@@ -164,7 +164,7 @@ const handleSearch = async () => {
 const handleReset = async () => {
   filters.value = {
     orderNumber: '',
-    customer: undefined,
+    customerId: undefined,
     receiveDate: null,
   }
   sortState.value = {}
@@ -200,7 +200,7 @@ const handleExport = async () => {
   try {
     const params = new URLSearchParams()
     if (filters.value.orderNumber) params.append('orderNumber', filters.value.orderNumber)
-    if (filters.value.customer) params.append('customer', filters.value.customer)
+    if (filters.value.customerId) params.append('customer', filters.value.customerId)
     // Handle date range - convert array to start/end parameters and format to ISO
     if (filters.value.receiveDate && Array.isArray(filters.value.receiveDate)) {
       params.append('receiveDateStart', dayjs(filters.value.receiveDate[0]).format('YYYY-MM-DD'))

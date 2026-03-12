@@ -6,10 +6,10 @@
     @cancel="$emit('cancel')"
   >
     <a-form :model="form" layout="vertical" ref="formRef">
-      <a-form-item :label="t('settings.customerName')" name="name" :rules="[{ required: true, message: t('settings.pleaseInputCustomerName') }]">
-        <a-input v-model:value="form.name" :placeholder="t('settings.pleaseInputCustomerName')" />
+      <a-form-item :label="t('settings.customer')" name="name" :rules="[{ required: true, message: t('settings.pleaseInputCustomer') }]">
+        <a-input v-model:value="form.name" :placeholder="t('settings.pleaseInputCustomer')" />
       </a-form-item>
-      <a-form-item :label="t('settings.customerCode')" name="code" :rules="[{ required: true, message: t('settings.pleaseInputCustomerCode') }]">
+      <a-form-item :label="t('settings.customerCode')" name="code">
         <a-input v-model:value="form.code" :placeholder="t('settings.pleaseInputCustomerCode')" />
       </a-form-item>
     </a-form>
@@ -23,7 +23,7 @@ import { useI18n } from 'vue-i18n'
 interface CustomerForm {
   id: string
   name: string
-  code: string
+  code: string | undefined
 }
 
 interface Props {

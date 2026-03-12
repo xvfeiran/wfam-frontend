@@ -13,6 +13,14 @@ export interface OrderListParams {
   sortOrder?: 'ascend' | 'descend'
 }
 
+export interface OrderPartsParams {
+  partNumber?: string
+  partCode?: string
+  businessUnit?: string
+  productPlatform?: string
+  status?: string
+}
+
 export interface PageResult<T> {
   data: T[]
   total: number
@@ -61,8 +69,8 @@ export const returnOrderApi = {
   getPartsCount(orderId: string): Promise<{ partsCount: number }> {
     return request.get(`/return-orders/${orderId}/parts-count`) as unknown as Promise<{ partsCount: number }>
   },
-  getParts(orderId: string): Promise<Part[]> {
-    return request.get(`/return-orders/${orderId}/parts`) as unknown as Promise<Part[]>
+  getParts(orderId: string, params?: OrderPartsParams): Promise<Part[]> {
+    return request.get(`/return-orders/${orderId}/parts`, { params }) as unknown as Promise<Part[]>
   },
   submit(id: string): Promise<ReturnOrder> {
     return request.post(`/return-orders/${id}/submit`) as unknown as Promise<ReturnOrder>

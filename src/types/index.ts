@@ -30,6 +30,7 @@ export enum ReturnMethod {
 export interface ReturnOrder {
   id: string
   orderNumber: string
+  customerId?: string
   customer: string
   receiveDate: string
   complaintDate: string
