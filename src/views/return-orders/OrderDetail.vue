@@ -8,7 +8,14 @@
         <a-space>
           <a-button v-if="canShowEditButton" @click="handleEdit">{{ t('common.edit') }}</a-button>
           <a-button v-if="order?.status === 'draft'" type="primary" @click="handleSubmit">{{ t('common.submit') }}</a-button>
-          <a-button v-if="order?.status === 'in_initial_analysis'" type="primary" @click="handleSampling">{{ t('returnOrder.sampling') }}</a-button>
+          <!-- 初分析中和精分析中：所有用户都可以点击"抽样"按钮 -->
+          <a-button
+            v-if="order?.status === 'in_initial_analysis' || order?.status === 'in_detailed_analysis'"
+            type="primary"
+            @click="handleSampling"
+          >
+            {{ t('returnOrder.sampling') }}
+          </a-button>
           <a-button v-if="order?.status === 'analysis_completed'" danger @click="handleScrap">
             <StopOutlined /> {{ t('returnOrder.scrap') }}
           </a-button>
@@ -93,6 +100,7 @@
     <SamplingModal
       v-model:visible="samplingVisible"
       :order="order"
+      :read-only="samplingReadOnly"
       @success="handleSamplingSuccess"
       @no-sampling="handleNoSamplingSuccess"
     />
@@ -130,6 +138,7 @@ const order = ref<ReturnOrder | null>(null)
 const parts = ref<Part[]>([])
 const samplingVisible = ref(false)
 const scrapVisible = ref(false)
+const samplingReadOnly = ref(false) // 抽样只读模式标志
 
 // 售后件列表分页配置
 const partsPagination = ref({
@@ -438,6 +447,9 @@ const handleSubmit = async () => {
 }
 
 const handleSampling = () => {
+  // 初分析中状态：打开可编辑模式
+  // 精分析中状态：打开只读模式（弹窗内QMC Manager可切换到可编辑模式）
+  samplingReadOnly.value = order.value?.status === 'in_detailed_analysis'
   samplingVisible.value = true
 }
 

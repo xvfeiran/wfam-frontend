@@ -73,6 +73,7 @@ export interface Part {
   customerDescription?: string
   otherDescription?: string
   status: PartStatus
+  isSample?: number  // 0=未抽样, 1=已抽样
   images: string[]
   createdBy: string
   createdAt: string

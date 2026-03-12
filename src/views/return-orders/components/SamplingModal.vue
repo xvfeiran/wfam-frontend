@@ -1,20 +1,20 @@
 <template>
   <a-modal
     :open="visible"
-    :title="isSampled ? t('modal.samplingResultView') : t('modal.samplingManagement')"
+    :title="modalTitle"
     width="920px"
     :footer="null"
     destroy-on-close
     @cancel="handleCancel"
   >
-    <!-- 已抽样：只读模式 -->
-    <template v-if="isSampled">
+    <!-- 只读模式：查看已完成的抽样结果 -->
+    <template v-if="isReadOnly">
       <a-alert :message="t('message.samplingCompletedAlert')" type="info" show-icon style="margin-bottom: 16px" />
       <a-transfer
         :data-source="transferDataSource"
         :target-keys="sampledPartIds"
         :titles="[
-          `${t('message.allParts')} (${availableParts.length})`,
+          `${t('message.unsampledParts')} (${availableParts.length - sampledPartIds.length}/${availableParts.length})`,
           `${t('message.sampledParts')} (${sampledPartIds.length})`
         ]"
         :render="renderItem"
@@ -22,10 +22,30 @@
         disabled
         show-search
       />
+      <!-- QMC Manager 可以切换到可编辑模式 -->
+      <div class="modal-footer">
+        <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
+        <a-button
+          v-if="isQMCManager"
+          type="primary"
+          @click="handleSwitchToEditMode"
+        >
+          {{ t('returnOrder.resampling') }}
+        </a-button>
+      </div>
     </template>
 
-    <!-- 未抽样：可操作模式 -->
+    <!-- 可操作模式：抽样或重新抽样 -->
     <template v-else>
+      <!-- 重新抽样警告提示 -->
+      <a-alert
+        v-if="hasBeenSampled"
+        :message="t('message.resamplingWarning')"
+        type="warning"
+        show-icon
+        style="margin-bottom: 16px"
+      />
+
       <!-- 选择抽样方式 -->
       <div class="choice-section">
         <span class="choice-label">{{ t('message.selectSamplingMethod') }}：</span>
@@ -99,7 +119,7 @@
           :data-source="transferDataSource"
           :target-keys="selectedPartIds"
           :titles="[
-            `${t('message.allParts')} (${availableParts.length})`,
+            `${t('message.unsampledParts')} (${availableParts.length - selectedPartIds.length}/${availableParts.length})`,
             `${t('message.sampledParts')} (${selectedPartIds.length})`
           ]"
           :render="renderItem"
@@ -133,12 +153,15 @@ import { StopOutlined, FilterOutlined, ThunderboltOutlined } from '@ant-design/i
 import { returnOrderApi } from '@/services/returnOrderApi'
 import { OrderStatus } from '@/types'
 import type { ReturnOrder, Part } from '@/types'
+import { usePermissions } from '@/composables/usePermissions'
 
 const { t } = useI18n()
+const { isQMCManager } = usePermissions()
 
 const props = defineProps<{
   visible: boolean
   order: ReturnOrder | null
+  readOnly?: boolean  // 是否只读模式（查看已完成的抽样结果）
 }>()
 
 const emit = defineEmits<{
@@ -148,6 +171,7 @@ const emit = defineEmits<{
 }>()
 
 // 状态
+const internalReadOnly = ref(false)  // 内部只读状态（支持在弹窗内切换）
 const samplingChoice = ref<'none' | 'sampling' | null>('sampling')
 const selectedPartIds = ref<string[]>([])
 const sampledPartIds = ref<string[]>([])  // 已抽样只读视图用
@@ -157,7 +181,7 @@ const submitting = ref(false)
 const updating = ref(false)
 const availableParts = ref<Part[]>([])
 
-// 是否已完成抽样（只读模式）
+// 是否已完成抽样（用于判断订单状态）
 const isSampled = computed(() => {
   if (!props.order) return false
   return [
@@ -167,6 +191,25 @@ const isSampled = computed(() => {
     OrderStatus.SCRAP_IN_PROGRESS,
     OrderStatus.SCRAPPED,
   ].includes(props.order.status)
+})
+
+// 是否已经抽样过（用于显示重新抽样警告）
+const hasBeenSampled = computed(() => {
+  return isSampled.value && sampledPartIds.value.length > 0
+})
+
+// 当前是否为只读模式（使用内部状态，支持弹窗内切换）
+const isReadOnly = computed(() => internalReadOnly.value)
+
+// 模态框标题
+const modalTitle = computed(() => {
+  if (isReadOnly.value) {
+    return t('returnOrder.viewSamplingResult')
+  }
+  if (hasBeenSampled.value) {
+    return t('message.resamplingTitle')
+  }
+  return t('modal.samplingManagement')
 })
 
 const totalCount = computed(() => availableParts.value.length)
@@ -189,22 +232,39 @@ watch(
   () => [props.visible, props.order] as const,
   async ([visible, order]) => {
     if (!visible || !order) return
+    // 设置内部只读状态（从 props 初始化）
+    internalReadOnly.value = props.readOnly ?? false
+
     samplingChoice.value = 'sampling'
     selectedPartIds.value = []
     sampledCount.value = 0
     samplingRatio.value = 0
     availableParts.value = await returnOrderApi.getParts(order.id)
-    // 只读视图：模拟已抽样数据（实际由后端提供）
+
+    // 加载已抽样的售后件数据
     if (isSampled.value) {
+      // 从 isSample 字段加载已抽样的售后件
       sampledPartIds.value = availableParts.value
-        .slice(0, Math.ceil(availableParts.value.length / 2))
+        .filter(p => p.isSample === 1)
         .map(p => p.id)
+
+      // 同步抽样数量和比例
+      selectedPartIds.value = [...sampledPartIds.value]
+      sampledCount.value = selectedPartIds.value.length
+      samplingRatio.value = totalCount.value > 0
+        ? parseFloat(((sampledCount.value / totalCount.value) * 100).toFixed(1))
+        : 0
     } else {
       sampledPartIds.value = []
     }
   },
   { immediate: true }
 )
+
+// 切换到可编辑模式（点击"重新抽样"按钮）
+const handleSwitchToEditMode = () => {
+  internalReadOnly.value = false
+}
 
 // 手动拖拽穿梭框后同步比例/数量
 const handleTransferChange = (targetKeys: string[]) => {
