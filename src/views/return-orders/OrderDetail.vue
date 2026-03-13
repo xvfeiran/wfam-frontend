@@ -8,14 +8,19 @@
         <a-space>
           <a-button v-if="canShowEditButton" @click="handleEdit">{{ t('common.edit') }}</a-button>
           <a-button v-if="order?.status === 'draft'" type="primary" @click="handleSubmit">{{ t('common.submit') }}</a-button>
-          <!-- 初分析中和精分析中：所有用户都可以点击"抽样"按钮 -->
+          <!-- 初分析中和精分析中：所有用户都可以点击"抽样"按钮，但BA20（0km）订单除外 -->
           <a-button
-            v-if="order?.status === 'in_initial_analysis' || order?.status === 'in_detailed_analysis'"
+            v-if="(order?.status === 'in_initial_analysis' || order?.status === 'in_detailed_analysis') && order?.failureType !== 'BA20'"
             type="primary"
             @click="handleSampling"
           >
             {{ t('returnOrder.sampling') }}
           </a-button>
+          <!-- BA20（0km）订单提示 -->
+          <a-tooltip v-if="(order?.status === 'in_initial_analysis' || order?.status === 'in_detailed_analysis') && order?.failureType === 'BA20'">
+            <template #title>{{ t('message.failureTypeBA20CannotSample') }}</template>
+            <a-button disabled>{{ t('returnOrder.sampling') }}</a-button>
+          </a-tooltip>
           <a-button v-if="order?.status === 'analysis_completed'" danger @click="handleScrap">
             <StopOutlined /> {{ t('returnOrder.scrap') }}
           </a-button>
@@ -39,6 +44,10 @@
             <a-descriptions-item :label="t('returnOrder.returnMethod')">{{ getReturnMethodLabel() }}</a-descriptions-item>
             <a-descriptions-item :label="t('returnOrder.trackingNumber')">{{ order?.trackingNumber || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('returnOrder.returnQuantity')">{{ order?.returnQuantity }}</a-descriptions-item>
+            <a-descriptions-item :label="t('returnOrder.failureType')">
+              {{ order?.failureType || '-' }}
+              <a-tag v-if="order?.failureType === 'BA20'" color="red" style="margin-left: 8px">{{ t('returnOrder.is0km') }}</a-tag>
+            </a-descriptions-item>
             <a-descriptions-item :label="t('orderDetail.detailedAnalysisQuantity')">{{ order?.detailedAnalysisQuantity }}</a-descriptions-item>
             <a-descriptions-item :label="t('orderDetail.scrappedQuantity')">{{ order?.scrappedQuantity }}</a-descriptions-item>
             <a-descriptions-item :label="t('orderDetail.qcCreatedQuantity')">{{ order?.qcCreatedQuantity }}</a-descriptions-item>

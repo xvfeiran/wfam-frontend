@@ -37,6 +37,7 @@ export interface ReturnOrder {
   returnMethod: ReturnMethod
   trackingNumber?: string
   returnQuantity: number
+  failureType?: string  // 失效类型（BA20代表0km）
   initialAnalysisQuantity: number
   detailedAnalysisQuantity: number
   scrappedQuantity: number

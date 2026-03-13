@@ -50,6 +50,8 @@
                 v-model:value="form.complaintDate"
                 style="width: 100%"
                 :disabled-date="disabledFutureDate"
+                :disabled="form.returnMethod === 'express'"
+                :placeholder="form.returnMethod === 'express' ? t('validation.sameAsReceiveDate') : ''"
               />
             </a-form-item>
           </a-col>
@@ -90,44 +92,17 @@
               />
             </a-form-item>
           </a-col>
+          <a-col :span="12">
+            <a-form-item :label="t('returnOrder.failureType')" name="failureType">
+              <a-select v-model:value="form.failureType" :placeholder="t('validation.selectFailureType')">
+                <a-select-option v-for="ct in failureTypes" :key="ct.code" :value="ct.code">
+                  {{ ct.code }} - {{ ct.description }}
+                </a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
         </a-row>
       </a-form>
-
-      <!-- 售后件列表区（仅在新建模式下显示） -->
-      <template v-if="!isEdit">
-        <a-divider>{{ t('returnOrder.partsList') }}</a-divider>
-        <div class="parts-section">
-          <div class="parts-header">
-            <a-button type="primary" @click="handleAddPart">
-              <PlusOutlined /> {{ t('returnOrder.addPart') }}
-            </a-button>
-          </div>
-          <a-table
-            :columns="partColumns"
-            :data-source="parts"
-            :pagination="partsPagination"
-            row-key="id"
-            size="small"
-          >
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'partNumber'">
-                <a @click="handleViewPart(record)">{{ record.partNumber }}</a>
-              </template>
-              <template v-else-if="column.key === 'action'">
-                <a-space>
-                  <a @click="handleViewPart(record)">{{ t('common.view') }}</a>
-                  <a-divider type="vertical" />
-                  <a @click="handleEditPart(record)">{{ t('common.edit') }}</a>
-                  <a-divider type="vertical" />
-                  <a-popconfirm :title="t('returnOrder.confirmDeletePart')" @confirm="handleDeletePart(record.id)">
-                    <a class="danger-link">{{ t('common.delete') }}</a>
-                </a-popconfirm>
-                </a-space>
-              </template>
-            </template>
-          </a-table>
-        </div>
-      </template>
     </a-card>
 
     <!-- 底部操作栏 -->
@@ -160,12 +135,9 @@ import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
-import { PlusOutlined } from '@ant-design/icons-vue'
 import { returnOrderApi } from '@/services/returnOrderApi'
-import { lookupApi } from '@/services/lookupApi'
 import { customerApi } from '@/services/customerApi'
 import { usePermissions } from '@/composables/usePermissions'
-import type { Part } from '@/types'
 import type { Customer } from '@/services/customerApi'
 
 const { t } = useI18n()
@@ -189,7 +161,28 @@ const canEditSubmittedOrder = computed(() => {
 })
 
 const customers = ref<Customer[]>([])
-const parts = ref<Part[]>([])
+
+// 失效类型列表
+const failureTypes = ref([
+  { code: 'BA10', description: '0-mlg, provisional rework/accept. back' },
+  { code: 'BA20', description: '0-km, uninstalled' },
+  { code: 'BA21', description: 'QM01' },
+  { code: 'BA30', description: 'stock product of AA volume (0-km)' },
+  { code: 'BA31', description: 'Stock product of IAM Vol.(0-km, uninst)' },
+  { code: 'BA35', description: 'Logistics complaint original equipment' },
+  { code: 'BA40', description: 'field product' },
+  { code: 'BA41', description: 'Field campaign' },
+  { code: 'BA42', description: 'goodwill' },
+  { code: 'BA43', description: 'Field product outside partial market' },
+  { code: 'BA50', description: 'Internal Complaint' },
+  { code: 'BA60', description: 'commercial processing, 0-km' },
+  { code: 'BA61', description: 'commercial processing, field' },
+  { code: 'BA70', description: 'product for exam. w/o warranty claim' },
+  { code: 'BA76', description: 'Technical sample complaint' },
+  { code: 'BA77', description: 'Sample product analysis due to contract' },
+  { code: 'BA78', description: 'Sample product analysis customer request' },
+  { code: 'BA79', description: 'Logistics sample complaint' },
+])
 
 const form = reactive({
   orderNumber: '',
@@ -200,12 +193,24 @@ const form = reactive({
   returnMethod: 'express',
   trackingNumber: '',
   returnQuantity: 1,
+  failureType: undefined as string | undefined, // 失效类型，必填
 })
 
 // Watch returnMethod changes - clear trackingNumber when switching from express to pickup
 watch(() => form.returnMethod, (newValue, oldValue) => {
   if (oldValue === 'express' && newValue === 'pickup') {
     form.trackingNumber = ''
+  }
+  // When switching to express, sync complaintDate with receiveDate
+  if (newValue === 'express' && form.receiveDate) {
+    form.complaintDate = form.receiveDate
+  }
+})
+
+// Watch receiveDate changes - sync complaintDate when return method is express
+watch(() => form.receiveDate, (newValue) => {
+  if (form.returnMethod === 'express' && newValue) {
+    form.complaintDate = newValue
   }
 })
 
@@ -223,21 +228,7 @@ const rules = computed(() => ({
     { required: true, message: t('validation.inputReturnQuantity') },
     { type: 'number', min: 1, max: 9999, message: t('validation.returnQuantityRange', { min: 1, max: 9999 }) }
   ],
-}))
-
-const partColumns = computed(() => [
-  { title: t('returnPart.partNumber'), dataIndex: 'partNumber', key: 'partNumber' },
-  { title: t('returnPart.partCode'), dataIndex: 'partCode', key: 'partCode' },
-  { title: t('returnPart.businessUnit'), dataIndex: 'businessUnit', key: 'businessUnit' },
-  { title: t('returnPart.productPlatform'), dataIndex: 'productPlatform', key: 'productPlatform' },
-  { title: t('common.operation'), key: 'action', width: 160 },
-])
-
-const partsPagination = computed(() => ({
-  pageSize: 10,
-  showSizeChanger: true,
-  showQuickJumper: true,
-  showTotal: (total: number) => t('common.total', { total }),
+  failureType: [{ required: true, message: t('validation.selectFailureType') }],
 }))
 
 const disabledFutureDate = (current: Dayjs) => {
@@ -268,9 +259,7 @@ onMounted(async () => {
       // Only load trackingNumber for express delivery
       form.trackingNumber = (order.returnMethod === 'express' && order.trackingNumber) ? order.trackingNumber : ''
       form.returnQuantity = order.returnQuantity
-
-      // 加载关联的售后件
-      parts.value = await returnOrderApi.getParts(order.id)
+      form.failureType = order.failureType
     }
   }
 })
@@ -279,34 +268,20 @@ const handleBack = () => {
   router.back()
 }
 
-const handleAddPart = () => {
-  // 跳转到售后件新建页面，带上退货单编号
-  router.push({
-    path: '/return-parts/new',
-    query: { orderNumber: form.orderNumber, orderId: orderId.value || 'new' }
-  })
-}
-
-const handleViewPart = (part: Part) => {
-  router.push(`/return-parts/${part.id}`)
-}
-
-const handleEditPart = (part: Part) => {
-  router.push(`/return-parts/${part.id}/edit`)
-}
-
-const handleDeletePart = (id: string) => {
-  parts.value = parts.value.filter(p => p.id !== id)
-  message.success(t('message.deleteSuccess'))
-}
-
 const buildPayload = () => {
+  // For express delivery, ensure complaintDate matches receiveDate
+  let complaintDate = form.complaintDate
+  if (form.returnMethod === 'express' && form.receiveDate) {
+    complaintDate = form.receiveDate
+  }
+
   const payload: any = {
     customerId: form.customerId,
     receiveDate: form.receiveDate ? form.receiveDate.format('YYYY-MM-DD') : undefined,
-    complaintDate: form.complaintDate ? form.complaintDate.format('YYYY-MM-DD') : undefined,
+    complaintDate: complaintDate ? complaintDate.format('YYYY-MM-DD') : undefined,
     returnMethod: form.returnMethod,
     returnQuantity: form.returnQuantity,
+    failureType: form.failureType, // 失效类型，必填
   }
   // Only include trackingNumber for express delivery
   if (form.returnMethod === 'express' && form.trackingNumber) {
@@ -375,21 +350,11 @@ const handleSubmit = async () => {
 
 <style lang="less" scoped>
 .order-form {
-  .parts-section {
-    .parts-header {
-      margin-bottom: 16px;
-    }
-  }
-
   .form-footer {
     margin-top: 24px;
     padding: 24px;
     background: #fff;
     text-align: center;
-  }
-
-  .danger-link {
-    color: #ff4d4f;
   }
 }
 </style>
