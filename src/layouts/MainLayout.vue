@@ -42,6 +42,10 @@
           <template #icon><AuditOutlined /></template>
           <span>{{ t('menu.approval') }}</span>
         </a-menu-item>
+        <a-menu-item key="/imports">
+          <template #icon><ImportOutlined /></template>
+          <span>{{ t('menu.imports') }}</span>
+        </a-menu-item>
         <a-menu-item key="/settings">
           <template #icon><SettingOutlined /></template>
           <span>{{ t('menu.settings') }}</span>
@@ -103,6 +107,7 @@ import {
   BellOutlined,
   UserOutlined,
   LogoutOutlined,
+  ImportOutlined,
 } from '@ant-design/icons-vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import UserSwitcher from '@/components/UserSwitcher.vue'
@@ -128,6 +133,7 @@ const currentPageTitle = computed(() => {
     '/return-parts/:id/analysis': 'analysisForm.title',
     '/reports': 'menu.reports',
     '/approval': 'menu.approval',
+    '/imports': 'menu.imports',
     '/settings': 'menu.settings',
   }
 
@@ -172,6 +178,8 @@ watch(
       selectedKeys.value = ['/reports']
     } else if (path.startsWith('/approval')) {
       selectedKeys.value = ['/approval']
+    } else if (path.startsWith('/imports')) {
+      selectedKeys.value = ['/imports']
     } else if (path.startsWith('/settings')) {
       selectedKeys.value = ['/settings']
     } else {

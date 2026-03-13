@@ -200,3 +200,32 @@ export const RETURN_METHOD_MAP: Record<ReturnMethod, string> = {
   [ReturnMethod.PICKUP]: '自提',
   [ReturnMethod.OTHER]: '其他',
 }
+
+// 导入记录接口
+export interface ImportRecord {
+  id: string
+  importType: string
+  fileName: string
+  status: string
+  totalCount: number
+  successCount: number
+  failCount: number
+  failLogs: string    // JSON: [{row, status:"failed", error, rawData}]
+  importLogs: string  // JSON: 完整日志（成功+失败）
+  createdBy: string
+  createdAt: string
+}
+
+export interface ImportLogEntry {
+  row: number
+  status: 'success' | 'failed'
+  // 成功时有
+  orderId?: string
+  orderNumber?: string
+  receiveDate?: string
+  trackingNumber?: string
+  description?: string
+  // 失败时有
+  error?: string
+  rawData?: Record<string, string>
+}

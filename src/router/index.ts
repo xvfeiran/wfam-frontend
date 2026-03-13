@@ -84,6 +84,13 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/approval/Approval.vue'),
         meta: { title: '审批' },
       },
+      // 导入管理
+      {
+        path: 'imports',
+        name: 'Imports',
+        component: () => import('@/views/imports/ImportList.vue'),
+        meta: { title: '导入管理' },
+      },
       // 配置
       {
         path: 'settings',
