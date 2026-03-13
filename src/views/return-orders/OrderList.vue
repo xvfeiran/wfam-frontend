@@ -15,6 +15,7 @@
       :selected-count="selectedRowKeys.length"
       :can-edit="canEditSelectedOrder"
       :can-delete="canDeleteSelectedOrder"
+      :export-loading="exportLoading"
       @create="handleCreate"
       @import="handleImport"
       @export="handleExport"
@@ -111,6 +112,7 @@ const {
 const samplingVisible = ref(false)
 const currentOrder = ref<ReturnOrder | null>(null)
 const scrapVisible = ref(false)
+const exportLoading = ref(false)
 
 // Check if the selected order can be edited
 // Draft orders (no orderNumber) can be edited by anyone
@@ -197,6 +199,8 @@ const handleEdit = () => {
 }
 
 const handleExport = async () => {
+  if (exportLoading.value) return
+  exportLoading.value = true
   try {
     const params: Record<string, string> = {}
     if (filters.value.orderNumber) params.orderNumber = filters.value.orderNumber
@@ -229,6 +233,8 @@ const handleExport = async () => {
       }
     } catch { /* 解析失败，使用默认提示 */ }
     message.error(errMsg, 6)
+  } finally {
+    exportLoading.value = false
   }
 }
 

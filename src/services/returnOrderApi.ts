@@ -88,6 +88,7 @@ export const returnOrderApi = {
     return request.get('/return-orders/export', {
       params,
       responseType: 'blob',
+      timeout: 120000,
     }) as unknown as Promise<Blob>
   },
 }

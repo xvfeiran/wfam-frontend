@@ -43,7 +43,6 @@ export interface ReturnOrder {
   scrappedQuantity: number
   qcCreatedQuantity: number
   qcNotCreatedQuantity: number
-  description?: string
   status: OrderStatus
   createdBy: string
   createdAt: string
@@ -225,7 +224,6 @@ export interface ImportLogEntry {
   orderNumber?: string
   receiveDate?: string
   trackingNumber?: string
-  description?: string
   // 失败时有
   error?: string
   rawData?: Record<string, string>

@@ -7,7 +7,7 @@
       <a-button @click="$emit('import')">
         <UploadOutlined /> {{ t('common.import') }}
       </a-button>
-      <a-button @click="$emit('export')">
+      <a-button :loading="exportLoading" @click="$emit('export')">
         <DownloadOutlined /> {{ t('common.export') }}
       </a-button>
       <!-- Edit button: only visible when user has permission -->
@@ -44,6 +44,7 @@ interface Props {
   selectedCount: number
   canEdit?: boolean
   canDelete?: boolean
+  exportLoading?: boolean
 }
 
 defineProps<Props>()
