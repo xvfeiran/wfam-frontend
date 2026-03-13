@@ -59,6 +59,7 @@ export interface Part {
   orderNumber?: string
   partCode: string
   businessUnit: string
+  productCategory: string
   productPlatform: string
   productionShift?: string
   complaintType?: string

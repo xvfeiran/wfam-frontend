@@ -84,4 +84,10 @@ export const returnOrderApi = {
   workonConfirm(id: string): Promise<ReturnOrder> {
     return request.post(`/return-orders/${id}/scrap/workon-confirm`) as unknown as Promise<ReturnOrder>
   },
+  exportExcel(params?: Pick<OrderListParams, 'orderNumber' | 'customer' | 'receiveDateStart' | 'receiveDateEnd'>): Promise<Blob> {
+    return request.get('/return-orders/export', {
+      params,
+      responseType: 'blob',
+    }) as unknown as Promise<Blob>
+  },
 }

@@ -55,6 +55,11 @@
 
       <a-row :gutter="24">
         <a-col :span="12">
+          <a-form-item :label="t('returnPart.productCategory')" name="productCategory">
+            <a-input v-model:value="form.productCategory" :placeholder="t('validation.inputProductCategory')" />
+          </a-form-item>
+        </a-col>
+        <a-col :span="12">
           <a-form-item :label="t('returnPart.productPlatform')" name="productPlatform">
             <a-select v-model:value="form.productPlatform" :placeholder="t('validation.selectProductPlatform')">
               <a-select-option v-for="pp in productPlatforms" :key="pp" :value="pp">
@@ -63,6 +68,9 @@
             </a-select>
           </a-form-item>
         </a-col>
+      </a-row>
+
+      <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('returnPart.productionShift')">
             <a-input v-model:value="form.productionShift" />
@@ -121,6 +129,7 @@ interface Form {
   orderId?: string
   partCode: string
   businessUnit?: string
+  productCategory: string
   productPlatform?: string
   productionShift: string
   complaintType?: string
@@ -168,6 +177,7 @@ defineExpose({
     orderId: [{ required: true, message: t('validation.selectOrder') }],
     partCode: [{ required: true, message: t('validation.inputPartCode') }],
     businessUnit: [{ required: true, message: t('validation.selectBusinessUnit') }],
+    productCategory: [{ required: true, message: t('validation.inputProductCategory') }],
     productPlatform: [{ required: true, message: t('validation.selectProductPlatform') }],
   }))
 })

@@ -26,6 +26,11 @@
 
       <a-row :gutter="16">
         <a-col :span="12">
+          <a-form-item :label="t('returnPart.productCategory')" name="productCategory">
+            <a-input v-model:value="form.productCategory" :placeholder="t('validation.inputProductCategory')" />
+          </a-form-item>
+        </a-col>
+        <a-col :span="12">
           <a-form-item :label="t('returnPart.productPlatform')" name="productPlatform">
             <a-select v-model:value="form.productPlatform" :placeholder="t('validation.selectProductPlatform')">
               <a-select-option v-for="pp in productPlatforms" :key="pp" :value="pp">
@@ -34,6 +39,9 @@
             </a-select>
           </a-form-item>
         </a-col>
+      </a-row>
+
+      <a-row :gutter="16">
         <a-col :span="12">
           <a-form-item :label="t('partDetail.productionShift')">
             <a-input v-model:value="form.productionShift" :placeholder="t('returnPart.productionShift')" />
@@ -75,6 +83,7 @@ watch(() => props.visible, async (val) => {
 const form = reactive({
   partCode: '',
   businessUnit: undefined as string | undefined,
+  productCategory: '',
   productPlatform: undefined as string | undefined,
   productionShift: '',
 })
@@ -82,6 +91,7 @@ const form = reactive({
 const rules = {
   partCode: [{ required: true, message: t('validation.inputPartCode') }],
   businessUnit: [{ required: true, message: t('validation.selectBusinessUnit') }],
+  productCategory: [{ required: true, message: t('validation.inputProductCategory') }],
   productPlatform: [{ required: true, message: t('validation.selectProductPlatform') }],
 }
 
@@ -91,11 +101,13 @@ watch(
     if (part) {
       form.partCode = part.partCode
       form.businessUnit = part.businessUnit
+      form.productCategory = part.productCategory || ''
       form.productPlatform = part.productPlatform
       form.productionShift = part.productionShift || ''
     } else {
       form.partCode = ''
       form.businessUnit = undefined
+      form.productCategory = ''
       form.productPlatform = undefined
       form.productionShift = ''
     }
@@ -116,6 +128,7 @@ const handleSubmit = async () => {
       orderId: '',
       partCode: form.partCode,
       businessUnit: form.businessUnit!,
+      productCategory: form.productCategory,
       productPlatform: form.productPlatform!,
       productionShift: form.productionShift,
       status: PartStatus.REGISTERED,

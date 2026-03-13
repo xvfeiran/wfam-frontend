@@ -198,18 +198,16 @@ const handleEdit = () => {
 
 const handleExport = async () => {
   try {
-    const params = new URLSearchParams()
-    if (filters.value.orderNumber) params.append('orderNumber', filters.value.orderNumber)
-    if (filters.value.customerId) params.append('customer', filters.value.customerId)
-    // Handle date range - convert array to start/end parameters and format to ISO
+    const params: Record<string, string> = {}
+    if (filters.value.orderNumber) params.orderNumber = filters.value.orderNumber
+    if (filters.value.customerId)  params.customer = filters.value.customerId
     if (filters.value.receiveDate && Array.isArray(filters.value.receiveDate)) {
-      params.append('receiveDateStart', dayjs(filters.value.receiveDate[0]).format('YYYY-MM-DD'))
-      params.append('receiveDateEnd', dayjs(filters.value.receiveDate[1]).format('YYYY-MM-DD'))
+      params.receiveDateStart = dayjs(filters.value.receiveDate[0]).format('YYYY-MM-DD')
+      params.receiveDateEnd   = dayjs(filters.value.receiveDate[1]).format('YYYY-MM-DD')
     }
-    const url = `/api/v1/return-orders/export${params.toString() ? '?' + params.toString() : ''}`
-    const response = await fetch(url)
-    if (!response.ok) throw new Error('Export failed')
-    const blob = await response.blob()
+
+    const blob = await returnOrderApi.exportExcel(params)
+
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
@@ -217,8 +215,20 @@ const handleExport = async () => {
     link.click()
     URL.revokeObjectURL(link.href)
     message.success(t('message.exportSuccess'))
-  } catch {
-    message.error(t('message.exportFailed'))
+  } catch (e: any) {
+    // axios blob 响应时，错误体需从 blob 中读取
+    let errMsg = t('message.exportFailed')
+    try {
+      const raw = e?.response?.data
+      if (raw instanceof Blob) {
+        const text = await raw.text()
+        const body = JSON.parse(text)
+        if (body?.message) errMsg = body.message
+      } else if (raw?.message) {
+        errMsg = raw.message
+      }
+    } catch { /* 解析失败，使用默认提示 */ }
+    message.error(errMsg, 6)
   }
 }
 

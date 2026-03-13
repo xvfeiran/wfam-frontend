@@ -108,6 +108,7 @@ const form = reactive({
   orderId: undefined as string | undefined,
   partCode: '',
   businessUnit: undefined as string | undefined,
+  productCategory: '',
   productPlatform: undefined as string | undefined,
   productionShift: '',
   complaintType: undefined as string | undefined,
@@ -130,6 +131,7 @@ const rules = computed(() => ({
   orderId: [{ required: true, message: t('validation.selectOrder') }],
   partCode: [{ required: true, message: t('validation.inputPartCode') }],
   businessUnit: [{ required: true, message: t('validation.selectBusinessUnit') }],
+  productCategory: [{ required: true, message: t('validation.inputProductCategory') }],
   productPlatform: [{ required: true, message: t('validation.selectProductPlatform') }],
 }))
 
@@ -162,6 +164,7 @@ function populateForm(part: any) {
   form.orderId = part.orderId
   form.partCode = part.partCode
   form.businessUnit = part.businessUnit
+  form.productCategory = part.productCategory || ''
   form.productPlatform = part.productPlatform
   form.productionShift = part.productionShift || ''
   form.complaintType = part.complaintType || undefined
@@ -187,6 +190,7 @@ const buildPartPayload = () => ({
   orderId: form.orderId,
   partCode: form.partCode,
   businessUnit: form.businessUnit,
+  productCategory: form.productCategory,
   productPlatform: form.productPlatform,
   productionShift: form.productionShift || undefined,
   complaintType: form.complaintType || undefined,
