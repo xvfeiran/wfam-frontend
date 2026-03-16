@@ -132,11 +132,13 @@ import { partApi } from '@/services/partApi'
 import { reportsApi } from '@/services/reportsApi'
 import { PART_STATUS_MAP, PartStatus } from '@/types'
 import type { Part, AnalysisReport, ReportTemplate } from '@/types'
+import { usePermissions } from '@/composables/usePermissions'
 import AnalysisReportModal from './components/AnalysisReportModal.vue'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
+const { isQMCManager } = usePermissions()
 const partId = computed(() => route.params.id as string)
 
 const part = ref<Part | null>(null)
@@ -167,18 +169,9 @@ const canEditPart = computed(() => {
 
 /**
  * 检查当前用户是否有"编辑已提交单据"的权限
- * TODO: 根据实际角色信息返回结果
  */
 const canEditSubmittedPart = (): boolean => {
-  // TODO: 实现角色权限检查逻辑
-  // 示例实现（需要根据实际认证头格式调整）：
-  // const authHeader = getAuthHeader() // 从请求拦截器或 store 获取
-  // const roleNames = authHeader?.roleNames || ''
-  // const hasPermission = roleNames.includes('W_RBCC_AEP_WFAM_QMC_Manager') ||
-  //                       roleNames.includes('W_RBCC_AEP_WFAM_SystemAdmin')
-  // return hasPermission
-
-  return true // 当前写死返回 true
+  return isQMCManager.value
 }
 
 const handleSubmitQcNo = async () => {

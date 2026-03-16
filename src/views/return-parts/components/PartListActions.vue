@@ -4,10 +4,10 @@
       <a-button type="primary" @click="$emit('create')">
         <PlusOutlined /> {{ t('common.create') }}
       </a-button>
-      <a-button type="primary" :disabled="selectedCount !== 1" @click="$emit('edit')">
+      <a-button v-if="canEdit" type="primary" :disabled="selectedCount !== 1" @click="$emit('edit')">
         <EditOutlined /> {{ t('common.edit') }}
       </a-button>
-      <a-popconfirm :title="t('returnPart.confirmDelete')" @confirm="$emit('delete')" :disabled="selectedCount === 0">
+      <a-popconfirm v-if="canDelete" :title="t('returnPart.confirmDelete')" @confirm="$emit('delete')">
         <a-button danger :disabled="selectedCount === 0">
           <DeleteOutlined /> {{ t('common.delete') }}
         </a-button>
@@ -34,6 +34,8 @@ import {
 
 interface Props {
   selectedCount: number
+  canEdit?: boolean
+  canDelete?: boolean
 }
 
 defineProps<Props>()

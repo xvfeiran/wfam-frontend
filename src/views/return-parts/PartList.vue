@@ -14,9 +14,11 @@
     <!-- 操作区 -->
     <PartListActions
       :selected-count="selectedRowKeys.length"
+      :can-edit="canEditSelectedPart"
+      :can-delete="canDeleteSelectedPart"
       @create="handleCreate"
       @edit="handleEdit"
-      @delete="handleBatchDelete"
+      @delete="handleBatchDeleteWrapper"
       @detailed-analysis="handleDetailedAnalysis"
       @analysis="handleAnalysis"
     />
@@ -44,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
@@ -52,6 +54,7 @@ import { partApi } from '@/services/partApi'
 import { lookupApi } from '@/services/lookupApi'
 import type { Part } from '@/types'
 import { useTableList } from '@/composables/useTableList'
+import { usePermissions } from '@/composables/usePermissions'
 import PartListFilters from './components/PartListFilters.vue'
 import PartListActions from './components/PartListActions.vue'
 import PartTable from './components/PartTable.vue'
@@ -59,6 +62,7 @@ import AnalysisReportModal from './components/AnalysisReportModal.vue'
 
 const { t } = useI18n()
 const router = useRouter()
+const { isQMCManager } = usePermissions()
 
 const businessUnits = ref<string[]>([])
 const productPlatforms = ref<string[]>([])
@@ -111,6 +115,31 @@ const {
 const analysisVisible = ref(false)
 const currentPart = ref<Part | null>(null)
 
+// 检查选中的售后件是否可以编辑
+const canEditSelectedPart = computed(() => {
+  if (selectedRowKeys.value.length !== 1) return false
+  const selectedPart = parts.value.find(p => p.id === selectedRowKeys.value[0])
+  if (!selectedPart) return false
+  // 未提交的售后件都可以编辑
+  if (!selectedPart.partNumber) return true
+  // 已提交的售后件需要 QMC Manager 权限
+  return isQMCManager.value
+})
+
+// 检查选中的售后件是否可以删除
+const canDeleteSelectedPart = computed(() => {
+  if (selectedRowKeys.value.length === 0) return false
+  // 检查是否有已提交的售后件
+  const hasSubmittedPart = selectedRowKeys.value.some(id => {
+    const part = parts.value.find(p => p.id === id)
+    return part?.partNumber
+  })
+  // 如果全部是未提交的售后件，任何人都可以删除
+  if (!hasSubmittedPart) return true
+  // 如果有已提交的售后件被选中，只有 QMC Manager 可以删除
+  return isQMCManager.value
+})
+
 onMounted(async () => {
   loading.value = true
   try {
@@ -152,8 +181,14 @@ const handleView = (id: string) => {
   router.push(`/return-parts/${id}`)
 }
 
-const handleEdit = (id: string) => {
+const handleEdit = () => {
+  if (selectedRowKeys.value.length !== 1) return
+  const id = selectedRowKeys.value[0]
   router.push(`/return-parts/${id}/edit`)
+}
+
+const handleBatchDeleteWrapper = async () => {
+  await handleBatchDelete(partApi.delete)
 }
 
 const handleDetailedAnalysis = () => {

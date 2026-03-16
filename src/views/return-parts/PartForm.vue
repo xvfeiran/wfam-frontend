@@ -70,6 +70,7 @@ import { partApi } from '@/services/partApi'
 import { lookupApi } from '@/services/lookupApi'
 import { userApi } from '@/services/userApi'
 import { useOCR } from '@/composables/useOCR'
+import { usePermissions } from '@/composables/usePermissions'
 import OCRActionBar from './components/OCRActionBar.vue'
 import BasicInfoCard from './components/BasicInfoCard.vue'
 import ComplaintInfoCard from './components/ComplaintInfoCard.vue'
@@ -78,14 +79,15 @@ import PhotoUploadCard from './components/PhotoUploadCard.vue'
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
+const { isQMCManager } = usePermissions()
 
 const isEdit = computed(() => !!route.params.id)
 const partId = computed(() => route.params.id as string)
 const isSubmitted = computed(() => !!form.partNumber)
 
 const canEditSubmittedPart = computed(() => {
-  // TODO: 实现角色权限检查逻辑
-  return true
+  if (!isSubmitted.value) return true // 未提交都可以编辑
+  return isQMCManager.value // 已提交需要 QMC Manager 权限
 })
 
 const basicInfoCardRef = ref<any>(null)
@@ -250,12 +252,8 @@ const handleSubmit = async () => {
     await partApi.submit(savedId)
     message.success(t('message.submitSuccess'))
 
-    // 如果是从退货单详情页进入，返回到退货单详情页
-    if (fromOrderDetail.value && form.orderId) {
-      router.push(`/return-orders/${form.orderId}`)
-    } else {
-      router.push(`/return-parts/${savedId}`)
-    }
+    // 提交后返回售后件列表页
+    router.push('/return-parts')
   } catch (error: any) {
     if (error?.errorFields) {
       message.error(t('validation.formError'))
