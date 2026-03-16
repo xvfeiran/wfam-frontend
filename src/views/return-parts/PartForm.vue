@@ -88,6 +88,8 @@ const canEditSubmittedPart = computed(() => {
   return true
 })
 
+const basicInfoCardRef = ref<any>(null)
+
 const orders = ref<any[]>([])
 const businessUnits = ref<string[]>([])
 const productPlatforms = ref<string[]>([])
@@ -140,13 +142,15 @@ const { ocrLoading, ocrResults, hasOCRResults, handleOCRUpload, stopOCR, applyAl
 onMounted(async () => {
   const [lookups, ordersData, usersData] = await Promise.all([
     lookupApi.getAll(),
-    returnOrderApi.list({ pageSize: 1000 }), // 获取足够多的订单用于下拉选择
+    returnOrderApi.list(), // 不限制数量
     userApi.list(),
   ])
   businessUnits.value = lookups.businessUnits
   productPlatforms.value = lookups.productPlatforms
   failureTypes.value = lookups.failureTypes
-  orders.value = ordersData.data // 提取 data 数组
+  // 只显示未抽样的退货单（草稿或初分析中状态）
+  const eligibleStatuses = ['draft', 'in_initial_analysis']
+  orders.value = ordersData.data.filter((order: any) => eligibleStatuses.includes(order.status))
   users.value = usersData
 
   if (isEdit.value) {
@@ -210,6 +214,7 @@ const buildPartPayload = () => ({
 
 const handleSave = async () => {
   try {
+    await basicInfoCardRef.value?.validate()
     if (isEdit.value) {
       await partApi.update(partId.value, buildPartPayload())
     } else {
@@ -234,6 +239,7 @@ const handleSave = async () => {
 
 const handleSubmit = async () => {
   try {
+    await basicInfoCardRef.value?.validate()
     let savedId = partId.value
     if (isEdit.value) {
       await partApi.update(savedId, buildPartPayload())

@@ -18,12 +18,6 @@
       <a-button v-if="canDelete" danger :disabled="selectedCount === 0" @click="$emit('delete')">
         <DeleteOutlined /> {{ t('common.delete') }}
       </a-button>
-      <a-button :disabled="selectedCount !== 1" @click="$emit('sampling')">
-        <ExperimentOutlined /> {{ t('returnOrder.sampling') }}
-      </a-button>
-      <a-button danger :disabled="selectedCount === 0" @click="$emit('scrap')">
-        <StopOutlined /> {{ t('returnOrder.scrap') }}
-      </a-button>
     </a-space>
   </div>
 </template>
@@ -36,8 +30,6 @@ import {
   DownloadOutlined,
   EditOutlined,
   DeleteOutlined,
-  ExperimentOutlined,
-  StopOutlined,
 } from '@ant-design/icons-vue'
 
 interface Props {
@@ -55,8 +47,6 @@ defineEmits<{
   (e: 'export'): void
   (e: 'edit'): void
   (e: 'delete'): void
-  (e: 'sampling'): void
-  (e: 'scrap'): void
 }>()
 
 const { t } = useI18n()

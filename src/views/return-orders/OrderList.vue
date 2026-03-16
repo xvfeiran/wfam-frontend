@@ -21,8 +21,6 @@
       @export="handleExport"
       @edit="handleEdit"
       @delete="handleBatchDeleteWrapper"
-      @sampling="handleSampling"
-      @scrap="handleScrap"
     />
 
     <!-- 列表区 -->
@@ -36,20 +34,6 @@
       @selection-change="onSelectChange"
       @table-change="handleTableChange"
       @view="handleView"
-    />
-
-    <!-- 抽样弹窗 -->
-    <SamplingModal
-      v-model:visible="samplingVisible"
-      :order="currentOrder"
-      @success="handleSamplingSuccess"
-    />
-
-    <!-- 报废弹窗 -->
-    <ScrapModal
-      v-model:visible="scrapVisible"
-      :selected-ids="selectedRowKeys"
-      @success="handleScrapSuccess"
     />
   </div>
 </template>
@@ -70,8 +54,6 @@ import { useTableList } from '@/composables/useTableList'
 import OrderListFilters from './components/OrderListFilters.vue'
 import OrderListActions from './components/OrderListActions.vue'
 import OrderTable from './components/OrderTable.vue'
-import SamplingModal from './components/SamplingModal.vue'
-import ScrapModal from './components/ScrapModal.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -109,9 +91,6 @@ const {
   return await returnOrderApi.list(apiParams)
 })
 
-const samplingVisible = ref(false)
-const currentOrder = ref<ReturnOrder | null>(null)
-const scrapVisible = ref(false)
 const exportLoading = ref(false)
 
 // Check if the selected order can be edited
@@ -258,28 +237,6 @@ const handleImport = () => {
     }
   }
   input.click()
-}
-
-const handleSampling = () => {
-  if (selectedRowKeys.value.length === 1) {
-    currentOrder.value = orders.value.find(o => o.id === selectedRowKeys.value[0]) || null
-    samplingVisible.value = true
-  }
-}
-
-const handleSamplingSuccess = () => {
-  samplingVisible.value = false
-  message.success(t('message.samplingComplete'))
-}
-
-const handleScrap = () => {
-  scrapVisible.value = true
-}
-
-const handleScrapSuccess = () => {
-  scrapVisible.value = false
-  selectedRowKeys.value = []
-  message.success(t('message.scrapSubmitted'))
 }
 
 const handleBatchDeleteWrapper = async () => {

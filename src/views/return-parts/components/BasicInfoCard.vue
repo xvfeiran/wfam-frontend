@@ -120,7 +120,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { COMPLAINT_TYPES } from '@/constants/complaintTypes'
 
@@ -172,7 +172,10 @@ const filterOrderOption = (input: string, option: any) => {
          (unsubmitted.includes(searchText) && !order.orderNumber)
 }
 
+const formRef = ref()
+
 defineExpose({
+  validate: () => formRef.value?.validate(),
   rules: computed(() => ({
     orderId: [{ required: true, message: t('validation.selectOrder') }],
     partCode: [{ required: true, message: t('validation.inputPartCode') }],

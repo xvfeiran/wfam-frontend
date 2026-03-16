@@ -5,6 +5,7 @@
     width="600px"
     @cancel="handleCancel"
     @ok="handleSubmit"
+    :confirm-loading="submitting"
   >
     <a-alert
       :message="t('message.workOnAlert')"
@@ -24,33 +25,36 @@
         </a-typography-text>
       </div>
       <a-descriptions :column="1" bordered size="small" style="margin-top: 12px">
-        <a-descriptions-item :label="t('message.orderNumber')">{{ orderNumbers }}</a-descriptions-item>
-        <a-descriptions-item :label="t('message.scrapQuantity')">{{ selectedIds.length }}{{ t('message.unit') }}</a-descriptions-item>
+        <a-descriptions-item :label="t('message.orderNumber')">{{ displayOrderNumber }}</a-descriptions-item>
+        <a-descriptions-item :label="t('message.currentStatus')">
+          <a-tag :color="getStatusColor()">{{ getStatusLabel() }}</a-tag>
+        </a-descriptions-item>
       </a-descriptions>
     </a-card>
 
     <a-form :model="form" layout="vertical">
       <a-form-item :label="t('message.scrapStatus')" required>
         <a-radio-group v-model:value="form.scrapStatus">
-          <a-radio value="pending_workon">{{ t('message.pendingWorkOnScrap') }}</a-radio>
-          <a-radio value="completed_workon">{{ t('message.completedWorkOnScrap') }}</a-radio>
+          <a-radio value="pending_workon" :disabled="isScrapInProgressOrScrapped">
+            {{ t('message.pendingWorkOnScrap') }}
+          </a-radio>
+          <a-radio value="completed_workon" :disabled="!isScrapInProgress || isScrapped">
+            {{ t('message.completedWorkOnScrap') }}
+          </a-radio>
         </a-radio-group>
-      </a-form-item>
-
-      <a-form-item :label="t('message.remark')">
-        <a-textarea
-          v-model:value="form.remark"
-          :placeholder="t('message.pleaseInputRemarkOptional')"
-          :rows="3"
-          show-count
-          :maxlength="200"
-        />
+        <div v-if="isScrapped" class="status-hint">
+          <a-typography-text type="secondary">
+            {{ t('message.alreadyScrappedCannotModify') }}
+          </a-typography-text>
+        </div>
       </a-form-item>
     </a-form>
 
     <template #footer>
       <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
-      <a-button type="primary" @click="handleSubmit">{{ t('modal.markAsConfirmed') }}</a-button>
+      <a-button type="primary" @click="handleSubmit" :loading="submitting" :disabled="isScrapped">
+        {{ isScrapped ? t('common.viewOnly') : t('modal.markAsConfirmed') }}
+      </a-button>
     </template>
   </a-modal>
 </template>
@@ -62,39 +66,87 @@ import { useI18n } from 'vue-i18n'
 import { LinkOutlined } from '@ant-design/icons-vue'
 import { returnOrderApi } from '@/services/returnOrderApi'
 import type { ReturnOrder } from '@/types'
+import { ORDER_STATUS_MAP } from '@/types'
 
 const { t } = useI18n()
 
 const props = defineProps<{
   visible: boolean
-  selectedIds: string[]
+  order?: ReturnOrder | null
+  selectedIds?: string[]
 }>()
 
 const emit = defineEmits(['update:visible', 'success'])
 
 const form = reactive({
   scrapStatus: 'pending_workon' as 'pending_workon' | 'completed_workon',
-  remark: '',
 })
 
-const orders = ref<ReturnOrder[]>([])
+const submitting = ref(false)
 
-// 获取选中的退货单号
-const orderNumbers = computed(() => {
-  return props.selectedIds
-    .map(id => orders.value.find(o => o.id === id)?.orderNumber)
-    .filter(Boolean)
-    .join(', ') || '-'
+// 显示的订单号
+const displayOrderNumber = computed(() => {
+  if (props.order) {
+    return props.order.orderNumber || t('validation.unsubmitted')
+  }
+  return '-'
 })
 
-// 重置表单并加载订单数据
+// 是否为报废中或已报废状态
+const isScrapInProgressOrScrapped = computed(() => {
+  if (!props.order) return false
+  return props.order.status === 'scrap_in_progress' || props.order.status === 'scrapped'
+})
+
+// 是否为报废中状态
+const isScrapInProgress = computed(() => {
+  if (!props.order) return false
+  return props.order.status === 'scrap_in_progress'
+})
+
+// 是否为已报废状态
+const isScrapped = computed(() => {
+  if (!props.order) return false
+  return props.order.status === 'scrapped'
+})
+
+// 获取状态颜色
+const getStatusColor = () => {
+  if (!props.order) return 'default'
+  return ORDER_STATUS_MAP[props.order.status]?.color || 'default'
+}
+
+// 获取状态标签
+const getStatusLabel = () => {
+  if (!props.order) return '-'
+  const key = statusI18nKeyMap[props.order.status] || props.order.status
+  return t(key)
+}
+
+// 状态到i18n键的映射
+const statusI18nKeyMap: Record<string, string> = {
+  draft: 'status.draft',
+  in_initial_analysis: 'status.inInitialAnalysis',
+  in_detailed_analysis: 'status.inDetailedAnalysis',
+  pending_approval: 'status.pendingApproval',
+  analysis_completed: 'status.analysisCompleted',
+  scrap_in_progress: 'status.scrapInProgress',
+  scrapped: 'status.scrapped',
+}
+
+// 重置表单
 watch(
   () => props.visible,
-  async (visible) => {
+  (visible) => {
     if (visible) {
-      form.scrapStatus = 'pending_workon'
-      form.remark = ''
-      orders.value = await returnOrderApi.list()
+      // 根据当前状态设置默认值
+      if (isScrapInProgress.value) {
+        form.scrapStatus = 'pending_workon'
+      } else if (isScrapped.value) {
+        form.scrapStatus = 'completed_workon'
+      } else {
+        form.scrapStatus = 'pending_workon'
+      }
     }
   }
 )
@@ -103,17 +155,46 @@ const handleCancel = () => {
   emit('update:visible', false)
 }
 
-const submitting = ref(false)
-
 const handleSubmit = async () => {
+  // 已报废状态只能查看
+  if (isScrapped.value) {
+    emit('update:visible', false)
+    return
+  }
+
   submitting.value = true
   try {
-    for (const id of props.selectedIds) {
-      await returnOrderApi.scrap(id)
+    // 详情页模式：处理单个订单
+    if (props.order) {
+      // 如果是已报废状态，不需要操作
+      if (props.order.status === 'scrapped') {
+        emit('update:visible', false)
+        return
+      }
+
+      // 如果用户选择了"已WorkON报废"，调用 workonConfirm
+      if (form.scrapStatus === 'completed_workon' && props.order.status === 'scrap_in_progress') {
+        await returnOrderApi.workonConfirm(props.order.id)
+      } else {
+        // 否则调用 scrap 方法
+        await returnOrderApi.scrap(props.order.id)
+      }
+
+      emit('success')
+      emit('update:visible', false)
     }
-    message.success(t('message.scrapSubmitted'))
-    emit('success')
-    emit('update:visible', false)
+    // 列表页模式：处理多个订单（已废弃，但保留兼容性）
+    else if (props.selectedIds && props.selectedIds.length > 0) {
+      for (const id of props.selectedIds) {
+        await returnOrderApi.scrap(id)
+      }
+      emit('success')
+      emit('update:visible', false)
+    }
+  } catch (error: any) {
+    console.error('Scrap failed:', error)
+    const errorMsg = error?.response?.data?.message || error?.message || t('message.scrapFailed')
+    message.error(errorMsg)
   } finally {
     submitting.value = false
   }
@@ -123,5 +204,9 @@ const handleSubmit = async () => {
 <style lang="less" scoped>
 .workon-link {
   padding: 8px 0;
+}
+
+.status-hint {
+  margin-top: 8px;
 }
 </style>

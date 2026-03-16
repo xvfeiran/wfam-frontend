@@ -21,10 +21,9 @@
             <template #title>{{ t('message.failureTypeBA20CannotSample') }}</template>
             <a-button disabled>{{ t('returnOrder.sampling') }}</a-button>
           </a-tooltip>
-          <a-button v-if="order?.status === 'analysis_completed'" danger @click="handleScrap">
+          <a-button danger @click="handleScrap">
             <StopOutlined /> {{ t('returnOrder.scrap') }}
           </a-button>
-          <a-button v-if="order?.status === 'scrap_in_progress'" type="primary" @click="handleWorkonConfirm">{{ t('orderDetail.stepScrapped') }}</a-button>
         </a-space>
       </template>
     </a-page-header>
@@ -181,7 +180,7 @@
     <!-- 报废弹窗 -->
     <ScrapModal
       v-model:visible="scrapVisible"
-      :selected-ids="order ? [order.id] : []"
+      :order="order"
       @success="handleScrapSuccess"
     />
   </div>
@@ -393,7 +392,12 @@ const statusStepMap: Record<OrderStatus, number> = {
 }
 
 const currentStep = computed(() => {
-  return order.value ? statusStepMap[order.value.status] : 0
+  if (!order.value) return 0
+  // 已报废是最终状态，应设置为比最大步骤索引更大的值，使其显示为"已完成"
+  if (order.value.status === OrderStatus.SCRAPPED) {
+    return 7 // 比最大步骤索引6大1
+  }
+  return statusStepMap[order.value.status]
 })
 
 // Permission check for edit button
@@ -633,15 +637,6 @@ const handleScrapSuccess = async () => {
   scrapVisible.value = false
   message.success(t('message.scrapStatusMarked'))
   order.value = await returnOrderApi.getById(orderId.value)
-}
-
-const handleWorkonConfirm = async () => {
-  try {
-    order.value = await returnOrderApi.workonConfirm(orderId.value)
-    message.success(t('message.scrapStatusMarked'))
-  } catch {
-    message.error(t('message.scrapStatusMarked'))
-  }
 }
 
 const handleAddPart = () => {
