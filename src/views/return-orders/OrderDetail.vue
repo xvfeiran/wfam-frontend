@@ -64,7 +64,7 @@
           <template #title>
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
               <span>{{ t('orderDetail.partsList') }}</span>
-              <a-button type="primary" size="small" @click="handleAddPart">
+              <a-button v-if="canAddPart" type="primary" size="small" @click="handleAddPart">
                 <PlusOutlined /> {{ t('common.create') }}
               </a-button>
             </div>
@@ -411,6 +411,13 @@ const canShowEditButton = computed(() => {
   if (!order.value?.orderNumber) return true
   // Submitted orders only visible to QMC Manager
   return isQMCManager.value
+})
+
+// Add part button visibility logic:
+// - Only draft and in_initial_analysis status can add parts
+const canAddPart = computed(() => {
+  if (!order.value) return false
+  return order.value.status === 'draft' || order.value.status === 'in_initial_analysis'
 })
 
 const partColumns = computed(() => [
