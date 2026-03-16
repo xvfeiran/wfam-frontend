@@ -94,13 +94,18 @@ const {
   const result = await partApi.list(Object.keys(params).length > 0 ? params : undefined)
 
   // QC created status filter on frontend
+  let filteredData = result
   if (filters.value.qcCreated === 'yes') {
-    return result.filter(p => (p as any).qcNo)
+    filteredData = result.filter(p => (p as any).qcNo)
   } else if (filters.value.qcCreated === 'no') {
-    return result.filter(p => !(p as any).qcNo)
+    filteredData = result.filter(p => !(p as any).qcNo)
   }
 
-  return result
+  // Return in the format expected by useTableList
+  return {
+    data: filteredData,
+    total: filteredData.length
+  }
 })
 
 const analysisVisible = ref(false)
