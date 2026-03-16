@@ -53,7 +53,7 @@
     <TemplateUploadModal
       :visible="templateModalVisible"
       :form="templateForm"
-      :product-platforms="productPlatformOptions"
+      :product-categories="productCategoryOptions"
       :failure-types="failureTypeOptions"
       @upload="handleTemplateUpload"
       @cancel="templateModalVisible = false"
@@ -93,7 +93,7 @@ type SyncStatus = 'success' | 'failed' | 'idle'
 interface TemplateItem {
   id: string
   name: string
-  productPlatform: string
+  productCategory: string
   failureType: string
   uploadTime: string
   uploadBy: string
@@ -113,12 +113,12 @@ const templateModalVisible = ref(false)
 const customerModalVisible = ref(false)
 const syncing = ref(false)
 
-const productPlatformOptions = ref<string[]>([])
+const productCategoryOptions = ref<string[]>([])
 const failureTypeOptions = ref<string[]>([])
 
 onMounted(async () => {
   const lookups = await lookupApi.getAll()
-  productPlatformOptions.value = lookups.productPlatforms
+  productCategoryOptions.value = lookups.productCategories
   failureTypeOptions.value = lookups.failureTypes
 
   await loadCustomers()
@@ -131,7 +131,7 @@ const loadTemplates = async () => {
     templates.value = data.map(t => ({
       id: t.id,
       name: t.name,
-      productPlatform: t.productPlatform || '-',
+      productCategory: t.productCategory || '-',
       failureType: t.failureType || '-',
       uploadTime: t.createdAt || '-',
       uploadBy: t.createdBy || '-',
@@ -164,7 +164,7 @@ const templates = ref<TemplateItem[]>([])
 
 const templateForm = reactive({
   name: undefined as string | undefined,
-  productPlatform: undefined as string | undefined,
+  productCategory: undefined as string | undefined,
   failureType: undefined as string | undefined,
   fileList: [] as any[],
 })
@@ -212,7 +212,7 @@ const loadCustomers = async () => {
 
 const handleAddTemplate = () => {
   templateForm.name = undefined
-  templateForm.productPlatform = undefined
+  templateForm.productCategory = undefined
   templateForm.failureType = undefined
   templateForm.fileList = []
   templateModalVisible.value = true
@@ -226,7 +226,7 @@ const handleTemplateUpload = async () => {
 
   const formData = new FormData()
   formData.append('file', templateForm.fileList[0].originFileObj)
-  formData.append('productPlatform', templateForm.productPlatform!)
+  formData.append('productCategory', templateForm.productCategory!)
   formData.append('failureType', templateForm.failureType || '')
   if (templateForm.name) {
     formData.append('name', templateForm.name)

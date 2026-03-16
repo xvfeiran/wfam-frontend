@@ -4,6 +4,7 @@ export interface LookupData {
   customers: string[]
   businessUnits: string[]
   productPlatforms: string[]
+  productCategories: string[]
   failureTypes: string[]
 }
 
@@ -19,6 +20,9 @@ export const lookupApi = {
   },
   getProductPlatforms(): Promise<string[]> {
     return request.get('/lookups/product-platforms') as unknown as Promise<string[]>
+  },
+  getProductCategories(): Promise<string[]> {
+    return request.get('/lookups/product-categories') as unknown as Promise<string[]>
   },
   getFailureTypes(): Promise<string[]> {
     return request.get('/lookups/failure-types') as unknown as Promise<string[]>

@@ -31,7 +31,7 @@ import { PlusOutlined } from '@ant-design/icons-vue'
 interface TemplateItem {
   id: string
   name: string
-  productPlatform: string
+  productCategory: string
   failureType: string
   uploadTime: string
   uploadBy: string
@@ -54,7 +54,7 @@ const { t } = useI18n()
 
 const columns = computed(() => [
   { title: t('settings.templateName'), dataIndex: 'name', key: 'name' },
-  { title: t('settings.productPlatform'), dataIndex: 'productPlatform', key: 'productPlatform' },
+  { title: t('settings.productCategory'), dataIndex: 'productCategory', key: 'productCategory' },
   { title: t('settings.failureType'), dataIndex: 'failureType', key: 'failureType' },
   { title: t('settings.uploadTime'), dataIndex: 'uploadTime', key: 'uploadTime' },
   { title: t('settings.uploadBy'), dataIndex: 'uploadBy', key: 'uploadBy' },

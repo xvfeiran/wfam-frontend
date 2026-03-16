@@ -113,7 +113,7 @@ export interface Task {
 export interface ReportTemplate {
   id: string
   name: string
-  productPlatform?: string
+  productCategory?: string
   failureType?: string
   fields: Array<{
     name: string

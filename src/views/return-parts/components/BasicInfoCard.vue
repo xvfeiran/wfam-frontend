@@ -56,7 +56,11 @@
       <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('returnPart.productCategory')" name="productCategory">
-            <a-input v-model:value="form.productCategory" :placeholder="t('validation.inputProductCategory')" />
+            <a-select v-model:value="form.productCategory" :placeholder="t('validation.selectProductCategory')">
+              <a-select-option v-for="pc in productCategories" :key="pc" :value="pc">
+                {{ pc }}
+              </a-select-option>
+            </a-select>
           </a-form-item>
         </a-col>
         <a-col :span="12">
@@ -144,6 +148,7 @@ interface Props {
   hasPresetOrder: boolean
   orders: any[]
   businessUnits: string[]
+  productCategories: string[]
   productPlatforms: string[]
   failureTypes: string[]
   users: { id: string; loginName; displayName: string }[]
@@ -180,7 +185,7 @@ defineExpose({
     orderId: [{ required: true, message: t('validation.selectOrder') }],
     partCode: [{ required: true, message: t('validation.inputPartCode') }],
     businessUnit: [{ required: true, message: t('validation.selectBusinessUnit') }],
-    productCategory: [{ required: true, message: t('validation.inputProductCategory') }],
+    productCategory: [{ required: true, message: t('validation.selectProductCategory') }],
     productPlatform: [{ required: true, message: t('validation.selectProductPlatform') }],
   }))
 })

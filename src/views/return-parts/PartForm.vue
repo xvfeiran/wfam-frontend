@@ -22,6 +22,7 @@
       :has-preset-order="hasPresetOrder"
       :orders="orders"
       :business-units="businessUnits"
+      :product-categories="productCategories"
       :product-platforms="productPlatforms"
       :failure-types="failureTypes"
       :users="users"
@@ -94,6 +95,7 @@ const basicInfoCardRef = ref<any>(null)
 
 const orders = ref<any[]>([])
 const businessUnits = ref<string[]>([])
+const productCategories = ref<string[]>([])
 const productPlatforms = ref<string[]>([])
 const failureTypes = ref<string[]>([])
 const users = ref<{ id: string; loginName: string; displayName: string }[]>([])
@@ -135,7 +137,7 @@ const rules = computed(() => ({
   orderId: [{ required: true, message: t('validation.selectOrder') }],
   partCode: [{ required: true, message: t('validation.inputPartCode') }],
   businessUnit: [{ required: true, message: t('validation.selectBusinessUnit') }],
-  productCategory: [{ required: true, message: t('validation.inputProductCategory') }],
+  productCategory: [{ required: true, message: t('validation.selectProductCategory') }],
   productPlatform: [{ required: true, message: t('validation.selectProductPlatform') }],
 }))
 
@@ -148,6 +150,7 @@ onMounted(async () => {
     userApi.list(),
   ])
   businessUnits.value = lookups.businessUnits
+  productCategories.value = lookups.productCategories
   productPlatforms.value = lookups.productPlatforms
   failureTypes.value = lookups.failureTypes
   // 只显示未抽样的退货单（草稿或初分析中状态）
