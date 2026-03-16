@@ -12,12 +12,6 @@
           <DeleteOutlined /> {{ t('common.delete') }}
         </a-button>
       </a-popconfirm>
-      <a-button :disabled="selectedCount !== 1" @click="$emit('detailed-analysis')">
-        <ExperimentOutlined /> {{ t('returnPart.detailedAnalysis') }}
-      </a-button>
-      <a-button :disabled="selectedCount !== 1" @click="$emit('analysis')">
-        <FileSearchOutlined /> {{ t('returnPart.analysisReport') }}
-      </a-button>
     </a-space>
   </div>
 </template>
@@ -28,8 +22,6 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-  ExperimentOutlined,
-  FileSearchOutlined,
 } from '@ant-design/icons-vue'
 
 interface Props {
@@ -44,8 +36,6 @@ defineEmits<{
   (e: 'create'): void
   (e: 'edit'): void
   (e: 'delete'): void
-  (e: 'detailed-analysis'): void
-  (e: 'analysis'): void
 }>()
 
 const { t } = useI18n()

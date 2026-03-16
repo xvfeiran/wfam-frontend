@@ -19,8 +19,6 @@
       @create="handleCreate"
       @edit="handleEdit"
       @delete="handleBatchDeleteWrapper"
-      @detailed-analysis="handleDetailedAnalysis"
-      @analysis="handleAnalysis"
     />
 
     <!-- 列表区 -->
@@ -34,13 +32,6 @@
       @table-change="handleTableChange"
       @view="handleView"
       @go-to-order="goToOrder"
-    />
-
-    <!-- 精分析报告弹窗 -->
-    <AnalysisReportModal
-      v-model:visible="analysisVisible"
-      :part="currentPart"
-      @success="handleAnalysisSuccess"
     />
   </div>
 </template>
@@ -58,7 +49,6 @@ import { usePermissions } from '@/composables/usePermissions'
 import PartListFilters from './components/PartListFilters.vue'
 import PartListActions from './components/PartListActions.vue'
 import PartTable from './components/PartTable.vue'
-import AnalysisReportModal from './components/AnalysisReportModal.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -111,9 +101,6 @@ const {
     total: filteredData.length
   }
 })
-
-const analysisVisible = ref(false)
-const currentPart = ref<Part | null>(null)
 
 // 检查选中的售后件是否可以编辑
 const canEditSelectedPart = computed(() => {
@@ -189,24 +176,6 @@ const handleEdit = () => {
 
 const handleBatchDeleteWrapper = async () => {
   await handleBatchDelete(partApi.delete)
-}
-
-const handleDetailedAnalysis = () => {
-  if (selectedRowKeys.value.length === 1) {
-    router.push(`/return-parts/${selectedRowKeys.value[0]}/analysis`)
-  }
-}
-
-const handleAnalysis = () => {
-  if (selectedRowKeys.value.length === 1) {
-    currentPart.value = parts.value.find(p => p.id === selectedRowKeys.value[0]) || null
-    analysisVisible.value = true
-  }
-}
-
-const handleAnalysisSuccess = () => {
-  analysisVisible.value = false
-  message.success(t('message.reportSubmitted'))
 }
 
 const goToOrder = (orderId: string) => {
