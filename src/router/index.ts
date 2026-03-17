@@ -89,7 +89,7 @@ const routes: RouteRecordRaw[] = [
         path: 'imports',
         name: 'Imports',
         component: () => import('@/views/imports/ImportList.vue'),
-        meta: { title: '导入管理' },
+        meta: { title: '导入' },
       },
       // 配置
       {

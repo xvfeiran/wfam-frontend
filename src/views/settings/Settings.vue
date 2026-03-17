@@ -22,6 +22,11 @@
         />
       </a-tab-pane>
 
+      <!-- 邮件服务器配置 -->
+      <a-tab-pane key="email" :tab="t('settings.email')">
+        <EmailConfig ref="emailConfigRef" />
+      </a-tab-pane>
+
       <!-- 主数据同步 -->
       <a-tab-pane key="sync" :tab="t('settings.dataSync')">
         <DataSync
@@ -80,6 +85,7 @@ import type { Customer } from '@/services/customerApi'
 import type { ReportTemplate } from '@/types'
 import TemplateManagement from './components/TemplateManagement.vue'
 import NotificationConfig from './components/NotificationConfig.vue'
+import EmailConfig from './components/EmailConfig.vue'
 import DataSync from './components/DataSync.vue'
 import CustomerManagement from './components/CustomerManagement.vue'
 import TemplateUploadModal from './components/TemplateUploadModal.vue'
@@ -87,7 +93,7 @@ import CustomerModal from './components/CustomerModal.vue'
 
 const { t } = useI18n()
 
-type SettingsTab = 'templates' | 'notifications' | 'sync' | 'dictionary'
+type SettingsTab = 'templates' | 'notifications' | 'email' | 'sync' | 'dictionary'
 type SyncStatus = 'success' | 'failed' | 'idle'
 
 interface TemplateItem {
