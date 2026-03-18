@@ -74,6 +74,7 @@ function getRoleIds(role: UserRole): string {
 }
 
 // 预定义的模拟用户（使用纯英文避免 HTTP 请求头编码问题）
+// ntAccount 与 loginName 保持一致，使分析单按 analyst 过滤时能正确匹配
 export const MOCK_USERS: DevUser[] = [
   {
     id: '6181',
@@ -81,34 +82,52 @@ export const MOCK_USERS: DevUser[] = [
     displayName: 'Zhang San',
     email: 'zhangsan@cn.bosch.com',
     department: 'BD/SWD-FSB1',
-    ntAccount: 'ZSAN',
+    ntAccount: 'zhangsan',
     role: 'W_RBCC_AEP_WFAM_Customer_Quality_ENG',
   },
   {
     id: '6182',
     username: 'lisi',
-    displayName: 'Li Si',
+    displayName: 'Li Si (Analyst)',
     email: 'lisi@cn.bosch.com',
     department: 'BD/SWD-FSB2',
-    ntAccount: 'LSI',
+    ntAccount: 'lisi',
+    role: 'W_RBCC_AEP_WFAM_Analyst',
+  },
+  {
+    id: '6187',
+    username: 'qianqi',
+    displayName: 'Qian Qi (Analyst)',
+    email: 'qianqi@cn.bosch.com',
+    department: 'BD/SWD-FSB3',
+    ntAccount: 'qianqi',
+    role: 'W_RBCC_AEP_WFAM_Analyst',
+  },
+  {
+    id: '6188',
+    username: 'zhaoliu',
+    displayName: 'Zhao Liu (Analyst)',
+    email: 'zhaoliu2@cn.bosch.com',
+    department: 'BD/SWD-FSB4',
+    ntAccount: 'zhaoliu',
     role: 'W_RBCC_AEP_WFAM_Analyst',
   },
   {
     id: '6183',
     username: 'wangwu',
-    displayName: 'Wang Wu',
+    displayName: 'Wang Wu (Leader)',
     email: 'wangwu@cn.bosch.com',
     department: 'BD/SWD-QMC',
-    ntAccount: 'WWU',
+    ntAccount: 'wangwu',
     role: 'W_RBCC_AEP_WFAM_QMC_Leader',
   },
   {
     id: '6184',
-    username: 'zhaoliu',
-    displayName: 'Zhao Liu',
-    email: 'zhaoliu@cn.bosch.com',
+    username: 'sunba',
+    displayName: 'Sun Ba (Manager)',
+    email: 'sunba@cn.bosch.com',
     department: 'BD/SWD-QMC',
-    ntAccount: 'ZLIU',
+    ntAccount: 'sunba',
     role: 'W_RBCC_AEP_WFAM_QMC_Manager',
   },
   {
@@ -117,7 +136,7 @@ export const MOCK_USERS: DevUser[] = [
     displayName: 'Guest User',
     email: 'guest@cn.bosch.com',
     department: 'BD/SWD-GUEST',
-    ntAccount: 'GUEST',
+    ntAccount: 'guest',
     role: 'R_RBCC_AEP_WFAM_Visitor',
   },
   {
@@ -126,7 +145,7 @@ export const MOCK_USERS: DevUser[] = [
     displayName: 'System Admin',
     email: 'admin@cn.bosch.com',
     department: 'IT/Admin',
-    ntAccount: 'ADMIN',
+    ntAccount: 'admin',
     role: 'W_RBCC_AEP_WFAM_SystemAdmin',
   },
 ]

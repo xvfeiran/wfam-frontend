@@ -15,6 +15,7 @@ export default {
     import: '导入',
     operation: '操作',
     status: '状态',
+    all: '全部',
     total: '共 {total} 条',
     success: '成功',
     failed: '失败',

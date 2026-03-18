@@ -15,6 +15,7 @@ export default {
     import: 'Import',
     operation: 'Action',
     status: 'Status',
+    all: 'All',
     total: 'Total {total} items',
     success: 'Success',
     failed: 'Failed',

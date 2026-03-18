@@ -153,8 +153,8 @@ onMounted(async () => {
   productCategories.value = lookups.productCategories
   productPlatforms.value = lookups.productPlatforms
   failureTypes.value = lookups.failureTypes
-  // 只显示未抽样的退货单（草稿或初分析中状态）
-  const eligibleStatuses = ['draft', 'in_initial_analysis']
+  // 只显示草稿或已提交状态的退货单
+  const eligibleStatuses = ['draft', 'submitted']
   orders.value = ordersData.data.filter((order: any) => eligibleStatuses.includes(order.status))
   users.value = usersData
 
