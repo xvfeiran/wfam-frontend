@@ -34,6 +34,10 @@
           <template #icon><ToolOutlined /></template>
           <span>{{ t('menu.returnParts') }}</span>
         </a-menu-item>
+        <a-menu-item key="/analysis-orders">
+          <template #icon><AuditOutlined /></template>
+          <span>{{ t('menu.analysisOrders') }}</span>
+        </a-menu-item>
         <a-menu-item key="/reports">
           <template #icon><BarChartOutlined /></template>
           <span>{{ t('menu.reports') }}</span>
@@ -131,6 +135,8 @@ const currentPageTitle = computed(() => {
     '/return-parts/:id': 'partDetail.title',
     '/return-parts/:id/edit': 'returnPart.editTitle',
     '/return-parts/:id/analysis': 'analysisForm.title',
+    '/analysis-orders': 'menu.analysisOrders',
+    '/analysis-orders/:id': 'analysisOrder.detailTitle',
     '/reports': 'menu.reports',
     '/approval': 'menu.approval',
     '/imports': 'menu.imports',
@@ -174,6 +180,8 @@ watch(
       selectedKeys.value = ['/return-orders']
     } else if (path.startsWith('/return-parts')) {
       selectedKeys.value = ['/return-parts']
+    } else if (path.startsWith('/analysis-orders')) {
+      selectedKeys.value = ['/analysis-orders']
     } else if (path.startsWith('/reports')) {
       selectedKeys.value = ['/reports']
     } else if (path.startsWith('/approval')) {

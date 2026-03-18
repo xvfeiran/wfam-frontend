@@ -40,7 +40,8 @@
             <a-descriptions-item :label="t('returnPart.productCategory')">{{ part?.productCategory }}</a-descriptions-item>
             <a-descriptions-item :label="t('returnPart.productPlatform')">{{ part?.productPlatform }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.productionShift')">{{ part?.productionShift || '-' }}</a-descriptions-item>
-            <a-descriptions-item :label="t('partDetail.failureType')">{{ part?.failureType || '-' }}</a-descriptions-item>
+            <a-descriptions-item :label="t('partDetail.customerFailureType')">{{ part?.failureType || '-' }}</a-descriptions-item>
+            <a-descriptions-item :label="t('partDetail.boschFailureType')">{{ part?.boschFailureType || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.responsibleEngineer')">{{ part?.responsibleEngineer || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.analyst')">{{ part?.analyst || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('common.status')" :span="2">

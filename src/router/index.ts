@@ -70,6 +70,19 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/return-parts/AnalysisForm.vue'),
         meta: { title: '精分析表单' },
       },
+      // 分析单管理
+      {
+        path: 'analysis-orders',
+        name: 'AnalysisOrders',
+        component: () => import('@/views/analysis-orders/AnalysisOrderList.vue'),
+        meta: { title: '分析单管理' },
+      },
+      {
+        path: 'analysis-orders/:id',
+        name: 'AnalysisOrderDetail',
+        component: () => import('@/views/analysis-orders/AnalysisOrderDetail.vue'),
+        meta: { title: '分析单详情' },
+      },
       // 统计报表
       {
         path: 'reports',

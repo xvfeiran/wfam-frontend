@@ -93,9 +93,9 @@
             </a-form-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item :label="t('returnOrder.failureType')" name="failureType">
-              <a-select v-model:value="form.failureType" :placeholder="t('validation.selectFailureType')">
-                <a-select-option v-for="ct in failureTypes" :key="ct.code" :value="ct.code">
+            <a-form-item :label="t('returnOrder.complaintType')" name="complaintType">
+              <a-select v-model:value="form.complaintType" :placeholder="t('validation.selectComplaintType')">
+                <a-select-option v-for="ct in complaintTypes" :key="ct.code" :value="ct.code">
                   {{ ct.code }} - {{ ct.description }}
                 </a-select-option>
               </a-select>
@@ -162,8 +162,8 @@ const canEditSubmittedOrder = computed(() => {
 
 const customers = ref<Customer[]>([])
 
-// 失效类型列表
-const failureTypes = ref([
+// 投诉类型列表（BA代码）
+const complaintTypes = ref([
   { code: 'BA10', description: '0-mlg, provisional rework/accept. back' },
   { code: 'BA20', description: '0-km, uninstalled' },
   { code: 'BA21', description: 'QM01' },
@@ -193,7 +193,7 @@ const form = reactive({
   returnMethod: 'express',
   trackingNumber: '',
   returnQuantity: 1,
-  failureType: undefined as string | undefined, // 失效类型，必填
+  complaintType: undefined as string | undefined, // 投诉类型（BA代码），必填
 })
 
 // Watch returnMethod changes - clear trackingNumber when switching from express to pickup
@@ -228,7 +228,7 @@ const rules = computed(() => ({
     { required: true, message: t('validation.inputReturnQuantity') },
     { type: 'number', min: 1, max: 9999, message: t('validation.returnQuantityRange', { min: 1, max: 9999 }) }
   ],
-  failureType: [{ required: true, message: t('validation.selectFailureType') }],
+  complaintType: [{ required: true, message: t('validation.selectComplaintType') }],
 }))
 
 const disabledFutureDate = (current: Dayjs) => {
@@ -259,7 +259,7 @@ onMounted(async () => {
       // Only load trackingNumber for express delivery
       form.trackingNumber = (order.returnMethod === 'express' && order.trackingNumber) ? order.trackingNumber : ''
       form.returnQuantity = order.returnQuantity
-      form.failureType = order.failureType
+      form.complaintType = order.complaintType
     }
   }
 })
@@ -281,7 +281,7 @@ const buildPayload = () => {
     complaintDate: complaintDate ? complaintDate.format('YYYY-MM-DD') : undefined,
     returnMethod: form.returnMethod,
     returnQuantity: form.returnQuantity,
-    failureType: form.failureType, // 失效类型，必填
+    complaintType: form.complaintType, // 投诉类型（BA代码），必填
   }
   // Only include trackingNumber for express delivery
   if (form.returnMethod === 'express' && form.trackingNumber) {

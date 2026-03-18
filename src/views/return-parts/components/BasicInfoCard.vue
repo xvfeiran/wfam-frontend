@@ -84,20 +84,11 @@
 
       <a-row :gutter="24">
         <a-col :span="12">
-          <a-form-item :label="t('returnPart.returnType')" name="complaintType">
-            <a-select v-model:value="form.complaintType" :placeholder="t('validation.pleaseSelect')">
-              <a-select-option v-for="ct in complaintTypes" :key="ct.value" :value="ct.value">
-                {{ ct.label }}
-              </a-select-option>
-            </a-select>
-          </a-form-item>
-        </a-col>
-        <a-col :span="12">
-          <a-form-item :label="t('returnPart.failureType')" name="failureType">
-            <a-select v-model:value="form.failureType" :placeholder="t('validation.selectFailureType')">
-              <a-select-option v-for="ft in failureTypes" :key="ft" :value="ft">
-                {{ ft }}
-              </a-select-option>
+          <a-form-item :label="t('returnPart.customerFailureType')" name="failureType">
+            <a-select v-model:value="form.failureType" :placeholder="t('validation.selectCustomerFailureType')">
+              <a-select-option value="NVH">NVH</a-select-option>
+              <a-select-option value="功能">{{ t('returnPart.failureFunctional') }}</a-select-option>
+              <a-select-option value="外观">{{ t('returnPart.failureAppearance') }}</a-select-option>
             </a-select>
           </a-form-item>
         </a-col>
@@ -112,7 +103,7 @@
           </a-form-item>
         </a-col>
         <a-col :span="12">
-          <a-form-item :label="t('partDetail.analyst')">
+          <a-form-item :label="t('partDetail.analyst')" name="analyst">
             <a-select v-model:value="form.analyst" :placeholder="t('validation.pleaseSelect')" allowClear>
               <a-select-option v-for="u in users" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
             </a-select>
@@ -126,7 +117,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { COMPLAINT_TYPES } from '@/constants/complaintTypes'
 
 interface Form {
   partNumber: string
@@ -136,7 +126,6 @@ interface Form {
   productCategory: string
   productPlatform?: string
   productionShift: string
-  complaintType?: string
   failureType?: string
   responsibleEngineer?: string
   analyst?: string
@@ -158,8 +147,6 @@ interface Props {
 const props = defineProps<Props>()
 
 const { t } = useI18n()
-
-const complaintTypes = COMPLAINT_TYPES
 
 // 订单搜索过滤
 const filterOrderOption = (input: string, option: any) => {
@@ -187,6 +174,7 @@ defineExpose({
     businessUnit: [{ required: true, message: t('validation.selectBusinessUnit') }],
     productCategory: [{ required: true, message: t('validation.selectProductCategory') }],
     productPlatform: [{ required: true, message: t('validation.selectProductPlatform') }],
+    analyst: [{ required: true, message: t('validation.selectAnalyst') }],
   }))
 })
 </script>

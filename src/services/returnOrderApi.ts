@@ -75,15 +75,6 @@ export const returnOrderApi = {
   submit(id: string): Promise<ReturnOrder> {
     return request.post(`/return-orders/${id}/submit`) as unknown as Promise<ReturnOrder>
   },
-  sampling(orderId: string, data: { sampledPartIds: string[] }): Promise<ReturnOrder> {
-    return request.post(`/return-orders/${orderId}/sampling`, data) as unknown as Promise<ReturnOrder>
-  },
-  scrap(id: string): Promise<ReturnOrder> {
-    return request.post(`/return-orders/${id}/scrap`) as unknown as Promise<ReturnOrder>
-  },
-  workonConfirm(id: string): Promise<ReturnOrder> {
-    return request.post(`/return-orders/${id}/scrap/workon-confirm`) as unknown as Promise<ReturnOrder>
-  },
   exportExcel(params?: Pick<OrderListParams, 'orderNumber' | 'customer' | 'receiveDateStart' | 'receiveDateEnd'>): Promise<Blob> {
     return request.get('/return-orders/export', {
       params,

@@ -8,22 +8,6 @@
         <a-space>
           <a-button v-if="canShowEditButton" @click="handleEdit">{{ t('common.edit') }}</a-button>
           <a-button v-if="order?.status === 'draft'" type="primary" @click="handleSubmit">{{ t('common.submit') }}</a-button>
-          <!-- 初分析中和精分析中：所有用户都可以点击"抽样"按钮，但BA20（0km）订单除外 -->
-          <a-button
-            v-if="(order?.status === 'in_initial_analysis' || order?.status === 'in_detailed_analysis') && order?.failureType !== 'BA20'"
-            type="primary"
-            @click="handleSampling"
-          >
-            {{ t('returnOrder.sampling') }}
-          </a-button>
-          <!-- BA20（0km）订单提示 -->
-          <a-tooltip v-if="(order?.status === 'in_initial_analysis' || order?.status === 'in_detailed_analysis') && order?.failureType === 'BA20'">
-            <template #title>{{ t('message.failureTypeBA20CannotSample') }}</template>
-            <a-button disabled>{{ t('returnOrder.sampling') }}</a-button>
-          </a-tooltip>
-          <a-button danger @click="handleScrap">
-            <StopOutlined /> {{ t('returnOrder.scrap') }}
-          </a-button>
         </a-space>
       </template>
     </a-page-header>
@@ -43,9 +27,9 @@
             <a-descriptions-item :label="t('returnOrder.returnMethod')">{{ getReturnMethodLabel() }}</a-descriptions-item>
             <a-descriptions-item :label="t('returnOrder.trackingNumber')">{{ order?.trackingNumber || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('returnOrder.returnQuantity')">{{ order?.returnQuantity }}</a-descriptions-item>
-            <a-descriptions-item :label="t('returnOrder.failureType')">
-              {{ order?.failureType || '-' }}
-              <a-tag v-if="order?.failureType === 'BA20'" color="red" style="margin-left: 8px">{{ t('returnOrder.is0km') }}</a-tag>
+            <a-descriptions-item :label="t('returnOrder.complaintType')">
+              {{ order?.complaintType || '-' }}
+              <a-tag v-if="order?.complaintType === 'BA40'" color="blue" style="margin-left: 8px">{{ t('returnOrder.aftermarketPartTag') }}</a-tag>
             </a-descriptions-item>
             <a-descriptions-item :label="t('orderDetail.detailedAnalysisQuantity')">{{ order?.detailedAnalysisQuantity }}</a-descriptions-item>
             <a-descriptions-item :label="t('orderDetail.scrappedQuantity')">{{ order?.scrappedQuantity }}</a-descriptions-item>
@@ -157,32 +141,12 @@
         <a-card :title="t('orderDetail.statusFlow')" class="status-card">
           <a-steps direction="vertical" :current="currentStep" size="small">
             <a-step :title="t('orderDetail.stepDraft')" :description="getStepDescription(0)" />
-            <a-step :title="t('orderDetail.stepInInitialAnalysis')" :description="getStepDescription(1)" />
-            <a-step :title="t('orderDetail.stepInDetailedAnalysis')" :description="getStepDescription(2)" />
-            <a-step :title="t('orderDetail.stepPendingApproval')" :description="getStepDescription(3)" />
-            <a-step :title="t('orderDetail.stepAnalysisCompleted')" :description="getStepDescription(4)" />
-            <a-step :title="t('orderDetail.stepScrapInProgress')" :description="getStepDescription(5)" />
-            <a-step :title="t('orderDetail.stepScrapped')" :description="getStepDescription(6)" />
+            <a-step :title="t('orderDetail.stepSubmitted')" :description="getStepDescription(1)" />
           </a-steps>
         </a-card>
       </a-col>
     </a-row>
 
-    <!-- 抽样弹窗 -->
-    <SamplingModal
-      v-model:visible="samplingVisible"
-      :order="order"
-      :read-only="samplingReadOnly"
-      @success="handleSamplingSuccess"
-      @no-sampling="handleNoSamplingSuccess"
-    />
-
-    <!-- 报废弹窗 -->
-    <ScrapModal
-      v-model:visible="scrapVisible"
-      :order="order"
-      @success="handleScrapSuccess"
-    />
   </div>
 </template>
 
@@ -191,14 +155,11 @@ import { ref, computed, onMounted, onUnmounted, watch, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
-import { StopOutlined, PlusOutlined } from '@ant-design/icons-vue'
+import { PlusOutlined } from '@ant-design/icons-vue'
 import { returnOrderApi } from '@/services/returnOrderApi'
 import { partApi } from '@/services/partApi'
-import { lookupApi } from '@/services/lookupApi'
 import { ORDER_STATUS_MAP, PART_STATUS_MAP, RETURN_METHOD_MAP, OrderStatus } from '@/types'
 import type { ReturnOrder, Part } from '@/types'
-import SamplingModal from './components/SamplingModal.vue'
-import ScrapModal from './components/ScrapModal.vue'
 import { usePermissions } from '@/composables/usePermissions'
 
 const { t } = useI18n()
@@ -209,9 +170,6 @@ const orderId = computed(() => route.params.id as string)
 
 const order = ref<ReturnOrder | null>(null)
 const parts = ref<Part[]>([])
-const samplingVisible = ref(false)
-const scrapVisible = ref(false)
-const samplingReadOnly = ref(false) // 抽样只读模式标志
 const loadingParts = ref(false) // 加载售后件列表的loading状态
 const loadingLookup = ref(false) // 加载字典数据的loading状态
 const isMounted = ref(true) // 组件是否已挂载标志，用于防止异步操作在组件卸载后更新状态
@@ -380,24 +338,18 @@ const refreshData = async () => {
   }
 }
 
-// 状态步骤映射
-const statusStepMap: Record<OrderStatus, number> = {
+// 状态步骤映射（v3.0 简化为 2 步）
+const statusStepMap: Record<string, number> = {
   [OrderStatus.DRAFT]: 0,
-  [OrderStatus.IN_INITIAL_ANALYSIS]: 1,
-  [OrderStatus.IN_DETAILED_ANALYSIS]: 2,
-  [OrderStatus.PENDING_APPROVAL]: 3,
-  [OrderStatus.ANALYSIS_COMPLETED]: 4,
-  [OrderStatus.SCRAP_IN_PROGRESS]: 5,
-  [OrderStatus.SCRAPPED]: 6,
+  [OrderStatus.SUBMITTED]: 1,
 }
 
 const currentStep = computed(() => {
   if (!order.value) return 0
-  // 已报废是最终状态，应设置为比最大步骤索引更大的值，使其显示为"已完成"
-  if (order.value.status === OrderStatus.SCRAPPED) {
-    return 7 // 比最大步骤索引6大1
+  if (order.value.status === OrderStatus.SUBMITTED) {
+    return 2 // 比最大步骤索引1大1，显示为"已完成"
   }
-  return statusStepMap[order.value.status]
+  return statusStepMap[order.value.status] ?? 0
 })
 
 // Permission check for edit button
@@ -414,10 +366,10 @@ const canShowEditButton = computed(() => {
 })
 
 // Add part button visibility logic:
-// - Only draft and in_initial_analysis status can add parts
+// - Only draft and submitted status can add parts
 const canAddPart = computed(() => {
   if (!order.value) return false
-  return order.value.status === 'draft' || order.value.status === 'in_initial_analysis'
+  return order.value.status === 'draft' || order.value.status === 'submitted'
 })
 
 const partColumns = computed(() => [
@@ -473,12 +425,7 @@ const partColumns = computed(() => [
 // 状态到i18n键的映射
 const returnOrderStatusI18nKeyMap: Record<string, string> = {
   draft: 'status.draft',
-  in_initial_analysis: 'status.inInitialAnalysis',
-  in_detailed_analysis: 'status.inDetailedAnalysis',
-  pending_approval: 'status.pendingApproval',
-  analysis_completed: 'status.analysisCompleted',
-  scrap_in_progress: 'status.scrapInProgress',
-  scrapped: 'status.scrapped',
+  submitted: 'status.submitted',
 }
 
 // 获取翻译后的状态标签（退货单）
@@ -613,37 +560,6 @@ const handleSubmit = async () => {
   } catch {
     message.error(t('message.submitSuccess'))
   }
-}
-
-const handleSampling = () => {
-  // 初分析中状态：打开可编辑模式
-  // 精分析中状态：打开只读模式（弹窗内QMC Manager可切换到可编辑模式）
-  samplingReadOnly.value = order.value?.status === 'in_detailed_analysis'
-  samplingVisible.value = true
-}
-
-const handleSamplingSuccess = async () => {
-  message.success(t('message.samplingComplete'))
-  order.value = await returnOrderApi.getById(orderId.value)
-  // 更新售后件列表
-  await loadParts()
-}
-
-const handleNoSamplingSuccess = async () => {
-  message.success(t('message.noSamplingSuccess'))
-  order.value = await returnOrderApi.getById(orderId.value)
-  // 更新售后件列表
-  await loadParts()
-}
-
-const handleScrap = () => {
-  scrapVisible.value = true
-}
-
-const handleScrapSuccess = async () => {
-  scrapVisible.value = false
-  message.success(t('message.scrapStatusMarked'))
-  order.value = await returnOrderApi.getById(orderId.value)
 }
 
 const handleAddPart = () => {

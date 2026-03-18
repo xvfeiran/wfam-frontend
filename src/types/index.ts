@@ -1,12 +1,7 @@
-// 退货单状态枚举（7个状态）
+// 退货单状态枚举（v3.0 简化为 2 个状态）
 export enum OrderStatus {
   DRAFT = 'draft',
-  IN_INITIAL_ANALYSIS = 'in_initial_analysis',
-  IN_DETAILED_ANALYSIS = 'in_detailed_analysis',
-  PENDING_APPROVAL = 'pending_approval',
-  ANALYSIS_COMPLETED = 'analysis_completed',
-  SCRAP_IN_PROGRESS = 'scrap_in_progress',
-  SCRAPPED = 'scrapped',
+  SUBMITTED = 'submitted',
 }
 
 // 售后件状态枚举（6个状态）
@@ -37,7 +32,7 @@ export interface ReturnOrder {
   returnMethod: ReturnMethod
   trackingNumber?: string
   returnQuantity: number
-  failureType?: string  // 失效类型（BA20代表0km）
+  complaintType?: string  // 投诉类型（BA代码，BA40代表售后件）
   initialAnalysisQuantity: number
   detailedAnalysisQuantity: number
   scrappedQuantity: number
@@ -61,8 +56,8 @@ export interface Part {
   productCategory: string
   productPlatform: string
   productionShift?: string
-  complaintType?: string
-  failureType?: string
+  failureType?: string        // 客户失效类型（NVH/功能/外观）
+  boschFailureType?: string   // 博世失效类型（BA代码）
   responsibleEngineer?: string
   analyst?: string
   repairStation?: string
@@ -175,15 +170,44 @@ export const ANALYSIS_FIELD_LABELS: Record<string, string> = {
   responsibleDept: '责任部门',
 }
 
+// 分析单状态枚举（6个状态）
+export enum AnalysisOrderStatus {
+  PENDING_SAMPLING = 'pending_sampling',
+  IN_DETAILED_ANALYSIS = 'in_detailed_analysis',
+  PENDING_APPROVAL = 'pending_approval',
+  ANALYSIS_COMPLETED = 'analysis_completed',
+  WORKON_SCRAP_IN_PROGRESS = 'workon_scrap_in_progress',
+  WORKON_SCRAPPED = 'workon_scrapped',
+}
+
+// 分析单接口
+export interface AnalysisOrder {
+  id: string
+  orderId: string
+  orderNumber?: string
+  analyst: string
+  status: AnalysisOrderStatus
+  statusChangedAt?: string
+  parts?: Part[]
+  createdBy: string
+  createdAt: string
+  updatedBy?: string
+  updatedAt?: string
+}
+
 // 状态显示映射
 export const ORDER_STATUS_MAP: Record<OrderStatus, { label: string; color: string }> = {
   [OrderStatus.DRAFT]: { label: '草稿', color: 'default' },
-  [OrderStatus.IN_INITIAL_ANALYSIS]: { label: '初分析中', color: 'processing' },
-  [OrderStatus.IN_DETAILED_ANALYSIS]: { label: '精分析中', color: 'processing' },
-  [OrderStatus.PENDING_APPROVAL]: { label: '待审批', color: 'warning' },
-  [OrderStatus.ANALYSIS_COMPLETED]: { label: '精分析完成', color: 'success' },
-  [OrderStatus.SCRAP_IN_PROGRESS]: { label: 'WorkOn报废中', color: 'warning' },
-  [OrderStatus.SCRAPPED]: { label: '已报废', color: 'default' },
+  [OrderStatus.SUBMITTED]: { label: '已提交', color: 'processing' },
+}
+
+export const ANALYSIS_ORDER_STATUS_MAP: Record<AnalysisOrderStatus, { label: string; color: string }> = {
+  [AnalysisOrderStatus.PENDING_SAMPLING]: { label: '待抽样', color: 'default' },
+  [AnalysisOrderStatus.IN_DETAILED_ANALYSIS]: { label: '精分析中', color: 'processing' },
+  [AnalysisOrderStatus.PENDING_APPROVAL]: { label: '待审批', color: 'warning' },
+  [AnalysisOrderStatus.ANALYSIS_COMPLETED]: { label: '精分析完成', color: 'success' },
+  [AnalysisOrderStatus.WORKON_SCRAP_IN_PROGRESS]: { label: 'WorkOn报废中', color: 'warning' },
+  [AnalysisOrderStatus.WORKON_SCRAPPED]: { label: '已报废', color: 'default' },
 }
 
 export const PART_STATUS_MAP: Record<PartStatus, { label: string; color: string }> = {

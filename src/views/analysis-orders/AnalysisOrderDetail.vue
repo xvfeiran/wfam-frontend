@@ -1,0 +1,241 @@
+<template>
+  <div class="analysis-order-detail">
+    <a-page-header
+      :title="t('analysisOrder.detailTitle', { orderNumber: order?.orderNumber || '' })"
+      @back="handleBack"
+    >
+      <template #extra>
+        <a-space>
+          <a-button
+            v-if="order?.status === 'pending_sampling'"
+            type="primary"
+            @click="handleSampling"
+          >
+            {{ t('returnOrder.sampling') }}
+          </a-button>
+          <a-button
+            v-if="canScrap"
+            danger
+            @click="handleScrap"
+          >
+            {{ t('returnOrder.scrap') }}
+          </a-button>
+          <a-button
+            v-if="order?.status === 'workon_scrap_in_progress'"
+            type="primary"
+            @click="handleWorkonConfirm"
+          >
+            {{ t('analysisOrder.workonConfirm') }}
+          </a-button>
+        </a-space>
+      </template>
+    </a-page-header>
+
+    <a-row :gutter="16">
+      <a-col :span="16">
+        <a-card :title="t('orderDetail.basicInfo')" class="info-card">
+          <a-descriptions :column="2" bordered>
+            <a-descriptions-item :label="t('analysisOrder.orderNumber')">
+              {{ order?.orderNumber || '-' }}
+            </a-descriptions-item>
+            <a-descriptions-item :label="t('partDetail.analyst')">
+              {{ order?.analyst || '-' }}
+            </a-descriptions-item>
+            <a-descriptions-item :label="t('common.status')" :span="2">
+              <a-tag :color="ANALYSIS_ORDER_STATUS_MAP[order?.status || 'pending_sampling']?.color || 'default'">
+                {{ getStatusLabel(order?.status) }}
+              </a-tag>
+            </a-descriptions-item>
+          </a-descriptions>
+        </a-card>
+
+        <!-- 售后件列表 -->
+        <a-card :title="t('orderDetail.partsList')" class="parts-card">
+          <a-table
+            :columns="partColumns"
+            :data-source="order?.parts || []"
+            row-key="id"
+            size="small"
+          >
+            <template #bodyCell="{ column, record }">
+              <template v-if="column.key === 'isSample'">
+                <a-tag :color="record.isSample === 1 ? 'green' : 'default'">
+                  {{ record.isSample === 1 ? t('analysisOrder.sampled') : t('analysisOrder.unsampled') }}
+                </a-tag>
+              </template>
+            </template>
+          </a-table>
+        </a-card>
+      </a-col>
+
+      <a-col :span="8">
+        <a-card :title="t('orderDetail.statusFlow')" class="status-card">
+          <a-steps direction="vertical" :current="currentStep" size="small">
+            <a-step :title="t('analysisOrder.statusPendingSampling')" :description="getStepDescription(0)" />
+            <a-step :title="t('analysisOrder.statusInDetailedAnalysis')" :description="getStepDescription(1)" />
+            <a-step :title="t('analysisOrder.statusPendingApproval')" :description="getStepDescription(2)" />
+            <a-step :title="t('analysisOrder.statusAnalysisCompleted')" :description="getStepDescription(3)" />
+            <a-step :title="t('analysisOrder.statusWorkonScrapInProgress')" :description="getStepDescription(4)" />
+            <a-step :title="t('analysisOrder.statusWorkonScrapped')" :description="getStepDescription(5)" />
+          </a-steps>
+        </a-card>
+      </a-col>
+    </a-row>
+
+    <!-- 抽样弹窗 -->
+    <a-modal
+      v-model:open="samplingVisible"
+      :title="t('returnOrder.sampling')"
+      @ok="confirmSampling"
+      :ok-loading="samplingLoading"
+    >
+      <a-transfer
+        v-model:target-keys="sampledPartIds"
+        :data-source="partTransferData"
+        :titles="[t('analysisOrder.unsampled'), t('analysisOrder.sampled')]"
+        :render="(item: any) => item.title"
+      />
+    </a-modal>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { message } from 'ant-design-vue'
+import { analysisOrderApi } from '@/services/analysisOrderApi'
+import { ANALYSIS_ORDER_STATUS_MAP, AnalysisOrderStatus } from '@/types'
+import type { AnalysisOrder } from '@/types'
+
+const { t } = useI18n()
+const route = useRoute()
+const router = useRouter()
+const orderId = computed(() => route.params.id as string)
+
+const order = ref<AnalysisOrder | null>(null)
+const samplingVisible = ref(false)
+const samplingLoading = ref(false)
+const sampledPartIds = ref<string[]>([])
+
+const statusStepMap: Record<string, number> = {
+  [AnalysisOrderStatus.PENDING_SAMPLING]: 0,
+  [AnalysisOrderStatus.IN_DETAILED_ANALYSIS]: 1,
+  [AnalysisOrderStatus.PENDING_APPROVAL]: 2,
+  [AnalysisOrderStatus.ANALYSIS_COMPLETED]: 3,
+  [AnalysisOrderStatus.WORKON_SCRAP_IN_PROGRESS]: 4,
+  [AnalysisOrderStatus.WORKON_SCRAPPED]: 5,
+}
+
+const currentStep = computed(() => {
+  if (!order.value) return 0
+  if (order.value.status === AnalysisOrderStatus.WORKON_SCRAPPED) return 6
+  return statusStepMap[order.value.status] ?? 0
+})
+
+const canScrap = computed(() => {
+  if (!order.value) return false
+  return ![
+    AnalysisOrderStatus.WORKON_SCRAP_IN_PROGRESS,
+    AnalysisOrderStatus.WORKON_SCRAPPED,
+    AnalysisOrderStatus.PENDING_SAMPLING,
+  ].includes(order.value.status as AnalysisOrderStatus)
+})
+
+const partTransferData = computed(() => {
+  return (order.value?.parts || []).map(p => ({
+    key: p.id,
+    title: p.partNumber || p.partCode,
+  }))
+})
+
+const partColumns = [
+  { title: t('returnPart.partNumber'), dataIndex: 'partNumber', key: 'partNumber' },
+  { title: t('returnPart.partCode'), dataIndex: 'partCode', key: 'partCode' },
+  { title: t('returnPart.businessUnit'), dataIndex: 'businessUnit', key: 'businessUnit' },
+  { title: t('common.status'), dataIndex: 'status', key: 'status' },
+  { title: t('analysisOrder.sampleStatus'), dataIndex: 'isSample', key: 'isSample' },
+]
+
+const statusKeyMap: Record<string, string> = {
+  pending_sampling: 'analysisOrder.statusPendingSampling',
+  in_detailed_analysis: 'analysisOrder.statusInDetailedAnalysis',
+  pending_approval: 'analysisOrder.statusPendingApproval',
+  analysis_completed: 'analysisOrder.statusAnalysisCompleted',
+  workon_scrap_in_progress: 'analysisOrder.statusWorkonScrapInProgress',
+  workon_scrapped: 'analysisOrder.statusWorkonScrapped',
+}
+
+const getStatusLabel = (status?: string) => {
+  if (!status) return '-'
+  const key = statusKeyMap[status]
+  return key ? t(key) : status
+}
+
+const getStepDescription = (step: number) => {
+  if (step < currentStep.value) return t('orderDetail.completed')
+  if (step === currentStep.value) return t('orderDetail.inProgress')
+  return ''
+}
+
+const handleSampling = () => {
+  sampledPartIds.value = (order.value?.parts || [])
+    .filter(p => p.isSample === 1)
+    .map(p => p.id)
+  samplingVisible.value = true
+}
+
+const confirmSampling = async () => {
+  samplingLoading.value = true
+  try {
+    await analysisOrderApi.sampling(orderId.value, { sampledPartIds: sampledPartIds.value })
+    message.success(t('message.samplingComplete'))
+    samplingVisible.value = false
+    order.value = await analysisOrderApi.getById(orderId.value)
+  } catch {
+    message.error(t('message.saveFailed'))
+  } finally {
+    samplingLoading.value = false
+  }
+}
+
+const handleScrap = async () => {
+  try {
+    order.value = await analysisOrderApi.scrap(orderId.value)
+    message.success(t('message.scrapSubmitted'))
+  } catch {
+    message.error(t('message.scrapFailed'))
+  }
+}
+
+const handleWorkonConfirm = async () => {
+  try {
+    order.value = await analysisOrderApi.workonConfirm(orderId.value)
+    message.success(t('message.scrapStatusMarked'))
+  } catch {
+    message.error(t('message.saveFailed'))
+  }
+}
+
+const handleBack = () => {
+  router.back()
+}
+
+onMounted(async () => {
+  try {
+    order.value = await analysisOrderApi.getById(orderId.value)
+  } catch {
+    message.error(t('message.loadFailed'))
+  }
+})
+</script>
+
+<style lang="less" scoped>
+.analysis-order-detail {
+  padding: 24px;
+
+  .info-card, .parts-card, .status-card {
+    margin-bottom: 16px;
+  }
+}
+</style>

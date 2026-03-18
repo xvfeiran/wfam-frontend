@@ -63,6 +63,29 @@ export function usePermissions() {
   })
 
   /**
+   * Check if current user is Analyst
+   */
+  const isAnalyst = computed(() => {
+    if (isDevMode.value) {
+      return devUserStore.currentUser.role === 'W_RBCC_AEP_WFAM_Analyst'
+    }
+    return false // TODO: Implement for production mode
+  })
+
+  /**
+   * Check if current user can view all analysis orders (Leader/Manager/Admin)
+   */
+  const canViewAllAnalysisOrders = computed(() => {
+    if (isDevMode.value) {
+      const role = devUserStore.currentUser.role
+      return role === 'W_RBCC_AEP_WFAM_QMC_Leader' ||
+             role === 'W_RBCC_AEP_WFAM_QMC_Manager' ||
+             role === 'W_RBCC_AEP_WFAM_SystemAdmin'
+    }
+    return false // TODO: Implement for production mode
+  })
+
+  /**
    * Get current user's role label
    */
   const currentRoleLabel = computed(() => {
@@ -77,6 +100,8 @@ export function usePermissions() {
     isQMCLeader,
     isQMCManager,
     isSystemAdmin,
+    isAnalyst,
+    canViewAllAnalysisOrders,
     currentRoleLabel,
   }
 }
