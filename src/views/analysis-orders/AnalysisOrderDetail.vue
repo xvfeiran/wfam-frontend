@@ -57,7 +57,7 @@
         </a-card>
 
         <!-- 售后件列表 -->
-        <PartsListCard ref="partsListRef" :order-id="order?.orderId || ''" :analyst="order?.analyst" show-sample-status />
+        <PartsListCard ref="partsListRef" :order-id="order?.orderId || ''" :analyst="order?.analyst" />
       </a-col>
 
       <a-col :span="8">
