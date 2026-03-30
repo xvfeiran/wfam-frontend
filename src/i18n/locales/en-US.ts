@@ -442,6 +442,7 @@ export default {
     sampledParts: 'Sampled Parts',
     samplingRatio: 'Sampling Ratio',
     sampledCount: 'Sample Count',
+    clearSelection: 'Clear All',
     randomSampling: 'Random Sampling',
     randomSamplingComplete: 'Randomly selected {count} parts',
     confirmSampling: 'Confirm Sampling',

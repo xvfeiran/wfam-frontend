@@ -442,6 +442,7 @@ export default {
     sampledParts: '已抽样',
     samplingRatio: '抽样比例',
     sampledCount: '抽样数',
+    clearSelection: '一键清除',
     randomSampling: '随机抽样',
     randomSamplingComplete: '已随机抽取 {count} 个售后件',
     confirmSampling: '确认抽样',

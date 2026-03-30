@@ -56,22 +56,7 @@
         </a-card>
 
         <!-- 售后件列表 -->
-        <a-card :title="t('orderDetail.partsList')" class="parts-card">
-          <a-table
-            :columns="partColumns"
-            :data-source="order?.parts || []"
-            row-key="id"
-            size="small"
-          >
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'isSample'">
-                <a-tag :color="record.isSample === 1 ? 'green' : 'default'">
-                  {{ record.isSample === 1 ? t('analysisOrder.sampled') : t('analysisOrder.unsampled') }}
-                </a-tag>
-              </template>
-            </template>
-          </a-table>
-        </a-card>
+        <PartsListCard :parts="order?.parts || []" show-sample-status />
       </a-col>
 
       <a-col :span="8">
@@ -109,6 +94,7 @@ import { analysisOrderApi } from '@/services/analysisOrderApi'
 import { ANALYSIS_ORDER_STATUS_MAP, AnalysisOrderStatus } from '@/types'
 import type { AnalysisOrder } from '@/types'
 import SamplingModal from './components/SamplingModal.vue'
+import PartsListCard from '@/components/PartsListCard.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -142,14 +128,6 @@ const canScrap = computed(() => {
     AnalysisOrderStatus.PENDING_SAMPLING,
   ].includes(order.value.status as AnalysisOrderStatus)
 })
-
-const partColumns = [
-  { title: t('returnPart.partNumber'), dataIndex: 'partNumber', key: 'partNumber' },
-  { title: t('returnPart.partCode'), dataIndex: 'partCode', key: 'partCode' },
-  { title: t('returnPart.businessUnit'), dataIndex: 'businessUnit', key: 'businessUnit' },
-  { title: t('common.status'), dataIndex: 'status', key: 'status' },
-  { title: t('analysisOrder.sampleStatus'), dataIndex: 'isSample', key: 'isSample' },
-]
 
 const statusKeyMap: Record<string, string> = {
   pending_sampling: 'analysisOrder.statusPendingSampling',

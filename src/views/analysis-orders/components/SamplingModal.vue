@@ -119,6 +119,14 @@
               <template #icon><ThunderboltOutlined /></template>
               {{ t('message.randomSampling') }}
             </a-button>
+            <a-button
+              type="default"
+              :disabled="selectedPartIds.length === 0"
+              @click="handleClearSelection"
+            >
+              <template #icon><ClearOutlined /></template>
+              {{ t('message.clearSelection') }}
+            </a-button>
           </a-space>
         </div>
 
@@ -191,7 +199,7 @@
 import { ref, computed, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
-import { StopOutlined, FilterOutlined, ThunderboltOutlined } from '@ant-design/icons-vue'
+import { StopOutlined, FilterOutlined, ThunderboltOutlined, ClearOutlined } from '@ant-design/icons-vue'
 import { analysisOrderApi } from '@/services/analysisOrderApi'
 import { AnalysisOrderStatus, PART_STATUS_MAP } from '@/types'
 import type { AnalysisOrder, Part } from '@/types'
@@ -348,6 +356,13 @@ const handleRandomSampling = () => {
   const shuffled = [...availableParts.value].sort(() => Math.random() - 0.5)
   selectedPartIds.value = shuffled.slice(0, count).map(p => p.id)
   message.success(t('message.randomSamplingComplete', { count }))
+}
+
+// 一键清除
+const handleClearSelection = () => {
+  selectedPartIds.value = []
+  sampledCount.value = 0
+  samplingRatio.value = 0
 }
 
 // 取消
