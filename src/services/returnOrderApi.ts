@@ -14,11 +14,15 @@ export interface OrderListParams {
 }
 
 export interface OrderPartsParams {
-  partNumber?: string
-  partCode?: string
+  keyword?: string
   businessUnit?: string
   productPlatform?: string
   status?: string
+  analyst?: string
+  page?: number
+  pageSize?: number
+  sortBy?: string
+  sortOrder?: 'ascend' | 'descend'
 }
 
 export interface PageResult<T> {
@@ -69,8 +73,28 @@ export const returnOrderApi = {
   getPartsCount(orderId: string): Promise<{ partsCount: number }> {
     return request.get(`/return-orders/${orderId}/parts-count`) as unknown as Promise<{ partsCount: number }>
   },
-  getParts(orderId: string, params?: OrderPartsParams): Promise<Part[]> {
-    return request.get(`/return-orders/${orderId}/parts`, { params }) as unknown as Promise<Part[]>
+  getParts(orderId: string, params?: OrderPartsParams): Promise<PageResult<Part>> {
+    const adaptedParams: any = params ? { ...params } : {}
+    if (adaptedParams.page !== undefined) {
+      adaptedParams.page = adaptedParams.page - 1
+    }
+    if (adaptedParams.pageSize !== undefined) {
+      adaptedParams.size = adaptedParams.pageSize
+      delete adaptedParams.pageSize
+    }
+    if (adaptedParams.sortBy && adaptedParams.sortOrder) {
+      const direction = adaptedParams.sortOrder === 'ascend' ? 'asc' : 'desc'
+      adaptedParams.sort = `${adaptedParams.sortBy},${direction}`
+      delete adaptedParams.sortBy
+      delete adaptedParams.sortOrder
+    } else if (adaptedParams.sortBy) {
+      adaptedParams.sort = `${adaptedParams.sortBy},asc`
+      delete adaptedParams.sortBy
+      if ('sortOrder' in adaptedParams) {
+        delete adaptedParams.sortOrder
+      }
+    }
+    return request.get(`/return-orders/${orderId}/parts`, { params: adaptedParams }) as unknown as Promise<PageResult<Part>>
   },
   submit(id: string): Promise<ReturnOrder> {
     return request.post(`/return-orders/${id}/submit`) as unknown as Promise<ReturnOrder>

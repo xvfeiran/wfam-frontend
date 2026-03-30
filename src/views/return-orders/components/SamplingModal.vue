@@ -239,7 +239,7 @@ watch(
     selectedPartIds.value = []
     sampledCount.value = 0
     samplingRatio.value = 0
-    availableParts.value = await returnOrderApi.getParts(order.id)
+    availableParts.value = (await returnOrderApi.getParts(order.id, { pageSize: 10000 })).data
 
     // 加载已抽样的售后件数据
     if (isSampled.value) {

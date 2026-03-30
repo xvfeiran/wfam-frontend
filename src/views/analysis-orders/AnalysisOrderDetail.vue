@@ -56,7 +56,7 @@
         </a-card>
 
         <!-- 售后件列表 -->
-        <PartsListCard :parts="order?.parts || []" show-sample-status />
+        <PartsListCard ref="partsListRef" :order-id="order?.orderId || ''" :analyst="order?.analyst" show-sample-status />
       </a-col>
 
       <a-col :span="8">
@@ -102,6 +102,7 @@ const router = useRouter()
 const orderId = computed(() => route.params.id as string)
 
 const order = ref<AnalysisOrder | null>(null)
+const partsListRef = ref<InstanceType<typeof PartsListCard>>()
 const samplingVisible = ref(false)
 const samplingReadOnly = ref(false)
 
@@ -158,6 +159,7 @@ const handleSampling = (readOnly: boolean) => {
 const handleSamplingSuccess = async () => {
   try {
     order.value = await analysisOrderApi.getById(orderId.value)
+    partsListRef.value?.refresh()
   } catch {
     message.error(t('message.loadFailed'))
   }

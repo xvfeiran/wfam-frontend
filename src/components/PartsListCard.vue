@@ -12,14 +12,14 @@
       <a-row :gutter="12" align="middle">
         <a-col :span="5">
           <a-input
-            v-model:value="partSearch.partNumber"
+            v-model:value="searchParams.keyword"
             :placeholder="t('returnPart.partNumber')"
             allow-clear
           />
         </a-col>
         <a-col :span="4">
           <a-select
-            v-model:value="partSearch.businessUnit"
+            v-model:value="searchParams.businessUnit"
             :placeholder="t('returnPart.businessUnit')"
             allow-clear
             style="width: 100%"
@@ -32,7 +32,7 @@
         </a-col>
         <a-col :span="4">
           <a-select
-            v-model:value="partSearch.productPlatform"
+            v-model:value="searchParams.productPlatform"
             :placeholder="t('returnPart.productPlatform')"
             allow-clear
             style="width: 100%"
@@ -45,7 +45,7 @@
         </a-col>
         <a-col :span="4">
           <a-select
-            v-model:value="partSearch.status"
+            v-model:value="searchParams.status"
             :placeholder="t('common.status')"
             allow-clear
             style="width: 100%"
@@ -70,8 +70,8 @@
 
     <a-table
       :columns="allColumns"
-      :data-source="paginatedParts"
-      :pagination="partsPagination"
+      :data-source="parts"
+      :pagination="pagination"
       :loading="loading"
       row-key="id"
       :custom-row="customRow"
@@ -94,17 +94,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, h } from 'vue'
+import { ref, computed, onMounted, watch, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { message } from 'ant-design-vue'
 import { PART_STATUS_MAP } from '@/types'
 import type { Part } from '@/types'
+import { returnOrderApi } from '@/services/returnOrderApi'
 import { lookupApi } from '@/services/lookupApi'
 import { useStatusLabels } from '@/composables/useStatusLabels'
 
 const props = defineProps<{
-  parts: Part[]
-  loading?: boolean
+  orderId: string
+  analyst?: string
   showSampleStatus?: boolean
 }>()
 
@@ -112,20 +114,23 @@ const { t } = useI18n()
 const router = useRouter()
 const { getStatusLabel } = useStatusLabels()
 
+const loading = ref(false)
+const parts = ref<Part[]>([])
+
 const loadingLookup = ref(false)
 const lookupData = ref({
   businessUnits: [] as string[],
   productPlatforms: [] as string[],
 })
 
-const partSearch = ref({
-  partNumber: '',
+const searchParams = ref({
+  keyword: '',
   businessUnit: undefined as string | undefined,
   productPlatform: undefined as string | undefined,
   status: undefined as string | undefined,
 })
 
-const partsPagination = ref({
+const pagination = ref({
   current: 1,
   pageSize: 10,
   total: 0,
@@ -134,55 +139,38 @@ const partsPagination = ref({
   showTotal: (total: number) => t('common.total', { total }),
 })
 
-const partsSorter = ref<{
-  columnKey?: string
-  order?: 'ascend' | 'descend' | null
-}>({})
+const sortState = ref<{ field?: string; order?: 'ascend' | 'descend' }>({})
 
-// 搜索过滤
-const filteredParts = computed(() => {
-  let result = props.parts
-  if (partSearch.value.partNumber) {
-    const kw = partSearch.value.partNumber.toLowerCase()
-    result = result.filter(p => (p.partNumber || '').toLowerCase().includes(kw) || (p.partCode || '').toLowerCase().includes(kw))
-  }
-  if (partSearch.value.businessUnit) {
-    result = result.filter(p => p.businessUnit === partSearch.value.businessUnit)
-  }
-  if (partSearch.value.productPlatform) {
-    result = result.filter(p => p.productPlatform === partSearch.value.productPlatform)
-  }
-  if (partSearch.value.status) {
-    result = result.filter(p => p.status === partSearch.value.status)
-  }
-  partsPagination.value.total = result.length
-  return result
-})
-
-// 排序
-const sortedParts = computed(() => {
-  if (!partsSorter.value.columnKey || !partsSorter.value.order) {
-    return filteredParts.value
-  }
-  const { columnKey, order } = partsSorter.value
-  return [...filteredParts.value].sort((a: any, b: any) => {
-    const aVal = a[columnKey] || ''
-    const bVal = b[columnKey] || ''
-    if (columnKey === 'partNumber') {
-      if (!a.partNumber && b.partNumber) return 1
-      if (a.partNumber && !b.partNumber) return -1
+const loadData = async () => {
+  if (!props.orderId) return
+  loading.value = true
+  try {
+    const params: Record<string, any> = {
+      page: pagination.value.current,
+      pageSize: pagination.value.pageSize,
     }
-    const result = String(aVal).localeCompare(String(bVal))
-    return order === 'ascend' ? result : -result
-  })
-})
+    if (sortState.value.field) {
+      params.sortBy = sortState.value.field
+      params.sortOrder = sortState.value.order
+    }
+    if (searchParams.value.keyword) params.keyword = searchParams.value.keyword
+    if (searchParams.value.businessUnit) params.businessUnit = searchParams.value.businessUnit
+    if (searchParams.value.productPlatform) params.productPlatform = searchParams.value.productPlatform
+    if (searchParams.value.status) params.status = searchParams.value.status
+    if (props.analyst) params.analyst = props.analyst
 
-// 分页
-const paginatedParts = computed(() => {
-  const { current, pageSize } = partsPagination.value
-  const start = (current - 1) * pageSize
-  return sortedParts.value.slice(start, start + pageSize)
-})
+    const result = await returnOrderApi.getParts(props.orderId, params)
+    parts.value = result.data
+    pagination.value.total = result.total
+  } catch (error) {
+    console.error('Failed to load parts:', error)
+    message.error(t('message.loadFailed'))
+  } finally {
+    loading.value = false
+  }
+}
+
+defineExpose({ refresh: loadData })
 
 // 基础列
 const baseColumns = computed(() => [
@@ -246,26 +234,36 @@ const allColumns = computed(() => {
 })
 
 const handleSearch = () => {
-  partsPagination.value.current = 1
+  pagination.value.current = 1
+  loadData()
 }
 
 const handleReset = () => {
-  partSearch.value = {
-    partNumber: '',
+  searchParams.value = {
+    keyword: '',
     businessUnit: undefined,
     productPlatform: undefined,
     status: undefined,
   }
-  partsSorter.value = {}
-  partsPagination.value.current = 1
+  sortState.value = {}
+  pagination.value.current = 1
+  loadData()
 }
 
-const handleTableChange = (pagination: any, _filters: any, sorter: any) => {
-  const sortChanged = sorter.columnKey !== partsSorter.value.columnKey ||
-                      sorter.order !== partsSorter.value.order
-  partsSorter.value = { columnKey: sorter.columnKey, order: sorter.order }
-  partsPagination.value.pageSize = pagination.pageSize
-  partsPagination.value.current = sortChanged ? 1 : pagination.current
+const handleTableChange = (pag: any, _filters: any, sorter: any) => {
+  const prevField = sortState.value.field
+  const prevOrder = sortState.value.order
+
+  sortState.value = { field: sorter.columnKey || sorter.field, order: sorter.order }
+
+  const sortChanged = (sorter.columnKey || sorter.field) !== prevField || sorter.order !== prevOrder
+  if (sortChanged && (sorter.columnKey || sorter.field)) {
+    pagination.value.current = 1
+  } else {
+    pagination.value.current = pag.current
+  }
+  pagination.value.pageSize = pag.pageSize
+  loadData()
 }
 
 const customRow = (record: Part) => ({
@@ -273,7 +271,16 @@ const customRow = (record: Part) => ({
   style: { cursor: 'pointer' },
 })
 
+// 监听 orderId / analyst 变化时重新加载（immediate 确保首次挂载也加载）
+watch([() => props.orderId, () => props.analyst], () => {
+  if (props.orderId) {
+    pagination.value.current = 1
+    loadData()
+  }
+}, { immediate: true })
+
 onMounted(async () => {
+  // 加载字典数据
   loadingLookup.value = true
   try {
     const data = await lookupApi.getAll()

@@ -44,7 +44,7 @@
         </a-card>
 
         <!-- 售后件列表 -->
-        <PartsListCard :parts="parts" :loading="loadingParts">
+        <PartsListCard ref="partsListRef" :order-id="orderId">
           <template #headerExtra>
             <a-button v-if="canAddPart" type="primary" size="small" @click="handleAddPart">
               <PlusOutlined /> {{ t('common.create') }}
@@ -75,7 +75,7 @@ import { message } from 'ant-design-vue'
 import { PlusOutlined } from '@ant-design/icons-vue'
 import { returnOrderApi } from '@/services/returnOrderApi'
 import { ORDER_STATUS_MAP, RETURN_METHOD_MAP, OrderStatus } from '@/types'
-import type { ReturnOrder, Part } from '@/types'
+import type { ReturnOrder } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
 import PartsListCard from '@/components/PartsListCard.vue'
 
@@ -86,39 +86,15 @@ const router = useRouter()
 const orderId = computed(() => route.params.id as string)
 
 const order = ref<ReturnOrder | null>(null)
-const parts = ref<Part[]>([])
-const loadingParts = ref(false)
 const isMounted = ref(true)
-
-// 加载订单的售后件列表（全量加载，搜索/排序/分页由 PartsListCard 处理）
-const loadParts = async () => {
-  if (!orderId.value) return
-  loadingParts.value = true
-  try {
-    const result = await returnOrderApi.getParts(orderId.value)
-    if (isMounted.value) {
-      parts.value = result
-    }
-  } catch (error) {
-    if (isMounted.value) {
-      console.error('Failed to load parts:', error)
-      message.error(t('message.loadFailed'))
-    }
-  } finally {
-    if (isMounted.value) {
-      loadingParts.value = false
-    }
-  }
-}
+const partsListRef = ref<InstanceType<typeof PartsListCard>>()
 
 // 刷新数据的函数（用于从子页面返回时调用）
 const refreshData = async () => {
   try {
     if (orderId.value && isMounted.value) {
       order.value = await returnOrderApi.getById(orderId.value)
-      if (order.value && isMounted.value) {
-        await loadParts()
-      }
+      partsListRef.value?.refresh()
     }
   } catch (error) {
     if (isMounted.value) {
@@ -197,9 +173,6 @@ const getStepDescription = (step: number) => {
 onMounted(async () => {
   try {
     order.value = await returnOrderApi.getById(orderId.value)
-    if (order.value) {
-      await loadParts()
-    }
   } catch (error) {
     console.error('Error during component mount:', error)
   }
@@ -213,9 +186,6 @@ onUnmounted(() => {
 watch(orderId, async () => {
   if (!isMounted.value) return
   order.value = await returnOrderApi.getById(orderId.value)
-  if (order.value && isMounted.value) {
-    await loadParts()
-  }
 })
 
 // 监听路由参数变化（如从新建售后件返回）
