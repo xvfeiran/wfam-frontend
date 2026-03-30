@@ -64,6 +64,7 @@ const filters = ref({
   productPlatform: undefined as string | undefined,
   status: undefined as string | undefined,
   qcCreated: undefined as string | undefined,
+  analyst: '',
 })
 
 const {
@@ -87,8 +88,14 @@ const {
 
   const result = await partApi.list(Object.keys(params).length > 0 ? params : undefined)
 
-  // QC created status filter on frontend
+  // Analyst filter on frontend
   let filteredData = result
+  if (filters.value.analyst.trim()) {
+    const kw = filters.value.analyst.trim().toLowerCase()
+    filteredData = filteredData.filter(p => (p.analyst || '').toLowerCase().includes(kw))
+  }
+
+  // QC created status filter on frontend
   if (filters.value.qcCreated === 'yes') {
     filteredData = result.filter(p => (p as any).qcNo)
   } else if (filters.value.qcCreated === 'no') {
@@ -155,6 +162,7 @@ const handleReset = async () => {
     productPlatform: undefined,
     status: undefined,
     qcCreated: undefined,
+    analyst: '',
   }
   sortState.value = {}
   await loadData()

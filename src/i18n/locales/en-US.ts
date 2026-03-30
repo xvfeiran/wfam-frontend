@@ -512,6 +512,8 @@ export default {
     unsampled: 'Unsampled',
     sampleStatus: 'Sample Status',
     workonConfirm: 'Confirm WorkOn Complete',
+    createdAt: 'Created At',
+    updatedAt: 'Updated At',
   },
   partDetail: {
     title: 'Part Detail - {partNumber}',

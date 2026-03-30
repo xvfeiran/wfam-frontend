@@ -9,9 +9,15 @@
           <a-button
             v-if="order?.status === 'pending_sampling'"
             type="primary"
-            @click="handleSampling"
+            @click="handleSampling(false)"
           >
             {{ t('returnOrder.sampling') }}
+          </a-button>
+          <a-button
+            v-if="order?.status !== 'pending_sampling'"
+            @click="handleSampling(true)"
+          >
+            {{ t('returnOrder.viewSamplingResult') }}
           </a-button>
           <a-button
             v-if="canScrap"
@@ -83,19 +89,14 @@
     </a-row>
 
     <!-- 抽样弹窗 -->
-    <a-modal
-      v-model:open="samplingVisible"
-      :title="t('returnOrder.sampling')"
-      @ok="confirmSampling"
-      :ok-loading="samplingLoading"
-    >
-      <a-transfer
-        v-model:target-keys="sampledPartIds"
-        :data-source="partTransferData"
-        :titles="[t('analysisOrder.unsampled'), t('analysisOrder.sampled')]"
-        :render="(item: any) => item.title"
-      />
-    </a-modal>
+    <SamplingModal
+      :visible="samplingVisible"
+      :order="order"
+      :read-only="samplingReadOnly"
+      @update:visible="samplingVisible = $event"
+      @success="handleSamplingSuccess"
+      @no-sampling="handleSamplingSuccess"
+    />
   </div>
 </template>
 
@@ -107,6 +108,7 @@ import { message } from 'ant-design-vue'
 import { analysisOrderApi } from '@/services/analysisOrderApi'
 import { ANALYSIS_ORDER_STATUS_MAP, AnalysisOrderStatus } from '@/types'
 import type { AnalysisOrder } from '@/types'
+import SamplingModal from './components/SamplingModal.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -115,8 +117,7 @@ const orderId = computed(() => route.params.id as string)
 
 const order = ref<AnalysisOrder | null>(null)
 const samplingVisible = ref(false)
-const samplingLoading = ref(false)
-const sampledPartIds = ref<string[]>([])
+const samplingReadOnly = ref(false)
 
 const statusStepMap: Record<string, number> = {
   [AnalysisOrderStatus.PENDING_SAMPLING]: 0,
@@ -140,13 +141,6 @@ const canScrap = computed(() => {
     AnalysisOrderStatus.WORKON_SCRAPPED,
     AnalysisOrderStatus.PENDING_SAMPLING,
   ].includes(order.value.status as AnalysisOrderStatus)
-})
-
-const partTransferData = computed(() => {
-  return (order.value?.parts || []).map(p => ({
-    key: p.id,
-    title: p.partNumber || p.partCode,
-  }))
 })
 
 const partColumns = [
@@ -178,24 +172,16 @@ const getStepDescription = (step: number) => {
   return ''
 }
 
-const handleSampling = () => {
-  sampledPartIds.value = (order.value?.parts || [])
-    .filter(p => p.isSample === 1)
-    .map(p => p.id)
+const handleSampling = (readOnly: boolean) => {
+  samplingReadOnly.value = readOnly
   samplingVisible.value = true
 }
 
-const confirmSampling = async () => {
-  samplingLoading.value = true
+const handleSamplingSuccess = async () => {
   try {
-    await analysisOrderApi.sampling(orderId.value, { sampledPartIds: sampledPartIds.value })
-    message.success(t('message.samplingComplete'))
-    samplingVisible.value = false
     order.value = await analysisOrderApi.getById(orderId.value)
   } catch {
-    message.error(t('message.saveFailed'))
-  } finally {
-    samplingLoading.value = false
+    message.error(t('message.loadFailed'))
   }
 }
 

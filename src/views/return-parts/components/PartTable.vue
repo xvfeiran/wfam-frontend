@@ -87,6 +87,7 @@ const columns = computed(() => [
   { title: t('returnPart.partCode'), dataIndex: 'partCode', key: 'partCode', sorter: true },
   { title: t('returnPart.businessUnit'), dataIndex: 'businessUnit', key: 'businessUnit', sorter: true },
   { title: t('returnPart.productPlatform'), dataIndex: 'productPlatform', key: 'productPlatform', sorter: true },
+  { title: t('partDetail.analyst'), dataIndex: 'analyst', key: 'analyst', sorter: true },
   { title: t('common.status'), dataIndex: 'status', key: 'status', sorter: true },
 ])
 

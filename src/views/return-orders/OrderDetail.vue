@@ -34,7 +34,7 @@
             <a-descriptions-item :label="t('orderDetail.detailedAnalysisQuantity')">{{ order?.detailedAnalysisQuantity }}</a-descriptions-item>
             <a-descriptions-item :label="t('orderDetail.scrappedQuantity')">{{ order?.scrappedQuantity }}</a-descriptions-item>
             <a-descriptions-item :label="t('orderDetail.qcCreatedQuantity')">{{ order?.qcCreatedQuantity }}</a-descriptions-item>
-            <a-descriptions-item :label="t('orderDetail.qcNotCreatedQuantity')" :span="2">{{ order?.qcNotCreatedQuantity }}</a-descriptions-item>
+            <a-descriptions-item :label="t('orderDetail.qcNotCreatedQuantity')">{{ order?.qcNotCreatedQuantity }}</a-descriptions-item>
             <a-descriptions-item :label="t('common.status')" :span="2">
               <a-tag :color="ORDER_STATUS_MAP[order?.status || 'draft']?.color || 'default'">
                 {{ getStatusLabel() }}

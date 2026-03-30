@@ -512,6 +512,8 @@ export default {
     unsampled: '未抽样',
     sampleStatus: '抽样状态',
     workonConfirm: '确认WorkOn完成',
+    createdAt: '创建时间',
+    updatedAt: '更新时间',
   },
   partDetail: {
     title: '售后件详情 - {partNumber}',

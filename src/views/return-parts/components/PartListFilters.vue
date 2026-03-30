@@ -48,6 +48,13 @@
           </a-form-item>
         </a-col>
       </a-row>
+      <a-row :gutter="24">
+        <a-col :span="12">
+          <a-form-item :label="t('partDetail.analyst')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+            <a-input v-model:value="localFilters.analyst" :placeholder="t('partDetail.analyst')" allowClear />
+          </a-form-item>
+        </a-col>
+      </a-row>
       <a-row>
         <a-col :span="24" class="filter-buttons">
           <a-space>
@@ -78,6 +85,7 @@ interface Filters {
   productPlatform?: string
   status?: string
   qcCreated?: string
+  analyst: string
 }
 
 interface Props {

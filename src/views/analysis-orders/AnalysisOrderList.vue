@@ -70,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted } from 'vue'
+import { ref, computed, reactive, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import type { TableProps } from 'ant-design-vue'
@@ -129,13 +129,23 @@ const filteredOrders = computed(() => {
   return result
 })
 
-const columns: TableProps['columns'] = [
+const columns = computed<TableProps['columns']>(() => [
   {
     title: t('analysisOrder.orderNumber'),
     dataIndex: 'orderNumber',
     key: 'orderNumber',
     sorter: (a: AnalysisOrder, b: AnalysisOrder) =>
       (a.orderNumber || '').localeCompare(b.orderNumber || ''),
+    customRender: ({ record }: { record: AnalysisOrder }) => {
+      if (!record.orderNumber) return '-'
+      return h('a', {
+        style: { color: '#1890ff' },
+        onClick: (e: Event) => {
+          e.stopPropagation()
+          router.push(`/return-orders/${record.orderId}`)
+        }
+      }, record.orderNumber)
+    }
   },
   {
     title: t('partDetail.analyst'),
@@ -152,11 +162,27 @@ const columns: TableProps['columns'] = [
       (a.status || '').localeCompare(b.status || ''),
   },
   {
+    title: t('analysisOrder.createdAt'),
+    dataIndex: 'createdAt',
+    key: 'createdAt',
+    sorter: (a: AnalysisOrder, b: AnalysisOrder) =>
+      (a.createdAt || '').localeCompare(b.createdAt || ''),
+    customRender: ({ text }: { text: string }) => text ? text.replace('T', ' ').substring(0, 19) : '-',
+  },
+  {
+    title: t('analysisOrder.updatedAt'),
+    dataIndex: 'updatedAt',
+    key: 'updatedAt',
+    sorter: (a: AnalysisOrder, b: AnalysisOrder) =>
+      (a.updatedAt || '').localeCompare(b.updatedAt || ''),
+    customRender: ({ text }: { text: string }) => text ? text.replace('T', ' ').substring(0, 19) : '-',
+  },
+  {
     title: t('common.operation'),
     key: 'action',
     width: 80,
   },
-]
+])
 
 const handleSearch = () => {
   pagination.current = 1

@@ -43,7 +43,7 @@
             <a-descriptions-item :label="t('partDetail.customerFailureType')">{{ part?.failureType || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.boschFailureType')">{{ part?.boschFailureType || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.responsibleEngineer')">{{ part?.responsibleEngineer || '-' }}</a-descriptions-item>
-            <a-descriptions-item :label="t('partDetail.analyst')">{{ part?.analyst || '-' }}</a-descriptions-item>
+            <a-descriptions-item :label="t('partDetail.analyst')" :span="2">{{ part?.analyst || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('common.status')" :span="2">
               <a-tag :color="PART_STATUS_MAP[part?.status || 'in_initial_analysis']?.color || 'default'">
                 {{ getStatusLabel(part?.status) }}
@@ -60,7 +60,7 @@
             <a-descriptions-item :label="t('partDetail.vehiclePurchaseDate')">{{ part?.vehiclePurchaseDate || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.vehicleFailureDate')">{{ part?.vehicleFailureDate || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.vehicleVIN')">{{ part?.vehicleVIN || '-' }}</a-descriptions-item>
-            <a-descriptions-item :label="t('partDetail.vehicleMileage')">{{ part?.vehicleMileage ? `${part.vehicleMileage} km` : '-' }}</a-descriptions-item>
+            <a-descriptions-item :label="t('partDetail.vehicleMileage')" :span="2">{{ part?.vehicleMileage ? `${part.vehicleMileage} km` : '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.customerDescription')" :span="2">{{ part?.customerDescription || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.otherDescription')" :span="2">{{ part?.otherDescription || '-' }}</a-descriptions-item>
           </a-descriptions>
