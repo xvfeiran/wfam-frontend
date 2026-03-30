@@ -42,7 +42,8 @@
         <a-card :title="t('orderDetail.basicInfo')" class="info-card">
           <a-descriptions :column="2" bordered>
             <a-descriptions-item :label="t('analysisOrder.orderNumber')">
-              {{ order?.orderNumber || '-' }}
+              <a v-if="order?.orderId" style="color: #1890ff" @click="router.push(`/return-orders/${order.orderId}`)">{{ order?.orderNumber || '-' }}</a>
+              <span v-else>{{ order?.orderNumber || '-' }}</span>
             </a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.analyst')">
               {{ order?.analyst || '-' }}

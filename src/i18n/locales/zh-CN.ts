@@ -444,6 +444,8 @@ export default {
     sampledCount: '抽样数',
     clearSelection: '一键清除',
     randomSampling: '随机抽样',
+    manualSampling: '手动抽样',
+    manualSamplingPlaceholder: '搜索零件号/零件码',
     randomSamplingComplete: '已随机抽取 {count} 个售后件',
     confirmSampling: '确认抽样',
     samplingSuccessMsg: '抽样完成，共抽取 {count} 个售后件',

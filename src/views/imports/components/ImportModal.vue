@@ -113,7 +113,7 @@ import type { ImportRecord, ImportLogEntry } from '@/types'
 const POLL_INTERVAL_MS = 2000
 const POLL_TIMEOUT_MS  = 5 * 60 * 1000
 
-const props = defineProps<{ visible: boolean }>()
+defineProps<{ visible: boolean }>()
 const emit  = defineEmits(['update:visible', 'success'])
 const { t } = useI18n()
 

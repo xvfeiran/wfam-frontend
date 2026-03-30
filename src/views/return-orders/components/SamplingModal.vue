@@ -151,7 +151,6 @@ import { message } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import { StopOutlined, FilterOutlined, ThunderboltOutlined } from '@ant-design/icons-vue'
 import { returnOrderApi } from '@/services/returnOrderApi'
-import { OrderStatus } from '@/types'
 import type { ReturnOrder, Part } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
 
@@ -180,17 +179,10 @@ const sampledCount = ref<number>(0)
 const submitting = ref(false)
 const updating = ref(false)
 const availableParts = ref<Part[]>([])
-
-// 是否已完成抽样（用于判断订单状态）
+// 是否已完成抽样（基于售后件的 isSample 字段判断）
 const isSampled = computed(() => {
   if (!props.order) return false
-  return [
-    OrderStatus.IN_DETAILED_ANALYSIS,
-    OrderStatus.PENDING_APPROVAL,
-    OrderStatus.ANALYSIS_COMPLETED,
-    OrderStatus.SCRAP_IN_PROGRESS,
-    OrderStatus.SCRAPPED,
-  ].includes(props.order.status)
+  return availableParts.value.some(p => p.isSample === 1)
 })
 
 // 是否已经抽样过（用于显示重新抽样警告）

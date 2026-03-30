@@ -141,7 +141,7 @@ const rules = computed(() => ({
   productPlatform: [{ required: true, message: t('validation.selectProductPlatform') }],
 }))
 
-const { ocrLoading, ocrResults, hasOCRResults, handleOCRUpload, stopOCR, applyAllOCR } = useOCR(form)
+const { ocrLoading, hasOCRResults, handleOCRUpload, stopOCR, applyAllOCR } = useOCR(form)
 
 onMounted(async () => {
   const [lookups, ordersData, usersData] = await Promise.all([

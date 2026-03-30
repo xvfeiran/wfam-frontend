@@ -11,7 +11,7 @@
   >
     <template #bodyCell="{ column, record }">
       <template v-if="column.key === 'status'">
-        <a-tag :color="PART_STATUS_MAP[record.status]?.color || 'default'">
+        <a-tag :color="getPartStatusColor(record.status)">
           {{ getStatusLabel(record.status) }}
         </a-tag>
       </template>
@@ -22,7 +22,7 @@
 <script setup lang="ts">
 import { computed, h } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { PART_STATUS_MAP } from '@/types'
+import { PART_STATUS_MAP, PartStatus } from '@/types'
 import type { Part } from '@/types'
 import { useStatusLabels } from '@/composables/useStatusLabels'
 
@@ -34,7 +34,7 @@ interface Props {
   sortState: { field?: string; order?: 'ascend' | 'descend' }
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 
 const emit = defineEmits<{
   (e: 'selection-change', keys: string[]): void
@@ -45,6 +45,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { getStatusLabel } = useStatusLabels()
+
+const getPartStatusColor = (status: PartStatus | string) => {
+  return status in PART_STATUS_MAP
+    ? PART_STATUS_MAP[status as PartStatus].color
+    : 'default'
+}
 
 const columns = computed(() => [
   {

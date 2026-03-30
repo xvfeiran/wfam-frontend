@@ -84,6 +84,8 @@ const form = reactive({
 
 const submitting = ref(false)
 
+const getCurrentStatus = () => props.order?.status as string | undefined
+
 // 显示的订单号
 const displayOrderNumber = computed(() => {
   if (props.order) {
@@ -94,32 +96,32 @@ const displayOrderNumber = computed(() => {
 
 // 是否为报废中或已报废状态
 const isScrapInProgressOrScrapped = computed(() => {
-  if (!props.order) return false
-  return props.order.status === 'scrap_in_progress' || props.order.status === 'scrapped'
+  const status = getCurrentStatus()
+  return status === 'scrap_in_progress' || status === 'scrapped'
 })
 
 // 是否为报废中状态
 const isScrapInProgress = computed(() => {
-  if (!props.order) return false
-  return props.order.status === 'scrap_in_progress'
+  return getCurrentStatus() === 'scrap_in_progress'
 })
 
 // 是否为已报废状态
 const isScrapped = computed(() => {
-  if (!props.order) return false
-  return props.order.status === 'scrapped'
+  return getCurrentStatus() === 'scrapped'
 })
 
 // 获取状态颜色
 const getStatusColor = () => {
-  if (!props.order) return 'default'
-  return ORDER_STATUS_MAP[props.order.status]?.color || 'default'
+  const status = getCurrentStatus()
+  if (!status) return 'default'
+  return status in ORDER_STATUS_MAP ? ORDER_STATUS_MAP[status as keyof typeof ORDER_STATUS_MAP].color : 'default'
 }
 
 // 获取状态标签
 const getStatusLabel = () => {
-  if (!props.order) return '-'
-  const key = statusI18nKeyMap[props.order.status] || props.order.status
+  const status = getCurrentStatus()
+  if (!status) return '-'
+  const key = statusI18nKeyMap[status] || status
   return t(key)
 }
 
@@ -167,13 +169,13 @@ const handleSubmit = async () => {
     // 详情页模式：处理单个订单
     if (props.order) {
       // 如果是已报废状态，不需要操作
-      if (props.order.status === 'scrapped') {
+      if (getCurrentStatus() === 'scrapped') {
         emit('update:visible', false)
         return
       }
 
       // 如果用户选择了"已WorkON报废"，调用 workonConfirm
-      if (form.scrapStatus === 'completed_workon' && props.order.status === 'scrap_in_progress') {
+      if (form.scrapStatus === 'completed_workon' && getCurrentStatus() === 'scrap_in_progress') {
         await returnOrderApi.workonConfirm(props.order.id)
       } else {
         // 否则调用 scrap 方法

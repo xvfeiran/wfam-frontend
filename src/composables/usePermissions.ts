@@ -1,7 +1,6 @@
 import { computed } from 'vue'
 import { useDevMode } from './useDevMode'
 import { useDevUserStore } from '@/stores/devUser'
-import { useUserInfoStore } from '@/stores/userInfo'
 import type { UserRole } from '@/stores/devUser'
 
 /**
@@ -15,7 +14,6 @@ const EDIT_SUBMITTED_ROLE: UserRole = 'W_RBCC_AEP_WFAM_QMC_Manager'
 export function usePermissions() {
   const { isDevMode } = useDevMode()
   const devUserStore = useDevUserStore()
-  const userInfoStore = useUserInfoStore()
 
   /**
    * Check if current user has permission to edit submitted forms (non-draft status)
@@ -79,8 +77,8 @@ export function usePermissions() {
     if (isDevMode.value) {
       const role = devUserStore.currentUser.role
       return role === 'W_RBCC_AEP_WFAM_QMC_Leader' ||
-             role === 'W_RBCC_AEP_WFAM_QMC_Manager' ||
-             role === 'W_RBCC_AEP_WFAM_SystemAdmin'
+        role === 'W_RBCC_AEP_WFAM_QMC_Manager' ||
+        role === 'W_RBCC_AEP_WFAM_SystemAdmin'
     }
     return false // TODO: Implement for production mode
   })

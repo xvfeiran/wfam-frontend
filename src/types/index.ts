@@ -110,6 +110,10 @@ export interface ReportTemplate {
   name: string
   productCategory?: string
   failureType?: string
+  createdBy?: string
+  createdAt?: string
+  updatedBy?: string
+  updatedAt?: string
   fields: Array<{
     name: string
     type: 'text' | 'number' | 'date' | 'select' | 'textarea'

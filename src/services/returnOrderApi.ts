@@ -96,6 +96,15 @@ export const returnOrderApi = {
     }
     return request.get(`/return-orders/${orderId}/parts`, { params: adaptedParams }) as unknown as Promise<PageResult<Part>>
   },
+  sampling(id: string, data: { sampledPartIds: string[] }): Promise<ReturnOrder> {
+    return request.post(`/return-orders/${id}/sampling`, data) as unknown as Promise<ReturnOrder>
+  },
+  scrap(id: string): Promise<ReturnOrder> {
+    return request.post(`/return-orders/${id}/scrap`) as unknown as Promise<ReturnOrder>
+  },
+  workonConfirm(id: string): Promise<ReturnOrder> {
+    return request.post(`/return-orders/${id}/scrap/workon-confirm`) as unknown as Promise<ReturnOrder>
+  },
   submit(id: string): Promise<ReturnOrder> {
     return request.post(`/return-orders/${id}/submit`) as unknown as Promise<ReturnOrder>
   },

@@ -131,7 +131,7 @@ const handleSubmit = async () => {
       productCategory: form.productCategory,
       productPlatform: form.productPlatform!,
       productionShift: form.productionShift,
-      status: PartStatus.REGISTERED,
+      status: props.part?.status ?? PartStatus.IN_INITIAL_ANALYSIS,
       images: [],
       createdBy: '管理员',
       createdAt: new Date().toISOString(),

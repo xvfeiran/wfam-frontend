@@ -43,7 +43,7 @@ interface Emits {
   (e: 'applyAllOCR'): void
 }
 
-defineEmits<Emits>()
+const emit = defineEmits<Emits>()
 
 interface Props {
   ocrLoading: boolean
@@ -60,6 +60,14 @@ const { t } = useI18n()
 const handleOCRUpload = (file: File) => {
   emit('handleOCRUpload', file)
   return false
+}
+
+const stopOCR = () => {
+  emit('stopOCR')
+}
+
+const applyAllOCR = () => {
+  emit('applyAllOCR')
 }
 
 defineExpose({ handleOCRUpload })

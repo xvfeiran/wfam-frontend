@@ -444,6 +444,8 @@ export default {
     sampledCount: 'Sample Count',
     clearSelection: 'Clear All',
     randomSampling: 'Random Sampling',
+    manualSampling: 'Manual Sampling',
+    manualSamplingPlaceholder: 'Search part number/code',
     randomSamplingComplete: 'Randomly selected {count} parts',
     confirmSampling: 'Confirm Sampling',
     samplingSuccessMsg: 'Sampling completed, {count} parts selected',

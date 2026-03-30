@@ -140,7 +140,7 @@ interface Props {
   productCategories: string[]
   productPlatforms: string[]
   failureTypes: string[]
-  users: { id: string; loginName; displayName: string }[]
+  users: { id: string; loginName: string; displayName: string }[]
   rules: Record<string, any[]>
 }
 

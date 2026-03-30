@@ -30,8 +30,8 @@
             allow-clear
             style="width: 160px"
           >
-            <a-select-option v-for="(v, k) in ANALYSIS_ORDER_STATUS_MAP" :key="k" :value="k">
-              {{ getStatusLabel(k) }}
+            <a-select-option v-for="status in statusOptions" :key="status" :value="status">
+              {{ getStatusLabel(status) }}
             </a-select-option>
           </a-select>
         </a-form-item>
@@ -56,7 +56,7 @@
       >
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'status'">
-            <a-tag :color="ANALYSIS_ORDER_STATUS_MAP[record.status]?.color || 'default'">
+            <a-tag :color="ANALYSIS_ORDER_STATUS_MAP[record.status as AnalysisOrderStatus]?.color || 'default'">
               {{ getStatusLabel(record.status) }}
             </a-tag>
           </template>
@@ -70,12 +70,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted, h } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import type { TableProps } from 'ant-design-vue'
 import { analysisOrderApi } from '@/services/analysisOrderApi'
-import { ANALYSIS_ORDER_STATUS_MAP } from '@/types'
+import { ANALYSIS_ORDER_STATUS_MAP, AnalysisOrderStatus } from '@/types'
 import type { AnalysisOrder } from '@/types'
 
 const { t } = useI18n()
@@ -86,7 +86,7 @@ const loading = ref(false)
 const searchForm = reactive({
   orderNumber: '',
   analyst: '',
-  status: undefined as string | undefined,
+  status: undefined as AnalysisOrderStatus | undefined,
 })
 
 const pagination = reactive({
@@ -98,7 +98,7 @@ const pagination = reactive({
   pageSizeOptions: ['10', '20', '50'],
 })
 
-const statusKeyMap: Record<string, string> = {
+const statusKeyMap: Record<AnalysisOrderStatus, string> = {
   pending_sampling: 'analysisOrder.statusPendingSampling',
   in_detailed_analysis: 'analysisOrder.statusInDetailedAnalysis',
   pending_approval: 'analysisOrder.statusPendingApproval',
@@ -107,8 +107,12 @@ const statusKeyMap: Record<string, string> = {
   workon_scrapped: 'analysisOrder.statusWorkonScrapped',
 }
 
-const getStatusLabel = (status: string) => {
-  const key = statusKeyMap[status]
+const statusOptions = Object.values(AnalysisOrderStatus)
+
+const getStatusLabel = (status: AnalysisOrderStatus | string) => {
+  const key = status in statusKeyMap
+    ? statusKeyMap[status as AnalysisOrderStatus]
+    : undefined
   return key ? t(key) : status
 }
 
@@ -136,16 +140,7 @@ const columns = computed<TableProps['columns']>(() => [
     key: 'orderNumber',
     sorter: (a: AnalysisOrder, b: AnalysisOrder) =>
       (a.orderNumber || '').localeCompare(b.orderNumber || ''),
-    customRender: ({ record }: { record: AnalysisOrder }) => {
-      if (!record.orderNumber) return '-'
-      return h('a', {
-        style: { color: '#1890ff' },
-        onClick: (e: Event) => {
-          e.stopPropagation()
-          router.push(`/return-orders/${record.orderId}`)
-        }
-      }, record.orderNumber)
-    }
+    customRender: ({ text }: { text: string }) => text || '-'
   },
   {
     title: t('partDetail.analyst'),

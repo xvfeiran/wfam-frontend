@@ -75,7 +75,6 @@ const {
   onSelectChange,
   handleTableChange,
   loadData,
-  handleBatchDelete,
   sortState,
 } = useTableList<ReturnOrder>(async (params) => {
   const apiParams: any = {
@@ -285,7 +284,7 @@ const showSimpleDeleteConfirm = (ids: string[]) => {
 }
 
 const showCascadeDeleteConfirm = (
-  allIds: string[],
+  ids: string[],
   ordersWithParts: Array<{ orderId: string; orderNumber: string; partsCount: number }>,
 ) => {
   const totalParts = ordersWithParts.reduce((sum, item) => sum + item.partsCount, 0)
@@ -307,10 +306,14 @@ const showCascadeDeleteConfirm = (
   Modal.confirm({
     title: t('returnOrder.confirmDeleteWithParts'),
     content,
-    okButtonProps: { style: { display: 'none' } },
+    okText: t('common.confirm'),
+    okType: 'danger',
     cancelText: t('common.cancel'),
     icon: () => h(ExclamationCircleOutlined),
     width: 500,
+    onOk: async () => {
+      await executeDelete(ids, true)
+    },
   })
 }
 

@@ -55,12 +55,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PlusOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons-vue'
-
-interface Customer {
-  id: string
-  name: string
-  code?: string
-}
+import type { Customer } from '@/services/customerApi'
 
 interface Props {
   customers: Customer[]
@@ -137,7 +132,7 @@ const handleReset = () => {
   emit('reset')
 }
 
-const handleTableChange = (pagination: any, filters: any, sorter: any) => {
+const handleTableChange = (pagination: any, _filters: any, sorter: any) => {
   // Update sort state
   sortState.value = {
     field: sorter.field,

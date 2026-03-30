@@ -33,8 +33,8 @@
         <a-col :span="12">
           <a-form-item :label="t('common.status')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
             <a-select v-model:value="localFilters.status" :placeholder="t('validation.pleaseSelect')" allowClear>
-              <a-select-option v-for="(info, key) in PART_STATUS_MAP" :key="key" :value="key">
-                {{ getStatusLabel(key) }}
+              <a-select-option v-for="status in statusOptions" :key="status" :value="status">
+                {{ getStatusLabel(status) }}
               </a-select-option>
             </a-select>
           </a-form-item>
@@ -75,7 +75,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons-vue'
-import { PART_STATUS_MAP } from '@/types'
+import { PartStatus } from '@/types'
 import { useStatusLabels } from '@/composables/useStatusLabels'
 
 interface Filters {
@@ -104,6 +104,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { getStatusLabel } = useStatusLabels()
+const statusOptions = Object.values(PartStatus)
 
 const localFilters = computed({
   get: () => props.filters,

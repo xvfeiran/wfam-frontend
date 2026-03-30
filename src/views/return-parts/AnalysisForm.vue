@@ -178,8 +178,6 @@ const form = reactive({
   attachments: [] as any[],
 })
 
-const failureModeLabel = computed(() => form.failureMode || t('returnPart.failureType'))
-
 onMounted(async () => {
   part.value = await partApi.getById(partId.value)
 })

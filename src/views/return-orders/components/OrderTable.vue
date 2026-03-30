@@ -11,7 +11,7 @@
   >
     <template #bodyCell="{ column, record }">
       <template v-if="column.key === 'status'">
-        <a-tag :color="ORDER_STATUS_MAP[record.status]?.color || 'default'">
+        <a-tag :color="getOrderStatusColor(record.status)">
           {{ getStatusLabel(record.status) }}
         </a-tag>
       </template>
@@ -22,7 +22,7 @@
 <script setup lang="ts">
 import { computed, h } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ORDER_STATUS_MAP } from '@/types'
+import { ORDER_STATUS_MAP, OrderStatus } from '@/types'
 import type { ReturnOrder } from '@/types'
 import type { Customer } from '@/services/customerApi'
 import { useStatusLabels } from '@/composables/useStatusLabels'
@@ -46,6 +46,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { getStatusLabel } = useStatusLabels()
+
+const getOrderStatusColor = (status: OrderStatus | string) => {
+  return status in ORDER_STATUS_MAP
+    ? ORDER_STATUS_MAP[status as OrderStatus].color
+    : 'default'
+}
 
 const columns = computed(() => [
   {

@@ -50,8 +50,8 @@
             allow-clear
             style="width: 100%"
           >
-            <a-select-option v-for="(info, key) in PART_STATUS_MAP" :key="key" :value="key">
-              {{ getStatusLabel(key) }}
+            <a-select-option v-for="status in statusOptions" :key="status" :value="status">
+              {{ getStatusLabel(status) }}
             </a-select-option>
           </a-select>
         </a-col>
@@ -79,7 +79,7 @@
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'status'">
-          <a-tag :color="PART_STATUS_MAP[record.status]?.color || 'default'">
+          <a-tag :color="getPartStatusColor(record.status)">
             {{ getStatusLabel(record.status) }}
           </a-tag>
         </template>
@@ -98,7 +98,7 @@ import { ref, computed, onMounted, watch, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
-import { PART_STATUS_MAP } from '@/types'
+import { PART_STATUS_MAP, PartStatus } from '@/types'
 import type { Part } from '@/types'
 import { returnOrderApi } from '@/services/returnOrderApi'
 import { lookupApi } from '@/services/lookupApi'
@@ -127,8 +127,16 @@ const searchParams = ref({
   keyword: '',
   businessUnit: undefined as string | undefined,
   productPlatform: undefined as string | undefined,
-  status: undefined as string | undefined,
+  status: undefined as PartStatus | undefined,
 })
+
+const statusOptions = Object.values(PartStatus)
+
+const getPartStatusColor = (status: PartStatus | string) => {
+  return status in PART_STATUS_MAP
+    ? PART_STATUS_MAP[status as PartStatus].color
+    : 'default'
+}
 
 const pagination = ref({
   current: 1,

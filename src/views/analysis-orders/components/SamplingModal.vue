@@ -58,8 +58,11 @@
       <div class="choice-section">
         <span class="choice-label">{{ t('message.selectSamplingMethod') }}：</span>
         <a-radio-group v-model:value="samplingChoice" button-style="solid" size="large">
-          <a-radio-button value="sampling">
-            <FilterOutlined /> {{ t('message.startSampling') }}
+          <a-radio-button value="random">
+            <ThunderboltOutlined /> {{ t('message.randomSampling') }}
+          </a-radio-button>
+          <a-radio-button value="manual">
+            <FilterOutlined /> {{ t('message.manualSampling') }}
           </a-radio-button>
           <a-radio-button value="none">
             <StopOutlined /> {{ t('message.noSampling') }}
@@ -83,8 +86,8 @@
         </div>
       </template>
 
-      <!-- 抽样操作区域 -->
-      <template v-if="samplingChoice === 'sampling'">
+      <!-- 随机抽样区域 -->
+      <template v-if="samplingChoice === 'random'">
         <!-- 抽样比例/数量控制 -->
         <div class="sampling-controls">
           <a-space :size="24" align="center" wrap>
@@ -119,18 +122,10 @@
               <template #icon><ThunderboltOutlined /></template>
               {{ t('message.randomSampling') }}
             </a-button>
-            <a-button
-              type="default"
-              :disabled="selectedPartIds.length === 0"
-              @click="handleClearSelection"
-            >
-              <template #icon><ClearOutlined /></template>
-              {{ t('message.clearSelection') }}
-            </a-button>
           </a-space>
         </div>
 
-        <!-- 穿梭框 -->
+        <!-- 穿梭框（完整数据源） -->
         <a-transfer
           :data-source="transferDataSource"
           :target-keys="selectedPartIds"
@@ -154,6 +149,95 @@
 
         <!-- 底部按钮 -->
         <div class="modal-footer">
+          <a-button
+            :disabled="selectedPartIds.length === 0"
+            @click="handleClearSelection"
+          >
+            <template #icon><ClearOutlined /></template>
+            {{ t('message.clearSelection') }}
+          </a-button>
+          <div style="flex: 1" />
+          <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
+          <a-button
+            type="primary"
+            :disabled="selectedPartIds.length === 0"
+            :loading="submitting"
+            @click="handleConfirmSampling"
+          >
+            {{ t('message.confirmSampling') }}（{{ selectedPartIds.length }}）
+          </a-button>
+        </div>
+      </template>
+
+      <!-- 手动抽样区域 -->
+      <template v-if="samplingChoice === 'manual'">
+        <!-- 搜索筛选 -->
+        <div class="manual-search">
+          <a-row :gutter="12" align="middle">
+            <a-col :span="8">
+              <a-input
+                v-model:value="manualSearch.keyword"
+                :placeholder="t('message.manualSamplingPlaceholder')"
+                allow-clear
+              />
+            </a-col>
+            <a-col :span="6">
+              <a-select
+                v-model:value="manualSearch.businessUnit"
+                :placeholder="t('returnPart.businessUnit')"
+                allow-clear
+                style="width: 100%"
+              >
+                <a-select-option v-for="bu in businessUnitOptions" :key="bu" :value="bu">
+                  {{ bu }}
+                </a-select-option>
+              </a-select>
+            </a-col>
+            <a-col :span="6">
+              <a-space>
+                <a-button type="primary" @click="applyManualFilter">
+                  {{ t('common.search') }}
+                </a-button>
+                <a-button @click="resetManualFilter">
+                  {{ t('common.reset') }}
+                </a-button>
+              </a-space>
+            </a-col>
+          </a-row>
+        </div>
+
+        <!-- 穿梭框（过滤后数据源） -->
+        <a-transfer
+          :data-source="manualFilteredSource"
+          :target-keys="selectedPartIds"
+          :titles="[
+            `${t('message.unsampledParts')} (${manualFilteredSource.length - selectedPartIds.length}/${manualFilteredSource.length})`,
+            `${t('message.sampledParts')} (${selectedPartIds.length})`
+          ]"
+          :list-style="{ width: '400px', height: '380px' }"
+          show-search
+          @change="handleTransferChange"
+        >
+          <template #render="item">
+            <span class="transfer-item">
+              <span class="transfer-item-text">{{ item.title }}  |  {{ item.description }}</span>
+              <a-button type="link" size="small" class="detail-btn" @click.stop="showPartDetail(item.key)">
+                {{ t('common.view') }}
+              </a-button>
+            </span>
+          </template>
+        </a-transfer>
+
+        <!-- 底部按钮 -->
+        <div class="modal-footer">
+          <a-button
+            :disabled="selectedPartIds.length === 0"
+            @click="handleClearSelection"
+          >
+            <template #icon><ClearOutlined /></template>
+            {{ t('message.clearSelection') }}
+          </a-button>
+          <div style="flex: 1" />
           <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
           <a-button
             type="primary"
@@ -224,7 +308,7 @@ const emit = defineEmits<{
 
 // 状态
 const internalReadOnly = ref(false)
-const samplingChoice = ref<'none' | 'sampling' | null>('sampling')
+const samplingChoice = ref<'random' | 'manual' | 'none' | null>('random')
 const selectedPartIds = ref<string[]>([])
 const sampledPartIds = ref<string[]>([])
 const samplingRatio = ref<number>(0)
@@ -234,6 +318,22 @@ const updating = ref(false)
 const availableParts = ref<Part[]>([])
 const detailVisible = ref(false)
 const detailPart = ref<Part | null>(null)
+
+// 手动抽样搜索状态
+const manualSearch = ref({
+  keyword: '',
+  businessUnit: undefined as string | undefined,
+})
+const manualFilterApplied = ref({
+  keyword: '',
+  businessUnit: undefined as string | undefined,
+})
+
+// BU 去重选项
+const businessUnitOptions = computed(() => {
+  const bus = new Set(availableParts.value.map(p => p.businessUnit).filter(Boolean))
+  return Array.from(bus).sort()
+})
 
 // 是否已完成抽样
 const isSampled = computed(() => {
@@ -272,10 +372,44 @@ const transferDataSource = computed(() =>
   }))
 )
 
+// 手动抽样过滤后的数据源（已选中的始终可见）
+const manualFilteredSource = computed(() => {
+  const { keyword, businessUnit } = manualFilterApplied.value
+  if (!keyword && !businessUnit) return transferDataSource.value
+
+  return transferDataSource.value.filter(item => {
+    // 已选中的项始终可见
+    if (selectedPartIds.value.includes(item.key)) return true
+
+    let match = true
+    if (keyword) {
+      const kw = keyword.toLowerCase()
+      const pn = (item.partNumber || '').toLowerCase()
+      const pc = (item.title || '').toLowerCase()
+      match = match && (pn.includes(kw) || pc.includes(kw))
+    }
+    if (businessUnit) {
+      match = match && item.description?.startsWith(businessUnit)
+    }
+    return match
+  })
+})
+
 // 查看售后件详情
 const showPartDetail = (partId: string) => {
   detailPart.value = availableParts.value.find(p => p.id === partId) || null
   detailVisible.value = true
+}
+
+// 手动抽样：应用筛选
+const applyManualFilter = () => {
+  manualFilterApplied.value = { ...manualSearch.value }
+}
+
+// 手动抽样：重置筛选
+const resetManualFilter = () => {
+  manualSearch.value = { keyword: '', businessUnit: undefined }
+  manualFilterApplied.value = { keyword: '', businessUnit: undefined }
 }
 
 // 当 visible 或 order 变化时加载数据并重置状态
@@ -285,11 +419,12 @@ watch(
     if (!visible || !order) return
     internalReadOnly.value = props.readOnly ?? false
 
-    samplingChoice.value = 'sampling'
+    samplingChoice.value = 'random'
     selectedPartIds.value = []
     sampledCount.value = 0
     samplingRatio.value = 0
     availableParts.value = order.parts || []
+    resetManualFilter()
 
     // 加载已抽样的售后件数据
     if (isSampled.value) {
@@ -432,6 +567,10 @@ const handleConfirmSampling = async () => {
     font-size: 14px;
     color: #888;
   }
+}
+
+.manual-search {
+  margin-bottom: 16px;
 }
 
 .modal-footer {

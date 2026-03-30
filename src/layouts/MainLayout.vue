@@ -109,8 +109,6 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   BellOutlined,
-  UserOutlined,
-  LogoutOutlined,
   ImportOutlined,
 } from '@ant-design/icons-vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
