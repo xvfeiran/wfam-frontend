@@ -26,13 +26,6 @@
           >
             {{ t('returnOrder.scrap') }}
           </a-button>
-          <a-button
-            v-if="order?.status === 'workon_scrap_in_progress'"
-            type="primary"
-            @click="handleWorkonConfirm"
-          >
-            {{ t('analysisOrder.workonConfirm') }}
-          </a-button>
         </a-space>
       </template>
     </a-page-header>
@@ -83,6 +76,14 @@
       @success="handleSamplingSuccess"
       @no-sampling="handleSamplingSuccess"
     />
+
+    <!-- 报废弹窗 -->
+    <ScrapModal
+      :visible="scrapVisible"
+      :order="order"
+      @update:visible="scrapVisible = $event"
+      @success="handleScrapSuccess"
+    />
   </div>
 </template>
 
@@ -95,6 +96,7 @@ import { analysisOrderApi } from '@/services/analysisOrderApi'
 import { ANALYSIS_ORDER_STATUS_MAP, AnalysisOrderStatus } from '@/types'
 import type { AnalysisOrder } from '@/types'
 import SamplingModal from './components/SamplingModal.vue'
+import ScrapModal from './components/ScrapModal.vue'
 import PartsListCard from '@/components/PartsListCard.vue'
 
 const { t } = useI18n()
@@ -106,6 +108,7 @@ const order = ref<AnalysisOrder | null>(null)
 const partsListRef = ref<InstanceType<typeof PartsListCard>>()
 const samplingVisible = ref(false)
 const samplingReadOnly = ref(false)
+const scrapVisible = ref(false)
 
 const statusStepMap: Record<string, number> = {
   [AnalysisOrderStatus.PENDING_SAMPLING]: 0,
@@ -125,7 +128,6 @@ const currentStep = computed(() => {
 const canScrap = computed(() => {
   if (!order.value) return false
   return ![
-    AnalysisOrderStatus.WORKON_SCRAP_IN_PROGRESS,
     AnalysisOrderStatus.WORKON_SCRAPPED,
     AnalysisOrderStatus.PENDING_SAMPLING,
   ].includes(order.value.status as AnalysisOrderStatus)
@@ -166,21 +168,15 @@ const handleSamplingSuccess = async () => {
   }
 }
 
-const handleScrap = async () => {
-  try {
-    order.value = await analysisOrderApi.scrap(orderId.value)
-    message.success(t('message.scrapSubmitted'))
-  } catch {
-    message.error(t('message.scrapFailed'))
-  }
+const handleScrap = () => {
+  scrapVisible.value = true
 }
 
-const handleWorkonConfirm = async () => {
+const handleScrapSuccess = async () => {
   try {
-    order.value = await analysisOrderApi.workonConfirm(orderId.value)
-    message.success(t('message.scrapStatusMarked'))
+    order.value = await analysisOrderApi.getById(orderId.value)
   } catch {
-    message.error(t('message.saveFailed'))
+    message.error(t('message.loadFailed'))
   }
 }
 
