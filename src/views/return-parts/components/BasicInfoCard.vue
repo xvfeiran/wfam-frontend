@@ -2,7 +2,7 @@
   <a-card :title="t('returnPart.basicInfo')" class="info-card">
     <a-form
       :model="form"
-      :rules="rules"
+      :rules="formRules"
       :label-col="{ span: 6 }"
       :wrapper-col="{ span: 16 }"
       ref="formRef"
@@ -166,16 +166,18 @@ const filterOrderOption = (input: string, option: any) => {
 
 const formRef = ref()
 
+// 表单验证规则
+const formRules = computed(() => ({
+  orderId: [{ required: true, message: t('validation.selectOrder') }],
+  partCode: [{ required: true, message: t('validation.inputPartCode') }],
+  businessUnit: [{ required: true, message: t('validation.selectBusinessUnit') }],
+  productCategory: [{ required: true, message: t('validation.selectProductCategory') }],
+  productPlatform: [{ required: true, message: t('validation.selectProductPlatform') }],
+  analyst: [{ required: true, message: t('validation.selectAnalyst') }],
+}))
+
 defineExpose({
-  validate: () => formRef.value?.validate(),
-  rules: computed(() => ({
-    orderId: [{ required: true, message: t('validation.selectOrder') }],
-    partCode: [{ required: true, message: t('validation.inputPartCode') }],
-    businessUnit: [{ required: true, message: t('validation.selectBusinessUnit') }],
-    productCategory: [{ required: true, message: t('validation.selectProductCategory') }],
-    productPlatform: [{ required: true, message: t('validation.selectProductPlatform') }],
-    analyst: [{ required: true, message: t('validation.selectAnalyst') }],
-  }))
+  validate: () => formRef.value?.validate()
 })
 </script>
 

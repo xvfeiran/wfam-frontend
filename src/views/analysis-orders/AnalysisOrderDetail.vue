@@ -20,7 +20,6 @@
             {{ t('returnOrder.viewSamplingResult') }}
           </a-button>
           <a-button
-            v-if="canScrap"
             danger
             @click="handleScrap"
           >
@@ -63,12 +62,9 @@
       <a-col :span="8">
         <a-card :title="t('orderDetail.statusFlow')" class="status-card">
           <a-steps direction="vertical" :current="currentStep" size="small">
-            <a-step :title="t('analysisOrder.statusPendingSampling')" :description="getStepDescription(0)" />
-            <a-step :title="t('analysisOrder.statusInDetailedAnalysis')" :description="getStepDescription(1)" />
-            <a-step :title="t('analysisOrder.statusPendingApproval')" :description="getStepDescription(2)" />
-            <a-step :title="t('analysisOrder.statusAnalysisCompleted')" :description="getStepDescription(3)" />
-            <a-step :title="t('analysisOrder.statusWorkonScrapInProgress')" :description="getStepDescription(4)" />
-            <a-step :title="t('analysisOrder.statusWorkonScrapped')" :description="getStepDescription(5)" />
+            <a-step :title="t('analysisOrder.stepPendingSampling')" :description="getStepDescription(0)" />
+            <a-step :title="t('analysisOrder.stepDetailedAnalysis')" :description="getStepDescription(1)" />
+            <a-step :title="t('analysisOrder.stepWorkonScrap')" :description="getStepDescription(2)" />
           </a-steps>
         </a-card>
       </a-col>
@@ -101,7 +97,7 @@ import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import { analysisOrderApi } from '@/services/analysisOrderApi'
 import { returnOrderApi } from '@/services/returnOrderApi'
-import { ANALYSIS_ORDER_STATUS_MAP, AnalysisOrderStatus } from '@/types'
+import { ANALYSIS_ORDER_STATUS_MAP, AnalysisOrderStatus, PartStatus } from '@/types'
 import type { AnalysisOrder, ReturnOrder } from '@/types'
 import SamplingModal from './components/SamplingModal.vue'
 import ScrapModal from './components/ScrapModal.vue'
@@ -133,24 +129,39 @@ const loadData = async () => {
 const statusStepMap: Record<string, number> = {
   [AnalysisOrderStatus.PENDING_SAMPLING]: 0,
   [AnalysisOrderStatus.IN_DETAILED_ANALYSIS]: 1,
-  [AnalysisOrderStatus.PENDING_APPROVAL]: 2,
-  [AnalysisOrderStatus.ANALYSIS_COMPLETED]: 3,
-  [AnalysisOrderStatus.WORKON_SCRAP_IN_PROGRESS]: 4,
-  [AnalysisOrderStatus.WORKON_SCRAPPED]: 5,
+  [AnalysisOrderStatus.PENDING_APPROVAL]: 1,
+  [AnalysisOrderStatus.ANALYSIS_COMPLETED]: 1,
+  [AnalysisOrderStatus.WORKON_SCRAP_IN_PROGRESS]: 2,
+  [AnalysisOrderStatus.WORKON_SCRAPPED]: 2,
 }
 
 const currentStep = computed(() => {
   if (!order.value) return 0
-  if (order.value.status === AnalysisOrderStatus.WORKON_SCRAPPED) return 6
   return statusStepMap[order.value.status] ?? 0
 })
 
 const canScrap = computed(() => {
   if (!order.value) return false
-  return ![
+
+  // 已报废或待抽样状态不能报废
+  if ([
     AnalysisOrderStatus.WORKON_SCRAPPED,
     AnalysisOrderStatus.PENDING_SAMPLING,
-  ].includes(order.value.status as AnalysisOrderStatus)
+  ].includes(order.value.status as AnalysisOrderStatus)) {
+    return false
+  }
+
+  // 检查抽样件的精分析完成状态
+  const parts = order.value.parts || []
+  const sampledParts = parts.filter(p => p.isSample === 1)
+
+  // 如果没有抽样件，允许报废
+  if (sampledParts.length === 0) {
+    return true
+  }
+
+  // 所有抽样件都必须是精分析完成状态
+  return sampledParts.every(p => p.status === PartStatus.ANALYSIS_COMPLETED)
 })
 
 const statusKeyMap: Record<string, string> = {
@@ -182,8 +193,23 @@ const getReturnMethodLabel = () => {
 }
 
 const getStepDescription = (step: number) => {
-  if (step < currentStep.value) return t('orderDetail.completed')
-  if (step === currentStep.value) return t('orderDetail.inProgress')
+  if (step === 0) {
+    return currentStep.value > 0 ? t('orderDetail.completed') : t('orderDetail.inProgress')
+  }
+  if (step === 1) {
+    if (currentStep.value < 1) return ''
+    const status = order.value?.status
+    if (status === AnalysisOrderStatus.IN_DETAILED_ANALYSIS) return t('analysisOrder.subInProgress')
+    if (status === AnalysisOrderStatus.PENDING_APPROVAL) return t('analysisOrder.subInApproval')
+    if (currentStep.value > 1 || status === AnalysisOrderStatus.ANALYSIS_COMPLETED) return t('orderDetail.completed')
+    return t('orderDetail.inProgress')
+  }
+  if (step === 2) {
+    if (currentStep.value < 2) return ''
+    const status = order.value?.status
+    if (status === AnalysisOrderStatus.WORKON_SCRAP_IN_PROGRESS) return t('orderDetail.inProgress')
+    return t('orderDetail.completed')
+  }
   return ''
 }
 

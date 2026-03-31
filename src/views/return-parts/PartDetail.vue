@@ -87,12 +87,9 @@
       <a-col :span="8">
         <a-card :title="t('partDetail.statusFlow')" class="status-card">
           <a-steps direction="vertical" :current="currentStep" size="small">
-            <a-step :title="t('partDetail.stepInInitialAnalysis')" :description="getStepDescription(0)" />
-            <a-step :title="t('partDetail.stepInDetailedAnalysis')" :description="getStepDescription(1)" />
-            <a-step :title="t('partDetail.stepPendingApproval')" :description="getStepDescription(2)" />
-            <a-step :title="t('partDetail.stepAnalysisCompleted')" :description="getStepDescription(3)" />
-            <a-step :title="t('partDetail.stepScrapInProgress')" :description="getStepDescription(4)" />
-            <a-step :title="t('partDetail.stepScrapped')" :description="getStepDescription(5)" />
+            <a-step :title="t('partDetail.stepInitialAnalysis')" :description="getStepDescription(0)" />
+            <a-step :title="t('partDetail.stepDetailedAnalysis')" :description="getStepDescription(1)" />
+            <a-step :title="t('partDetail.stepWorkonScrap')" :description="getStepDescription(2)" />
           </a-steps>
         </a-card>
 
@@ -184,14 +181,14 @@ const handleSubmitQcNo = async () => {
   message.success(t('message.saveSuccess'))
 }
 
-// 状态步骤映射
+// 状态步骤映射（3组）
 const statusStepMap: Record<PartStatus, number> = {
   [PartStatus.IN_INITIAL_ANALYSIS]: 0,
   [PartStatus.IN_DETAILED_ANALYSIS]: 1,
-  [PartStatus.PENDING_APPROVAL]: 2,
-  [PartStatus.ANALYSIS_COMPLETED]: 3,
-  [PartStatus.SCRAP_IN_PROGRESS]: 4,
-  [PartStatus.SCRAPPED]: 5,
+  [PartStatus.PENDING_APPROVAL]: 1,
+  [PartStatus.ANALYSIS_COMPLETED]: 1,
+  [PartStatus.SCRAP_IN_PROGRESS]: 2,
+  [PartStatus.SCRAPPED]: 2,
 }
 
 const currentStep = computed(() => {
@@ -199,8 +196,23 @@ const currentStep = computed(() => {
 })
 
 const getStepDescription = (step: number) => {
-  if (step < currentStep.value) return t('partDetail.completed')
-  if (step === currentStep.value) return t('partDetail.inProgress')
+  if (step === 0) {
+    return currentStep.value > 0 ? t('partDetail.completed') : t('partDetail.inProgress')
+  }
+  if (step === 1) {
+    if (currentStep.value < 1) return ''
+    const status = part.value?.status
+    if (status === PartStatus.IN_DETAILED_ANALYSIS) return t('partDetail.subInProgress')
+    if (status === PartStatus.PENDING_APPROVAL) return t('partDetail.subInApproval')
+    if (currentStep.value > 1 || status === PartStatus.ANALYSIS_COMPLETED) return t('partDetail.completed')
+    return t('partDetail.inProgress')
+  }
+  if (step === 2) {
+    if (currentStep.value < 2) return ''
+    const status = part.value?.status
+    if (status === PartStatus.SCRAP_IN_PROGRESS) return t('partDetail.inProgress')
+    return t('partDetail.completed')
+  }
   return ''
 }
 

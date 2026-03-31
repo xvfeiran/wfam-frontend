@@ -7,7 +7,18 @@
     @ok="handleSubmit"
     :confirm-loading="submitting"
   >
+    <!-- 报废限制提示 -->
     <a-alert
+      v-if="scrapRestrictionReason"
+      :message="t('message.cannotScrap')"
+      :description="scrapRestrictionReason"
+      type="warning"
+      show-icon
+      style="margin-bottom: 16px"
+    />
+
+    <a-alert
+      v-else
       :message="t('message.workOnAlert')"
       :description="t('message.workOnDescription')"
       type="info"
@@ -52,8 +63,8 @@
 
     <template #footer>
       <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
-      <a-button type="primary" @click="handleSubmit" :loading="submitting" :disabled="isScrapped">
-        {{ isScrapped ? t('common.viewOnly') : t('modal.markAsConfirmed') }}
+      <a-button type="primary" @click="handleSubmit" :loading="submitting" :disabled="hasScrapRestriction || isScrapped">
+        {{ isScrapped ? t('common.viewOnly') : hasScrapRestriction ? t('common.confirm') : t('modal.markAsConfirmed') }}
       </a-button>
     </template>
   </a-modal>
@@ -66,7 +77,7 @@ import { useI18n } from 'vue-i18n'
 import { LinkOutlined } from '@ant-design/icons-vue'
 import { analysisOrderApi } from '@/services/analysisOrderApi'
 import type { AnalysisOrder } from '@/types'
-import { ANALYSIS_ORDER_STATUS_MAP, AnalysisOrderStatus } from '@/types'
+import { ANALYSIS_ORDER_STATUS_MAP, AnalysisOrderStatus, PartStatus } from '@/types'
 
 const { t } = useI18n()
 
@@ -100,6 +111,42 @@ const isScrapInProgress = computed(() => {
 
 const isScrapped = computed(() => {
   return getCurrentStatus() === AnalysisOrderStatus.WORKON_SCRAPPED
+})
+
+// 报废限制原因
+const scrapRestrictionReason = computed(() => {
+  if (!props.order) return undefined
+
+  const status = getCurrentStatus()
+
+  // 已报废
+  if (status === AnalysisOrderStatus.WORKON_SCRAPPED) {
+    return t('message.alreadyScrappedCannotModify')
+  }
+
+  // 待抽样状态
+  if (status === AnalysisOrderStatus.PENDING_SAMPLING) {
+    return t('message.cannotScrapPendingSampling')
+  }
+
+  // 检查抽样件的精分析完成状态
+  const parts = props.order.parts || []
+  const sampledParts = parts.filter(p => p.isSample === 1)
+
+  // 有抽样件但未全部完成精分析
+  if (sampledParts.length > 0) {
+    const incompleteParts = sampledParts.filter(p => p.status !== PartStatus.ANALYSIS_COMPLETED)
+    if (incompleteParts.length > 0) {
+      return t('message.cannotScrapSampleNotCompleted', { count: incompleteParts.length })
+    }
+  }
+
+  return undefined
+})
+
+// 是否有报废限制
+const hasScrapRestriction = computed(() => {
+  return !!scrapRestrictionReason.value && !isScrapped.value
 })
 
 const getStatusColor = () => {
