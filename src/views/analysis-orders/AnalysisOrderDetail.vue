@@ -34,13 +34,20 @@
       <a-col :span="16">
         <a-card :title="t('orderDetail.basicInfo')" class="info-card">
           <a-descriptions :column="2" bordered>
-            <a-descriptions-item :label="t('analysisOrder.orderNumber')">
-              <a v-if="order?.orderId" style="color: #1890ff" @click="router.push(`/return-orders/${order.orderId}`)">{{ order?.orderNumber || '-' }}</a>
-              <span v-else>{{ order?.orderNumber || '-' }}</span>
+            <a-descriptions-item :label="t('returnOrder.orderNumber')">
+              <a v-if="order?.orderId" style="color: #1890ff" @click="router.push(`/return-orders/${order.orderId}`)">{{ returnOrder?.orderNumber || order?.orderNumber || '-' }}</a>
+              <span v-else>{{ returnOrder?.orderNumber || order?.orderNumber || '-' }}</span>
             </a-descriptions-item>
-            <a-descriptions-item :label="t('partDetail.analyst')">
-              {{ order?.analyst || '-' }}
+            <a-descriptions-item :label="t('returnOrder.customer')">{{ returnOrder?.customer || '-' }}</a-descriptions-item>
+            <a-descriptions-item :label="t('returnOrder.receiveDate')">{{ returnOrder?.receiveDate || '-' }}</a-descriptions-item>
+            <a-descriptions-item :label="t('returnOrder.complaintDate')">{{ returnOrder?.complaintDate || '-' }}</a-descriptions-item>
+            <a-descriptions-item :label="t('returnOrder.returnMethod')">{{ getReturnMethodLabel() }}</a-descriptions-item>
+            <a-descriptions-item :label="t('returnOrder.trackingNumber')">{{ returnOrder?.trackingNumber || '-' }}</a-descriptions-item>
+            <a-descriptions-item :label="t('returnOrder.complaintType')">
+              {{ returnOrder?.complaintType || '-' }}
+              <a-tag v-if="returnOrder?.complaintType === 'BA40'" color="blue" style="margin-left: 8px">{{ t('returnOrder.aftermarketPartTag') }}</a-tag>
             </a-descriptions-item>
+            <a-descriptions-item :label="t('orderDetail.detailedAnalysisQuantity')">{{ returnOrder?.detailedAnalysisQuantity ?? '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('common.status')" :span="2">
               <a-tag :color="ANALYSIS_ORDER_STATUS_MAP[order?.status || 'pending_sampling']?.color || 'default'">
                 {{ getStatusLabel(order?.status) }}
@@ -93,8 +100,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import { analysisOrderApi } from '@/services/analysisOrderApi'
+import { returnOrderApi } from '@/services/returnOrderApi'
 import { ANALYSIS_ORDER_STATUS_MAP, AnalysisOrderStatus } from '@/types'
-import type { AnalysisOrder } from '@/types'
+import type { AnalysisOrder, ReturnOrder } from '@/types'
 import SamplingModal from './components/SamplingModal.vue'
 import ScrapModal from './components/ScrapModal.vue'
 import PartsListCard from '@/components/PartsListCard.vue'
@@ -105,6 +113,7 @@ const router = useRouter()
 const orderId = computed(() => route.params.id as string)
 
 const order = ref<AnalysisOrder | null>(null)
+const returnOrder = ref<ReturnOrder | null>(null)
 const partsListRef = ref<InstanceType<typeof PartsListCard>>()
 const samplingVisible = ref(false)
 const samplingReadOnly = ref(false)
@@ -148,6 +157,19 @@ const getStatusLabel = (status?: string) => {
   return key ? t(key) : status
 }
 
+const returnMethodI18nKeyMap: Record<string, string> = {
+  express: 'returnOrder.methodExpress',
+  pickup: 'returnOrder.methodPickup',
+  other: 'returnOrder.methodOther',
+}
+
+const getReturnMethodLabel = () => {
+  const method = returnOrder.value?.returnMethod
+  if (!method) return '-'
+  const key = returnMethodI18nKeyMap[method]
+  return key ? t(key) : method
+}
+
 const getStepDescription = (step: number) => {
   if (step < currentStep.value) return t('orderDetail.completed')
   if (step === currentStep.value) return t('orderDetail.inProgress')
@@ -160,37 +182,32 @@ const handleSampling = (readOnly: boolean) => {
 }
 
 const handleSamplingSuccess = async () => {
-  try {
-    order.value = await analysisOrderApi.getById(orderId.value)
-    partsListRef.value?.refresh()
-  } catch {
-    message.error(t('message.loadFailed'))
-  }
+  await loadData()
+  partsListRef.value?.refresh()
 }
 
 const handleScrap = () => {
   scrapVisible.value = true
 }
 
-const handleScrapSuccess = async () => {
-  try {
-    order.value = await analysisOrderApi.getById(orderId.value)
-  } catch {
-    message.error(t('message.loadFailed'))
-  }
-}
+const handleScrapSuccess = loadData
 
 const handleBack = () => {
   router.back()
 }
 
-onMounted(async () => {
+const loadData = async () => {
   try {
     order.value = await analysisOrderApi.getById(orderId.value)
+    if (order.value.orderId) {
+      returnOrder.value = await returnOrderApi.getById(order.value.orderId)
+    }
   } catch {
     message.error(t('message.loadFailed'))
   }
-})
+}
+
+onMounted(loadData)
 </script>
 
 <style lang="less" scoped>
