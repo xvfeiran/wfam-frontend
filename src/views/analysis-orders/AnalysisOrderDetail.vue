@@ -119,6 +119,17 @@ const samplingVisible = ref(false)
 const samplingReadOnly = ref(false)
 const scrapVisible = ref(false)
 
+const loadData = async () => {
+  try {
+    order.value = await analysisOrderApi.getById(orderId.value)
+    if (order.value.orderId) {
+      returnOrder.value = await returnOrderApi.getById(order.value.orderId)
+    }
+  } catch {
+    message.error(t('message.loadFailed'))
+  }
+}
+
 const statusStepMap: Record<string, number> = {
   [AnalysisOrderStatus.PENDING_SAMPLING]: 0,
   [AnalysisOrderStatus.IN_DETAILED_ANALYSIS]: 1,
@@ -190,21 +201,10 @@ const handleScrap = () => {
   scrapVisible.value = true
 }
 
-const handleScrapSuccess = loadData
+const handleScrapSuccess = () => loadData()
 
 const handleBack = () => {
   router.back()
-}
-
-const loadData = async () => {
-  try {
-    order.value = await analysisOrderApi.getById(orderId.value)
-    if (order.value.orderId) {
-      returnOrder.value = await returnOrderApi.getById(order.value.orderId)
-    }
-  } catch {
-    message.error(t('message.loadFailed'))
-  }
 }
 
 onMounted(loadData)
