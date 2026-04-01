@@ -16,6 +16,7 @@
             style="width: 150px"
             @change="handleMatchConditionsChange"
             allow-clear
+            :disabled="isApproved"
           >
             <a-select-option v-for="pc in productCategoryOptions" :key="pc" :value="pc">
               {{ pc }}
@@ -28,6 +29,7 @@
             style="width: 150px"
             @change="handleMatchConditionsChange"
             allow-clear
+            :disabled="isApproved"
           >
             <a-select-option v-for="ft in failureTypeOptions" :key="ft" :value="ft">
               {{ ft }}
@@ -55,23 +57,23 @@
         <template v-for="field in selectedTemplate.fields" :key="field.name">
           <a-form-item :label="field.label" :name="['content', field.name]" :rules="field.required ? [{ required: true, message: t('reportForm.enterField', { field: field.label }) }] : []">
             <template v-if="field.type === 'text'">
-              <a-input v-model:value="form.content[field.name]" :placeholder="t('reportForm.inputField', { field: field.label })" />
+              <a-input v-model:value="form.content[field.name]" :placeholder="t('reportForm.inputField', { field: field.label })" :disabled="isApproved" />
             </template>
             <template v-else-if="field.type === 'textarea'">
-              <a-textarea v-model:value="form.content[field.name]" :placeholder="t('reportForm.inputField', { field: field.label })" :rows="3" />
+              <a-textarea v-model:value="form.content[field.name]" :placeholder="t('reportForm.inputField', { field: field.label })" :rows="3" :disabled="isApproved" />
             </template>
             <template v-else-if="field.type === 'select'">
-              <a-select v-model:value="form.content[field.name]" :placeholder="t('reportForm.selectField', { field: field.label })">
+              <a-select v-model:value="form.content[field.name]" :placeholder="t('reportForm.selectField', { field: field.label })" :disabled="isApproved">
                 <a-select-option v-for="opt in field.options" :key="opt" :value="opt">
                   {{ opt }}
                 </a-select-option>
               </a-select>
             </template>
             <template v-else-if="field.type === 'date'">
-              <a-date-picker v-model:value="form.content[field.name]" style="width: 100%" />
+              <a-date-picker v-model:value="form.content[field.name]" style="width: 100%" :disabled="isApproved" />
             </template>
             <template v-else-if="field.type === 'number'">
-              <a-input-number v-model:value="form.content[field.name]" style="width: 100%" />
+              <a-input-number v-model:value="form.content[field.name]" style="width: 100%" :disabled="isApproved" />
             </template>
           </a-form-item>
         </template>
@@ -79,12 +81,12 @@
         <a-divider>{{ t('reportForm.reportSummary') }}</a-divider>
 
         <a-form-item :label="t('reportForm.reportSummary')" name="summary">
-          <a-textarea v-model:value="form.summary" :placeholder="t('reportForm.inputReportSummary')" :rows="2" show-count :maxlength="200" />
+          <a-textarea v-model:value="form.summary" :placeholder="t('reportForm.inputReportSummary')" :rows="2" show-count :maxlength="200" :disabled="isApproved" />
         </a-form-item>
 
         <a-form-item :label="t('analysisForm.attachmentUpload')">
-          <a-upload v-model:file-list="form.attachments" :before-upload="() => false" :max-count="5">
-            <a-button>
+          <a-upload v-model:file-list="form.attachments" :before-upload="() => false" :max-count="5" :disabled="isApproved">
+            <a-button :disabled="isApproved">
               <UploadOutlined /> {{ t('common.upload') }}
             </a-button>
           </a-upload>
@@ -99,8 +101,16 @@
       <a-button @click="handleDownload" :disabled="!selectedTemplate">
         <DownloadOutlined /> {{ t('analysisForm.downloadReport') }}
       </a-button>
-      <a-button @click="handleSaveDraft" :disabled="!selectedTemplate">{{ t('common.save') }}</a-button>
-      <a-button type="primary" @click="handleSubmit" :disabled="!selectedTemplate">{{ t('analysisForm.submitApproval') }}</a-button>
+      <template v-if="isApproved">
+        <!-- 审批通过：只读，无编辑操作 -->
+      </template>
+      <template v-else-if="isPendingApproval">
+        <a-button type="primary" @click="handleViewApproval">{{ t('analysisForm.viewApprovalProgress') }}</a-button>
+      </template>
+      <template v-else>
+        <a-button @click="handleSaveDraft" :disabled="!selectedTemplate">{{ t('common.save') }}</a-button>
+        <a-button type="primary" @click="handleSubmit" :disabled="!selectedTemplate">{{ t('analysisForm.submitApproval') }}</a-button>
+      </template>
     </template>
   </a-modal>
 </template>
@@ -112,6 +122,7 @@ import { useI18n } from 'vue-i18n'
 import { UploadOutlined, DownloadOutlined } from '@ant-design/icons-vue'
 import { reportsApi } from '@/services/reportsApi'
 import { lookupApi } from '@/services/lookupApi'
+import { PartStatus } from '@/types'
 import type { Part, ReportTemplate } from '@/types'
 import dayjs from 'dayjs'
 
@@ -122,7 +133,7 @@ const props = defineProps<{
   part: Part | null
 }>()
 
-const emit = defineEmits(['update:visible', 'success'])
+const emit = defineEmits(['update:visible', 'success', 'view-approval'])
 
 const formRef = ref()
 const templates = ref<ReportTemplate[]>([])
@@ -150,6 +161,16 @@ const form = reactive({
 // 根据选中的模板ID获取当前模板
 const selectedTemplate = computed(() => {
   return matchedTemplates.value.find(t => t.id === form.templateId) || null
+})
+
+// 是否处于待审批状态（已提交，等待审批）
+const isPendingApproval = computed(() => {
+  return props.part?.status === PartStatus.PENDING_APPROVAL
+})
+
+// 是否已审批通过（只读，不可再编辑）
+const isApproved = computed(() => {
+  return props.part?.status === PartStatus.ANALYSIS_COMPLETED
 })
 
 // 匹配模板函数
@@ -277,6 +298,11 @@ watch(() => form.templateId, (newTemplateId) => {
 
 const handleCancel = () => {
   emit('update:visible', false)
+}
+
+const handleViewApproval = () => {
+  emit('update:visible', false)
+  emit('view-approval', props.part?.partNumber)
 }
 
 const handleSaveDraft = async () => {

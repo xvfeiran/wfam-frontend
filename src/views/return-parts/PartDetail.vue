@@ -21,6 +21,10 @@
       </a-space>
     </a-card>
 
+    <a-watermark
+      :content="part?.status === PartStatus.SCRAPPED ? t('status.scrapped') : undefined"
+      :font="{ color: 'rgba(0,0,0,0.07)', fontSize: 18 }"
+    >
     <a-row :gutter="16">
       <!-- 左侧：基本信息 -->
       <a-col :span="16">
@@ -111,12 +115,14 @@
         </a-card>
       </a-col>
     </a-row>
+    </a-watermark>
 
     <!-- 精分析报告弹窗 -->
     <AnalysisReportModal
       v-model:visible="analysisVisible"
       :part="part"
       @success="handleAnalysisSuccess"
+      @view-approval="handleViewApproval"
     />
   </div>
 </template>
@@ -280,6 +286,10 @@ const handleAnalysis = () => {
 const handleAnalysisSuccess = () => {
   analysisVisible.value = false
   message.success(t('partDetail.reportSubmitSuccess'))
+}
+
+const handleViewApproval = (partNumber: string) => {
+  router.push({ path: '/approval', query: { tab: 'myApplications', openPartNumber: partNumber } })
 }
 
 const goToOrder = (e?: Event) => {

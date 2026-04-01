@@ -133,9 +133,13 @@ const scrapRestrictionReason = computed(() => {
   const parts = props.order.parts || []
   const sampledParts = parts.filter(p => p.isSample === 1)
 
-  // 有抽样件但未全部完成精分析
+  // 有抽样件但未全部完成精分析（scrap_in_progress/scrapped 表示已通过审批进入后续流程，同样满足条件）
   if (sampledParts.length > 0) {
-    const incompleteParts = sampledParts.filter(p => p.status !== PartStatus.ANALYSIS_COMPLETED)
+    const incompleteParts = sampledParts.filter(p =>
+      p.status !== PartStatus.ANALYSIS_COMPLETED &&
+      p.status !== PartStatus.SCRAP_IN_PROGRESS &&
+      p.status !== PartStatus.SCRAPPED
+    )
     if (incompleteParts.length > 0) {
       return t('message.cannotScrapSampleNotCompleted', { count: incompleteParts.length })
     }

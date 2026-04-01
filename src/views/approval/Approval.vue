@@ -136,6 +136,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import { CheckOutlined, CloseOutlined, EyeOutlined, DownOutlined } from '@ant-design/icons-vue'
 import {
@@ -148,6 +149,7 @@ import { approvalApi } from '@/services/approvalApi'
 import { useApprovalColumns } from '@/composables/useApprovalColumns'
 
 const { t } = useI18n()
+const route = useRoute()
 
 // Tab状态
 const mainTab = ref('myApplications')
@@ -179,6 +181,18 @@ onMounted(async () => {
   ])
   myAnalysisApplications.value = myAnalysis
   pendingAnalysisApprovals.value = pendingAnalysis
+
+  // 处理从精分析弹窗跳转过来的路由参数
+  if (route.query.tab === 'myApplications') {
+    mainTab.value = 'myApplications'
+    const openPartNumber = route.query.openPartNumber as string | undefined
+    if (openPartNumber) {
+      const target = myAnalysisApplications.value.find(a => a.partNumber === openPartNumber)
+      if (target) {
+        handleViewReport(target)
+      }
+    }
+  }
 })
 
 const { myAnalysisColumns, approvalAnalysisColumns } = useApprovalColumns()
@@ -188,6 +202,7 @@ const statusI18nKeyMap: Record<ApprovalStatus, string> = {
   [ApprovalStatus.PENDING]: 'status.pending',
   [ApprovalStatus.APPROVED]: 'status.approved',
   [ApprovalStatus.REJECTED]: 'status.rejected',
+  [ApprovalStatus.WITHDRAWN]: 'status.withdrawn',
 }
 
 // 状态颜色映射
@@ -213,8 +228,9 @@ const handleCancelApplication = (record: AnalysisApplication) => {
     content: t('approval.confirmWithdraw'),
     onOk: async () => {
       await approvalApi.withdraw(record.id)
-      myAnalysisApplications.value = myAnalysisApplications.value.filter(a => a.id !== record.id)
-      message.success(t('message.approvalComplete') + ': ' + t('status.withdrawn'))
+      const item = myAnalysisApplications.value.find(a => a.id === record.id)
+      if (item) item.status = ApprovalStatus.WITHDRAWN
+      message.success(t('message.withdrawComplete'))
     },
   })
 }

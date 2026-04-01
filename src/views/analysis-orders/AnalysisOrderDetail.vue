@@ -29,6 +29,10 @@
       </template>
     </a-page-header>
 
+    <a-watermark
+      :content="order?.status === AnalysisOrderStatus.WORKON_SCRAPPED ? t('status.scrapped') : undefined"
+      :font="{ color: 'rgba(0,0,0,0.07)', fontSize: 18 }"
+    >
     <a-row :gutter="16">
       <a-col :span="16">
         <a-card :title="t('orderDetail.basicInfo')" class="info-card">
@@ -69,6 +73,8 @@
         </a-card>
       </a-col>
     </a-row>
+
+    </a-watermark>
 
     <!-- 抽样弹窗 -->
     <SamplingModal

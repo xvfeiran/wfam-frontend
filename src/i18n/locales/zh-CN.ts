@@ -340,6 +340,7 @@ export default {
     pending: '待审批',
     approved: '已审批',
     rejected: '已驳回',
+    withdrawn: '已撤回',
   },
   validation: {
     required: '此项为必填',
@@ -415,6 +416,7 @@ export default {
     pleaseUploadTemplateFile: '请上传模板文件',
     templateUploadSuccess: '模板上传成功',
     approvalComplete: '审批通过',
+    withdrawComplete: '撤回成功',
     rejectComplete: '已驳回',
     draftSaved: '已保存草稿',
     generatingReport: '正在生成报告，请稍候...',
@@ -582,6 +584,7 @@ export default {
     title: '精分析表单 - {partNumber}',
     saveDraft: '暂存草稿',
     submitApproval: '提交审批',
+    viewApprovalProgress: '查看审批进度',
     downloadReport: '下载报告',
     pleaseSaveFirst: '请先保存报告',
     templateHint: '该表单模板为：{platform}-{failureMode}',

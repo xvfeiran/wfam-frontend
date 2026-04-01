@@ -140,6 +140,7 @@ export enum ApprovalStatus {
   PENDING = 'pending',
   APPROVED = 'approved',
   REJECTED = 'rejected',
+  WITHDRAWN = 'withdrawn',
 }
 
 // 审批状态映射
@@ -147,6 +148,7 @@ export const APPROVAL_STATUS_MAP: Record<ApprovalStatus, { label: string; color:
   [ApprovalStatus.PENDING]: { label: '待审批', color: 'processing' },
   [ApprovalStatus.APPROVED]: { label: '已通过', color: 'success' },
   [ApprovalStatus.REJECTED]: { label: '已驳回', color: 'error' },
+  [ApprovalStatus.WITHDRAWN]: { label: '已撤回', color: 'default' },
 }
 
 // 精分析申请接口
