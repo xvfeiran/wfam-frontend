@@ -9,9 +9,9 @@
       <a-form-item :label="t('settings.templateName')" name="name">
         <a-input v-model:value="form.name" :placeholder="t('settings.templateNamePlaceholder')" />
       </a-form-item>
-      <a-form-item :label="t('settings.productCategory')" name="productCategory" :rules="[{ required: true, message: t('settings.pleaseSelectCategory') }]">
-        <a-select v-model:value="form.productCategory" :placeholder="t('settings.pleaseSelectCategory')">
-          <a-select-option v-for="pc in props.productCategories" :key="pc" :value="pc">{{ pc }}</a-select-option>
+      <a-form-item :label="t('settings.productPlatform')" name="productPlatform" :rules="[{ required: true, message: t('settings.pleaseSelectCategory') }]">
+        <a-select v-model:value="form.productPlatform" :placeholder="t('settings.pleaseSelectCategory')">
+          <a-select-option v-for="pp in props.productPlatforms" :key="pp" :value="pp">{{ pp }}</a-select-option>
         </a-select>
       </a-form-item>
       <a-form-item :label="t('settings.failureType')" name="failureType" :rules="[{ required: true, message: t('settings.pleaseSelectFailureType') }]">
@@ -42,7 +42,7 @@ import { UploadOutlined } from '@ant-design/icons-vue'
 
 interface TemplateForm {
   name?: string
-  productCategory?: string
+  productPlatform?: string
   failureType?: string
   fileList: any[]
 }
@@ -50,7 +50,7 @@ interface TemplateForm {
 interface Props {
   visible: boolean
   form: TemplateForm
-  productCategories: string[]
+  productPlatforms: string[]
   failureTypes: string[]
 }
 

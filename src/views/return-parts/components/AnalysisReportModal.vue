@@ -10,15 +10,15 @@
     <div class="part-info-tip">
       <div class="match-conditions">
         <span class="conditions-label">{{ t('reportForm.matchConditions') }}:</span>
-        <a-form-item :label="t('returnPart.productCategory')" style="margin-bottom: 0; margin-left: 8px;">
+        <a-form-item :label="t('returnPart.productPlatform')" style="margin-bottom: 0; margin-left: 8px;">
           <a-select
-            v-model:value="matchConditions.productCategory"
+            v-model:value="matchConditions.productPlatform"
             style="width: 150px"
             @change="handleMatchConditionsChange"
             allow-clear
             :disabled="isApproved"
           >
-            <a-select-option v-for="pc in productCategoryOptions" :key="pc" :value="pc">
+            <a-select-option v-for="pc in productPlatformOptions" :key="pc" :value="pc">
               {{ pc }}
             </a-select-option>
           </a-select>
@@ -142,13 +142,13 @@ const loading = ref(false)
 
 // 匹配条件状态
 const matchConditions = reactive({
-  productCategory: undefined as string | undefined,
+  productPlatform: undefined as string | undefined,
   failureType: undefined as string | undefined,
 })
 
 // 匹配模板列表
 const matchedTemplates = ref<ReportTemplate[]>([])
-const productCategoryOptions = ref<string[]>([])
+const productPlatformOptions = ref<string[]>([])
 const failureTypeOptions = ref<string[]>([])
 
 const form = reactive({
@@ -175,15 +175,15 @@ const isApproved = computed(() => {
 
 // 匹配模板函数
 const matchTemplates = async () => {
-  const { productCategory, failureType } = matchConditions
-  if (!productCategory) {
+  const { productPlatform, failureType } = matchConditions
+  if (!productPlatform) {
     matchedTemplates.value = []
     form.templateId = undefined
     return
   }
 
   try {
-    const allTemplates = await reportsApi.matchAllTemplates(productCategory, failureType)
+    const allTemplates = await reportsApi.matchAllTemplates(productPlatform, failureType)
     matchedTemplates.value = allTemplates
 
     // 如果没有已选择的模板（新报告），使用第一个匹配的模板
@@ -225,7 +225,7 @@ watch(() => props.visible, async (val) => {
     // 加载选项数据
     try {
       const lookups = await lookupApi.getAll()
-      productCategoryOptions.value = lookups.productCategories
+      productPlatformOptions.value = lookups.productPlatforms
       failureTypeOptions.value = lookups.failureTypes
     } catch (error) {
       console.error('[Template Modal] Failed to load lookup options:', error)
@@ -245,7 +245,7 @@ watch(() => props.visible, async (val) => {
 
     // 初始化匹配条件和加载现有报告
     if (props.part) {
-      matchConditions.productCategory = props.part.productCategory
+      matchConditions.productPlatform = props.part.productPlatform
       matchConditions.failureType = props.part.failureType || undefined
 
       // 加载现有报告（获取已保存的模板ID）

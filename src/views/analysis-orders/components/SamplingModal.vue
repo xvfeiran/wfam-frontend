@@ -263,7 +263,6 @@
       <a-descriptions-item :label="t('returnPart.partNumber')">{{ detailPart.partNumber || '-' }}</a-descriptions-item>
       <a-descriptions-item :label="t('returnPart.partCode')">{{ detailPart.partCode || '-' }}</a-descriptions-item>
       <a-descriptions-item :label="t('returnPart.businessUnit')">{{ detailPart.businessUnit || '-' }}</a-descriptions-item>
-      <a-descriptions-item :label="t('returnPart.productCategory')">{{ detailPart.productCategory || '-' }}</a-descriptions-item>
       <a-descriptions-item :label="t('returnPart.productPlatform')">{{ detailPart.productPlatform || '-' }}</a-descriptions-item>
       <a-descriptions-item :label="t('partDetail.productionShift')">{{ detailPart.productionShift || '-' }}</a-descriptions-item>
       <a-descriptions-item :label="t('partDetail.customerFailureType')">{{ detailPart.failureType || '-' }}</a-descriptions-item>

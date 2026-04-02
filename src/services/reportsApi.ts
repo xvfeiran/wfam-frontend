@@ -50,14 +50,14 @@ export const reportsApi = {
   deleteTemplate(id: string): Promise<void> {
     return request.delete(`/report-templates/${id}`)
   },
-  matchTemplate(productCategory: string, failureType?: string): Promise<ReportTemplate> {
+  matchTemplate(productPlatform: string, failureType?: string): Promise<ReportTemplate> {
     return request.get('/report-templates/match', {
-      params: { productCategory, failureType }
+      params: { productPlatform, failureType }
     }) as unknown as Promise<ReportTemplate>
   },
-  matchAllTemplates(productCategory: string, failureType?: string): Promise<ReportTemplate[]> {
+  matchAllTemplates(productPlatform: string, failureType?: string): Promise<ReportTemplate[]> {
     return request.get('/report-templates/match-all', {
-      params: { productCategory, failureType }
+      params: { productPlatform, failureType }
     }) as unknown as Promise<ReportTemplate[]>
   },
   submitReport(data: Partial<AnalysisReport>): Promise<AnalysisReport> {

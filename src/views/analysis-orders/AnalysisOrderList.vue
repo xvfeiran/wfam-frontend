@@ -14,7 +14,7 @@
             @press-enter="handleSearch"
           />
         </a-form-item>
-        <a-form-item :label="t('partDetail.analyst')">
+        <a-form-item v-if="!isAnalyst" :label="t('partDetail.analyst')">
           <a-input
             v-model:value="searchForm.analyst"
             :placeholder="t('partDetail.analyst')"
@@ -77,8 +77,10 @@ import type { TableProps } from 'ant-design-vue'
 import { analysisOrderApi } from '@/services/analysisOrderApi'
 import { ANALYSIS_ORDER_STATUS_MAP, AnalysisOrderStatus } from '@/types'
 import type { AnalysisOrder } from '@/types'
+import { usePermissions } from '@/composables/usePermissions'
 
 const { t } = useI18n()
+const { isAnalyst } = usePermissions()
 const router = useRouter()
 const allOrders = ref<AnalysisOrder[]>([])
 const loading = ref(false)

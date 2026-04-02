@@ -55,15 +55,6 @@
 
       <a-row :gutter="24">
         <a-col :span="12">
-          <a-form-item :label="t('returnPart.productCategory')" name="productCategory">
-            <a-select v-model:value="form.productCategory" :placeholder="t('validation.selectProductCategory')">
-              <a-select-option v-for="pc in productCategories" :key="pc" :value="pc">
-                {{ pc }}
-              </a-select-option>
-            </a-select>
-          </a-form-item>
-        </a-col>
-        <a-col :span="12">
           <a-form-item :label="t('returnPart.productPlatform')" name="productPlatform">
             <a-select v-model:value="form.productPlatform" :placeholder="t('validation.selectProductPlatform')">
               <a-select-option v-for="pp in productPlatforms" :key="pp" :value="pp">
@@ -72,9 +63,6 @@
             </a-select>
           </a-form-item>
         </a-col>
-      </a-row>
-
-      <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('returnPart.productionShift')">
             <a-input v-model:value="form.productionShift" />
@@ -92,9 +80,6 @@
             </a-select>
           </a-form-item>
         </a-col>
-      </a-row>
-
-      <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('partDetail.responsibleEngineer')">
             <a-select v-model:value="form.responsibleEngineer" :placeholder="t('validation.pleaseSelect')" allowClear>
@@ -102,6 +87,9 @@
             </a-select>
           </a-form-item>
         </a-col>
+      </a-row>
+
+      <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('partDetail.analyst')" name="analyst">
             <a-select v-model:value="form.analyst" :placeholder="t('validation.pleaseSelect')" allowClear>
@@ -123,7 +111,6 @@ interface Form {
   orderId?: string
   partCode: string
   businessUnit?: string
-  productCategory: string
   productPlatform?: string
   productionShift: string
   failureType?: string
@@ -137,7 +124,6 @@ interface Props {
   hasPresetOrder: boolean
   orders: any[]
   businessUnits: string[]
-  productCategories: string[]
   productPlatforms: string[]
   failureTypes: string[]
   users: { id: string; loginName: string; displayName: string }[]
@@ -171,7 +157,6 @@ const formRules = computed(() => ({
   orderId: [{ required: true, message: t('validation.selectOrder') }],
   partCode: [{ required: true, message: t('validation.inputPartCode') }],
   businessUnit: [{ required: true, message: t('validation.selectBusinessUnit') }],
-  productCategory: [{ required: true, message: t('validation.selectProductCategory') }],
   productPlatform: [{ required: true, message: t('validation.selectProductPlatform') }],
   analyst: [{ required: true, message: t('validation.selectAnalyst') }],
 }))

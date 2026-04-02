@@ -9,6 +9,7 @@ export function useStatusLabels() {
 
   const statusI18nKeyMap: Record<string, string> = {
     draft: 'status.draft',
+    submitted: 'status.submitted',
     in_initial_analysis: 'status.inInitialAnalysis',
     in_detailed_analysis: 'status.inDetailedAnalysis',
     pending_approval: 'status.pendingApproval',

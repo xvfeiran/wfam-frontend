@@ -38,19 +38,38 @@
 
       <!-- 数据字典 -->
       <a-tab-pane key="dictionary" :tab="t('settings.dataDictionary')">
-        <CustomerManagement
-          :customers="customers"
-          :loading="loadingCustomers"
-          :total="customerTotal"
-          :current-page="customerCurrentPage"
-          :page-size="customerPageSize"
-          @add-customer="handleAddCustomer"
-          @edit-customer="handleEditCustomer"
-          @search="handleCustomerSearch"
-          @reset="handleCustomerReset"
-          @page-change="handleCustomerPageChange"
-          @sort-change="handleCustomerSortChange"
-        />
+        <a-tabs v-model:activeKey="dictionaryTab">
+          <a-tab-pane key="customers" :tab="t('settings.customerManagement')">
+            <CustomerManagement
+              :customers="customers"
+              :loading="loadingCustomers"
+              :total="customerTotal"
+              :current-page="customerCurrentPage"
+              :page-size="customerPageSize"
+              @add-customer="handleAddCustomer"
+              @edit-customer="handleEditCustomer"
+              @search="handleCustomerSearch"
+              @reset="handleCustomerReset"
+              @page-change="handleCustomerPageChange"
+              @sort-change="handleCustomerSortChange"
+            />
+          </a-tab-pane>
+          <a-tab-pane key="partCodes" :tab="t('settings.partCodeManagement')">
+            <PartCodeManagement
+              :part-codes="partCodes"
+              :loading="loadingPartCodes"
+              :total="partCodeTotal"
+              :current-page="partCodeCurrentPage"
+              :page-size="partCodePageSize"
+              @add-part-code="handleAddPartCode"
+              @edit-part-code="handleEditPartCode"
+              @search="handlePartCodeSearch"
+              @reset="handlePartCodeReset"
+              @page-change="handlePartCodePageChange"
+              @sort-change="handlePartCodeSortChange"
+            />
+          </a-tab-pane>
+        </a-tabs>
       </a-tab-pane>
     </a-tabs>
 
@@ -58,7 +77,7 @@
     <TemplateUploadModal
       :visible="templateModalVisible"
       :form="templateForm"
-      :product-categories="productCategoryOptions"
+      :product-platforms="productPlatformOptions"
       :failure-types="failureTypeOptions"
       @upload="handleTemplateUpload"
       @cancel="templateModalVisible = false"
@@ -71,6 +90,14 @@
       @save="handleSaveCustomer"
       @cancel="customerModalVisible = false"
     />
+
+    <!-- 零件号编辑弹窗 -->
+    <PartCodeModal
+      :visible="partCodeModalVisible"
+      :form="partCodeForm"
+      @save="handleSavePartCode"
+      @cancel="partCodeModalVisible = false"
+    />
   </div>
 </template>
 
@@ -80,25 +107,30 @@ import { useI18n } from 'vue-i18n'
 import { message, Modal } from 'ant-design-vue'
 import { lookupApi } from '@/services/lookupApi'
 import { customerApi } from '@/services/customerApi'
+import { partCodeApi } from '@/services/partCodeApi'
 import { reportsApi } from '@/services/reportsApi'
 import type { Customer } from '@/services/customerApi'
+import type { PartCode } from '@/services/partCodeApi'
 import TemplateManagement from './components/TemplateManagement.vue'
 import NotificationConfig from './components/NotificationConfig.vue'
 import EmailConfig from './components/EmailConfig.vue'
 import DataSync from './components/DataSync.vue'
 import CustomerManagement from './components/CustomerManagement.vue'
+import PartCodeManagement from './components/PartCodeManagement.vue'
 import TemplateUploadModal from './components/TemplateUploadModal.vue'
 import CustomerModal from './components/CustomerModal.vue'
+import PartCodeModal from './components/PartCodeModal.vue'
 
 const { t } = useI18n()
 
 type SettingsTab = 'templates' | 'notifications' | 'email' | 'sync' | 'dictionary'
+type DictionaryTab = 'customers' | 'partCodes'
 type SyncStatus = 'success' | 'failed' | 'idle'
 
 interface TemplateItem {
   id: string
   name: string
-  productCategory: string
+  productPlatform: string
   failureType: string
   uploadTime: string
   uploadBy: string
@@ -114,19 +146,60 @@ interface SyncInfo {
 }
 
 const activeTab = ref<SettingsTab>('templates')
+const dictionaryTab = ref<DictionaryTab>('customers')
 const templateModalVisible = ref(false)
 const customerModalVisible = ref(false)
+const partCodeModalVisible = ref(false)
 const syncing = ref(false)
 
-const productCategoryOptions = ref<string[]>([])
+const productPlatformOptions = ref<string[]>([])
 const failureTypeOptions = ref<string[]>([])
+
+// Part code pagination state
+const partCodes = ref<PartCode[]>([])
+const loadingPartCodes = ref(false)
+const partCodeTotal = ref(0)
+const partCodeCurrentPage = ref(1)
+const partCodePageSize = ref(10)
+const partCodeSearchPartCode = ref('')
+const partCodeSearchBusinessUnit = ref('')
+const partCodeSortBy = ref<string | undefined>(undefined)
+const partCodeSortOrder = ref<'ascend' | 'descend' | undefined>(undefined)
+
+const partCodeForm = reactive({
+  id: '',
+  partCode: '',
+  businessUnit: '',
+  productPlatform: '',
+})
+
+const loadPartCodes = async () => {
+  loadingPartCodes.value = true
+  try {
+    const result = await partCodeApi.page({
+      partCode: partCodeSearchPartCode.value,
+      businessUnit: partCodeSearchBusinessUnit.value,
+      page: partCodeCurrentPage.value,
+      pageSize: partCodePageSize.value,
+      sortBy: partCodeSortBy.value,
+      sortOrder: partCodeSortOrder.value,
+    })
+    partCodes.value = result.data
+    partCodeTotal.value = result.total
+  } catch {
+    message.error(t('message.loadFailed'))
+  } finally {
+    loadingPartCodes.value = false
+  }
+}
 
 onMounted(async () => {
   const lookups = await lookupApi.getAll()
-  productCategoryOptions.value = lookups.productCategories
+  productPlatformOptions.value = lookups.productPlatforms
   failureTypeOptions.value = lookups.failureTypes
 
   await loadCustomers()
+  await loadPartCodes()
   await loadTemplates()
 })
 
@@ -136,7 +209,7 @@ const loadTemplates = async () => {
     templates.value = data.map(t => ({
       id: t.id,
       name: t.name,
-      productCategory: t.productCategory || '-',
+      productPlatform: t.productPlatform || '-',
       failureType: t.failureType || '-',
       uploadTime: t.createdAt || '-',
       uploadBy: t.createdBy || '-',
@@ -169,7 +242,7 @@ const templates = ref<TemplateItem[]>([])
 
 const templateForm = reactive({
   name: undefined as string | undefined,
-  productCategory: undefined as string | undefined,
+  productPlatform: undefined as string | undefined,
   failureType: undefined as string | undefined,
   fileList: [] as any[],
 })
@@ -217,7 +290,7 @@ const loadCustomers = async () => {
 
 const handleAddTemplate = () => {
   templateForm.name = undefined
-  templateForm.productCategory = undefined
+  templateForm.productPlatform = undefined
   templateForm.failureType = undefined
   templateForm.fileList = []
   templateModalVisible.value = true
@@ -231,7 +304,7 @@ const handleTemplateUpload = async () => {
 
   const formData = new FormData()
   formData.append('file', templateForm.fileList[0].originFileObj)
-  formData.append('productCategory', templateForm.productCategory!)
+  formData.append('productPlatform', templateForm.productPlatform!)
   formData.append('failureType', templateForm.failureType || '')
   if (templateForm.name) {
     formData.append('name', templateForm.name)
@@ -356,6 +429,73 @@ const handleSaveCustomer = async () => {
     message.success(t('settings.saveSuccess'))
   } catch {
     // Form validation failed or API error
+  }
+}
+
+const handleAddPartCode = () => {
+  partCodeForm.id = ''
+  partCodeForm.partCode = ''
+  partCodeForm.businessUnit = ''
+  partCodeForm.productPlatform = ''
+  partCodeModalVisible.value = true
+}
+
+const handleEditPartCode = (record: PartCode) => {
+  partCodeForm.id = record.id || ''
+  partCodeForm.partCode = record.partCode
+  partCodeForm.businessUnit = record.businessUnit || ''
+  partCodeForm.productPlatform = record.productPlatform || ''
+  partCodeModalVisible.value = true
+}
+
+const handlePartCodeSearch = async (partCode: string, businessUnit: string) => {
+  partCodeSearchPartCode.value = partCode
+  partCodeSearchBusinessUnit.value = businessUnit
+  partCodeCurrentPage.value = 1
+  await loadPartCodes()
+}
+
+const handlePartCodeReset = async () => {
+  partCodeSearchPartCode.value = ''
+  partCodeSearchBusinessUnit.value = ''
+  partCodeSortBy.value = undefined
+  partCodeSortOrder.value = undefined
+  partCodeCurrentPage.value = 1
+  await loadPartCodes()
+}
+
+const handlePartCodePageChange = async (page: number, pageSize: number) => {
+  partCodeCurrentPage.value = page
+  partCodePageSize.value = pageSize
+  await loadPartCodes()
+}
+
+const handlePartCodeSortChange = async (sortBy: string, sortOrder: 'ascend' | 'descend' | null) => {
+  partCodeSortBy.value = sortBy
+  partCodeSortOrder.value = sortOrder || undefined
+  await loadPartCodes()
+}
+
+const handleSavePartCode = async () => {
+  try {
+    if (partCodeForm.id) {
+      await partCodeApi.update(partCodeForm.id, {
+        partCode: partCodeForm.partCode,
+        businessUnit: partCodeForm.businessUnit,
+        productPlatform: partCodeForm.productPlatform,
+      })
+    } else {
+      await partCodeApi.create({
+        partCode: partCodeForm.partCode,
+        businessUnit: partCodeForm.businessUnit,
+        productPlatform: partCodeForm.productPlatform,
+      })
+    }
+    await loadPartCodes()
+    partCodeModalVisible.value = false
+    message.success(t('settings.saveSuccess'))
+  } catch {
+    // API error
   }
 }
 

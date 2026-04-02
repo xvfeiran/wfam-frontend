@@ -17,7 +17,7 @@
 
     <a-card>
       <div class="template-hint">
-        {{ t('analysisForm.templateHint', { platform: part?.productCategory || 'xxx', failureMode: form.failureMode || t('returnPart.failureType') }) }}
+        {{ t('analysisForm.templateHint', { platform: part?.productPlatform || 'xxx', failureMode: form.failureMode || t('returnPart.failureType') }) }}
       </div>
 
       <a-form :model="form" layout="vertical" ref="formRef">

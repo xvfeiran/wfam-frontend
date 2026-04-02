@@ -53,7 +53,6 @@ export interface Part {
   orderNumber?: string
   partCode: string
   businessUnit: string
-  productCategory: string
   productPlatform: string
   productionShift?: string
   failureType?: string        // 客户失效类型（NVH/功能/外观）
@@ -108,7 +107,7 @@ export interface Task {
 export interface ReportTemplate {
   id: string
   name: string
-  productCategory?: string
+  productPlatform?: string
   failureType?: string
   createdBy?: string
   createdAt?: string

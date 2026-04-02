@@ -4,9 +4,7 @@
       <a-button type="primary" @click="$emit('create')">
         <PlusOutlined /> {{ t('common.create') }}
       </a-button>
-      <a-button @click="$emit('import')">
-        <UploadOutlined /> {{ t('common.import') }}
-      </a-button>
+
       <a-button :loading="exportLoading" @click="$emit('export')">
         <DownloadOutlined /> {{ t('common.export') }}
       </a-button>
@@ -26,7 +24,6 @@
 import { useI18n } from 'vue-i18n'
 import {
   PlusOutlined,
-  UploadOutlined,
   DownloadOutlined,
   EditOutlined,
   DeleteOutlined,

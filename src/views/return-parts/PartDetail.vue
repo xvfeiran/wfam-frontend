@@ -41,7 +41,6 @@
             </a-descriptions-item>
             <a-descriptions-item :label="t('returnPart.partCode')">{{ part?.partCode }}</a-descriptions-item>
             <a-descriptions-item :label="t('returnPart.businessUnit')">{{ part?.businessUnit }}</a-descriptions-item>
-            <a-descriptions-item :label="t('returnPart.productCategory')">{{ part?.productCategory }}</a-descriptions-item>
             <a-descriptions-item :label="t('returnPart.productPlatform')">{{ part?.productPlatform }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.productionShift')">{{ part?.productionShift || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.customerFailureType')">{{ part?.failureType || '-' }}</a-descriptions-item>

@@ -22,7 +22,6 @@
       :has-preset-order="hasPresetOrder"
       :orders="orders"
       :business-units="businessUnits"
-      :product-categories="productCategories"
       :product-platforms="productPlatforms"
       :failure-types="failureTypes"
       :users="users"
@@ -95,7 +94,6 @@ const basicInfoCardRef = ref<any>(null)
 
 const orders = ref<any[]>([])
 const businessUnits = ref<string[]>([])
-const productCategories = ref<string[]>([])
 const productPlatforms = ref<string[]>([])
 const failureTypes = ref<string[]>([])
 const users = ref<{ id: string; loginName: string; displayName: string }[]>([])
@@ -114,7 +112,6 @@ const form = reactive({
   orderId: undefined as string | undefined,
   partCode: '',
   businessUnit: undefined as string | undefined,
-  productCategory: '',
   productPlatform: undefined as string | undefined,
   productionShift: '',
   complaintType: undefined as string | undefined,
@@ -137,7 +134,6 @@ const rules = computed(() => ({
   orderId: [{ required: true, message: t('validation.selectOrder') }],
   partCode: [{ required: true, message: t('validation.inputPartCode') }],
   businessUnit: [{ required: true, message: t('validation.selectBusinessUnit') }],
-  productCategory: [{ required: true, message: t('validation.selectProductCategory') }],
   productPlatform: [{ required: true, message: t('validation.selectProductPlatform') }],
 }))
 
@@ -150,7 +146,6 @@ onMounted(async () => {
     userApi.list(),
   ])
   businessUnits.value = lookups.businessUnits
-  productCategories.value = lookups.productCategories
   productPlatforms.value = lookups.productPlatforms
   failureTypes.value = lookups.failureTypes
   // 只显示草稿或已提交状态的退货单
@@ -173,7 +168,6 @@ function populateForm(part: any) {
   form.orderId = part.orderId
   form.partCode = part.partCode
   form.businessUnit = part.businessUnit
-  form.productCategory = part.productCategory || ''
   form.productPlatform = part.productPlatform
   form.productionShift = part.productionShift || ''
   form.complaintType = part.complaintType || undefined
@@ -199,7 +193,6 @@ const buildPartPayload = () => ({
   orderId: form.orderId,
   partCode: form.partCode,
   businessUnit: form.businessUnit,
-  productCategory: form.productCategory,
   productPlatform: form.productPlatform,
   productionShift: form.productionShift || undefined,
   complaintType: form.complaintType || undefined,

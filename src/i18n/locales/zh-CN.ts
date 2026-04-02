@@ -282,6 +282,16 @@ export default {
     customerExists: '客户已存在',
     customerCodeExists: '客户代码已存在',
     saveSuccess: '保存成功',
+    // 零件号管理
+    partCodeManagement: '零件号',
+    partCode: '零件号',
+    businessUnit: 'BU',
+    addPartCode: '新增零件号',
+    editPartCode: '编辑零件号',
+    pleaseInputPartCode: '请输入零件号',
+    pleaseInputBusinessUnit: '请输入BU',
+    pleaseInputProductPlatform: '请输入产品平台',
+    partCodeExists: '零件号已存在',
     // 邮件服务器配置
     email: '邮件服务器',
     emailConfig: '邮件服务器配置',
