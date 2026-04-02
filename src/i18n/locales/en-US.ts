@@ -369,6 +369,8 @@ export default {
     returnQuantityRange: 'Return quantity must be between {min} and {max}',
     trackingNumberMaxLength: 'Tracking number cannot exceed {max} characters',
     noPermissionToEdit: 'You do not have permission to edit this return order',
+    partCodeNotFoundInDictionary: 'Part code not found in data dictionary',
+    autoFillFromPartCode: 'Auto-filled from part code',
   },
   message: {
     searchComplete: 'Search completed',

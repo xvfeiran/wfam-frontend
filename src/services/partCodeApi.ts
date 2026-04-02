@@ -60,4 +60,8 @@ export const partCodeApi = {
   update(id: string, data: PartCode): Promise<PartCode> {
     return request.put(`/part-codes/${id}`, data) as unknown as Promise<PartCode>
   },
+  // 根据零件号查询（用于售后件表单自动填充产品类型和BU）
+  getByPartCode(partCode: string): Promise<PartCode | null> {
+    return request.get(`/part-codes/by-part-code`, { params: { partCode } }) as unknown as Promise<PartCode | null>
+  },
 }

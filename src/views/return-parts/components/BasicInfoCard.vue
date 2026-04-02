@@ -39,28 +39,54 @@
       <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('returnPart.partCode')" name="partCode">
-            <a-input v-model:value="form.partCode" :placeholder="t('validation.inputPartCode')" />
+            <a-select
+              v-model:value="form.partCode"
+              :placeholder="t('validation.inputPartCode')"
+              show-search
+              :filter-option="false"
+              :not-found-content="partCodeSearching ? undefined : null"
+              @search="handlePartCodeSearch"
+              @select="handlePartCodeSelect"
+              allowClear
+            >
+              <template v-if="partCodeSearching" #notFoundContent>
+                <a-spin size="small" />
+              </template>
+              <a-select-option v-for="pc in partCodeOptions" :key="pc.partCode" :value="pc.partCode">
+                {{ pc.partCode }}
+              </a-select-option>
+            </a-select>
           </a-form-item>
         </a-col>
         <a-col :span="12">
-          <a-form-item :label="t('returnPart.businessUnit')" name="businessUnit">
-            <a-select v-model:value="form.businessUnit" :placeholder="t('validation.selectBusinessUnit')">
+          <a-form-item :label="t('returnPart.businessUnit')">
+            <a-select
+              v-model:value="form.businessUnit"
+              :placeholder="t('validation.selectBusinessUnit')"
+              disabled
+            >
               <a-select-option v-for="bu in businessUnits" :key="bu" :value="bu">
                 {{ bu }}
               </a-select-option>
             </a-select>
+            <div v-if="businessUnitDisabledHint" class="field-disabled-hint">{{ t('validation.autoFillFromPartCode') }}</div>
           </a-form-item>
         </a-col>
       </a-row>
 
       <a-row :gutter="24">
         <a-col :span="12">
-          <a-form-item :label="t('returnPart.productPlatform')" name="productPlatform">
-            <a-select v-model:value="form.productPlatform" :placeholder="t('validation.selectProductPlatform')">
+          <a-form-item :label="t('returnPart.productPlatform')">
+            <a-select
+              v-model:value="form.productPlatform"
+              :placeholder="t('validation.selectProductPlatform')"
+              disabled
+            >
               <a-select-option v-for="pp in productPlatforms" :key="pp" :value="pp">
                 {{ pp }}
               </a-select-option>
             </a-select>
+            <div v-if="productPlatformDisabledHint" class="field-disabled-hint">{{ t('validation.autoFillFromPartCode') }}</div>
           </a-form-item>
         </a-col>
         <a-col :span="12">
@@ -103,8 +129,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { message } from 'ant-design-vue'
+import { partCodeApi } from '@/services/partCodeApi'
 
 interface Form {
   partNumber: string
@@ -127,12 +155,96 @@ interface Props {
   productPlatforms: string[]
   failureTypes: string[]
   users: { id: string; loginName: string; displayName: string }[]
-  rules: Record<string, any[]>
 }
 
 const props = defineProps<Props>()
 
 const { t } = useI18n()
+
+// 零件号选项（用于下拉搜索）
+const partCodeOptions = ref<any[]>([])
+const partCodeSearching = ref(false)
+let partCodeSearchTimer: ReturnType<typeof setTimeout> | null = null
+
+// 零件号是否存在（用于验证）
+const partCodeExists = ref(false)
+
+// 显示禁用提示
+const businessUnitDisabledHint = computed(() => !!props.form.partCode)
+const productPlatformDisabledHint = computed(() => !!props.form.partCode)
+
+// 零件号搜索（左匹配模糊搜索）
+const handlePartCodeSearch = (value: string) => {
+  // 清空之前的定时器
+  if (partCodeSearchTimer) {
+    clearTimeout(partCodeSearchTimer)
+  }
+
+  if (!value || value.trim() === '') {
+    partCodeOptions.value = []
+    return
+  }
+
+  // 防抖：300ms 后执行搜索
+  partCodeSearchTimer = setTimeout(async () => {
+    partCodeSearching.value = true
+    try {
+      const result = await partCodeApi.page({
+        partCode: value.trim(),
+        pageSize: 50, // 限制返回数量
+      })
+      partCodeOptions.value = result.data
+    } catch (error) {
+      console.error('Failed to search part codes:', error)
+      partCodeOptions.value = []
+    } finally {
+      partCodeSearching.value = false
+    }
+  }, 300)
+}
+
+// 零件号选择时自动填充产品类型和BU
+const handlePartCodeSelect = async (value: string) => {
+  if (!value) {
+    // 清空选择
+    props.form.businessUnit = undefined
+    props.form.productPlatform = undefined
+    partCodeExists.value = false
+    return
+  }
+
+  try {
+    const partCodeData = await partCodeApi.getByPartCode(value.trim())
+    if (partCodeData) {
+      // 找到零件号，自动填充产品和BU
+      props.form.businessUnit = partCodeData.businessUnit || undefined
+      props.form.productPlatform = partCodeData.productPlatform || undefined
+      partCodeExists.value = true
+    } else {
+      // 未找到零件号，清空产品和BU
+      props.form.businessUnit = undefined
+      props.form.productPlatform = undefined
+      partCodeExists.value = false
+      message.warning(t('validation.partCodeNotFoundInDictionary'))
+    }
+  } catch (error) {
+    // 查询失败，不做处理
+    console.error('Failed to query part code:', error)
+  }
+}
+
+// 监听零件号变化（用于编辑模式验证已有零件号是否存在）
+watch(() => props.form.partCode, async (newVal) => {
+  if (newVal && props.isEdit) {
+    // 编辑模式下，验证零件号是否存在
+    try {
+      const partCodeData = await partCodeApi.getByPartCode(newVal.trim())
+      partCodeExists.value = !!partCodeData
+    } catch {
+      partCodeExists.value = false
+    }
+  }
+}, { immediate: true })
 
 // 订单搜索过滤
 const filterOrderOption = (input: string, option: any) => {
@@ -152,17 +264,27 @@ const filterOrderOption = (input: string, option: any) => {
 
 const formRef = ref()
 
+// 自定义验证器：检查零件号是否存在于数据字典
+const validatePartCodeExists = async (_rule: any, value: string) => {
+  if (!value || value.trim() === '') {
+    return Promise.reject(t('validation.inputPartCode'))
+  }
+  if (!partCodeExists.value) {
+    return Promise.reject(t('validation.partCodeNotFoundInDictionary'))
+  }
+  return Promise.resolve()
+}
+
 // 表单验证规则
 const formRules = computed(() => ({
   orderId: [{ required: true, message: t('validation.selectOrder') }],
-  partCode: [{ required: true, message: t('validation.inputPartCode') }],
-  businessUnit: [{ required: true, message: t('validation.selectBusinessUnit') }],
-  productPlatform: [{ required: true, message: t('validation.selectProductPlatform') }],
+  partCode: [{ validator: validatePartCodeExists, trigger: 'change' }],
   analyst: [{ required: true, message: t('validation.selectAnalyst') }],
 }))
 
 defineExpose({
-  validate: () => formRef.value?.validate()
+  validate: () => formRef.value?.validate(),
+  partCodeExists: () => partCodeExists.value
 })
 </script>
 
@@ -173,6 +295,12 @@ defineExpose({
   .preset-order-hint {
     margin-top: 4px;
     color: #999;
+    font-size: 12px;
+  }
+
+  .field-disabled-hint {
+    margin-top: 4px;
+    color: #1890ff;
     font-size: 12px;
   }
 }

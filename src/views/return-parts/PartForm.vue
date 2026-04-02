@@ -25,7 +25,6 @@
       :product-platforms="productPlatforms"
       :failure-types="failureTypes"
       :users="users"
-      :rules="rules"
     />
 
     <!-- 客诉信息卡片 -->
@@ -129,13 +128,6 @@ const form = reactive({
   otherDescription: '',
   imageFiles: [] as any[],
 })
-
-const rules = computed(() => ({
-  orderId: [{ required: true, message: t('validation.selectOrder') }],
-  partCode: [{ required: true, message: t('validation.inputPartCode') }],
-  businessUnit: [{ required: true, message: t('validation.selectBusinessUnit') }],
-  productPlatform: [{ required: true, message: t('validation.selectProductPlatform') }],
-}))
 
 const { ocrLoading, hasOCRResults, handleOCRUpload, stopOCR, applyAllOCR } = useOCR(form)
 
