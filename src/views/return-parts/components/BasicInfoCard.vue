@@ -289,7 +289,16 @@ const validatePartCodeExists = async (_rule: any, value: string) => {
   if (!value || value.trim() === '') {
     return Promise.reject(t('validation.inputPartCode'))
   }
-  if (!partCodeExists.value) {
+  // 直接查询零件号是否存在，确保获取最新状态
+  try {
+    const partCodeData = await partCodeApi.getByPartCode(value.trim())
+    if (!partCodeData) {
+      return Promise.reject(t('validation.partCodeNotFoundInDictionary'))
+    }
+    // 同步更新 partCodeExists 状态
+    partCodeExists.value = true
+  } catch (error) {
+    // 查询失败时，假设不存在
     return Promise.reject(t('validation.partCodeNotFoundInDictionary'))
   }
   return Promise.resolve()
