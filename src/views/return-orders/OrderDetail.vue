@@ -118,14 +118,14 @@ const currentStep = computed(() => {
 })
 
 // Permission check for edit button
-const { isQMCManager } = usePermissions()
+const { canEditSubmittedForm } = usePermissions()
 
 // Edit button visibility logic:
 // - Draft orders (no orderNumber): visible to everyone
-// - Submitted orders (has orderNumber): only visible to QMC Manager
+// - Submitted orders (has orderNumber): only visible to QMC Leader
 const canShowEditButton = computed(() => {
   if (!order.value?.orderNumber) return true
-  return isQMCManager.value
+  return canEditSubmittedForm.value
 })
 
 // Add part button visibility logic:

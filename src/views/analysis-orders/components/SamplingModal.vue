@@ -30,11 +30,11 @@
           </span>
         </template>
       </a-transfer>
-      <!-- QMC Manager 可以切换到可编辑模式 -->
+      <!-- QMC Leader 可以切换到可编辑模式 -->
       <div class="modal-footer">
         <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
         <a-button
-          v-if="isQMCManager"
+          v-if="canEditSubmittedForm"
           type="primary"
           @click="handleSwitchToEditMode"
         >
@@ -290,7 +290,7 @@ import { usePermissions } from '@/composables/usePermissions'
 import { useStatusLabels } from '@/composables/useStatusLabels'
 
 const { t } = useI18n()
-const { isQMCManager } = usePermissions()
+const { canEditSubmittedForm } = usePermissions()
 const { getStatusLabel: getPartStatusLabel } = useStatusLabels()
 
 const props = defineProps<{

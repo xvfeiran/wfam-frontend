@@ -79,7 +79,7 @@ import PhotoUploadCard from './components/PhotoUploadCard.vue'
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const { isQMCManager } = usePermissions()
+const { canEditSubmittedForm } = usePermissions()
 
 const isEdit = computed(() => !!route.params.id)
 const partId = computed(() => route.params.id as string)
@@ -87,7 +87,7 @@ const isSubmitted = computed(() => !!form.partNumber)
 
 const canEditSubmittedPart = computed(() => {
   if (!isSubmitted.value) return true // 未提交都可以编辑
-  return isQMCManager.value // 已提交需要 QMC Manager 权限
+  return canEditSubmittedForm.value // 已提交需要 QMC Leader 权限
 })
 
 const basicInfoCardRef = ref<any>(null)

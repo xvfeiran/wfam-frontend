@@ -57,7 +57,7 @@ import OrderTable from './components/OrderTable.vue'
 
 const { t } = useI18n()
 const router = useRouter()
-const { isQMCManager } = usePermissions()
+const { canEditSubmittedForm } = usePermissions()
 
 const customers = ref<Customer[]>([])
 const filters = ref({
@@ -94,20 +94,20 @@ const exportLoading = ref(false)
 
 // Check if the selected order can be edited
 // Draft orders (no orderNumber) can be edited by anyone
-// Submitted orders (has orderNumber) can only be edited by QMC Manager
+// Submitted orders (has orderNumber) can only be edited by QMC Leader
 const canEditSelectedOrder = computed(() => {
   if (selectedRowKeys.value.length !== 1) return false
   const selectedOrder = orders.value.find(o => o.id === selectedRowKeys.value[0])
   if (!selectedOrder) return false
   // Draft orders can be edited by anyone
   if (!selectedOrder.orderNumber) return true
-  // Submitted orders require QMC Manager role
-  return isQMCManager.value
+  // Submitted orders require QMC Leader role
+  return canEditSubmittedForm.value
 })
 
 // Check if the selected order can be deleted
 // Draft orders (no orderNumber) can be deleted by anyone
-// Submitted orders (has orderNumber) can only be deleted by QMC Manager
+// Submitted orders (has orderNumber) can only be deleted by QMC Leader
 const canDeleteSelectedOrder = computed(() => {
   if (selectedRowKeys.value.length === 0) return false
   // Check if any selected order is submitted
@@ -117,8 +117,8 @@ const canDeleteSelectedOrder = computed(() => {
   })
   // If all are draft orders, anyone can delete
   if (!hasSubmittedOrder) return true
-  // If any submitted order is selected, only QMC Manager can delete
-  return isQMCManager.value
+  // If any submitted order is selected, only QMC Leader can delete
+  return canEditSubmittedForm.value
 })
 
 onMounted(async () => {
@@ -168,7 +168,7 @@ const handleEdit = () => {
   if (!selectedOrder) return
 
   // Check permission for editing submitted orders
-  if (selectedOrder.orderNumber && !isQMCManager.value) {
+  if (selectedOrder.orderNumber && !canEditSubmittedForm.value) {
     message.warning(t('validation.noPermissionToEdit'))
     return
   }

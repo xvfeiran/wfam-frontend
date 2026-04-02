@@ -52,7 +52,7 @@ import PartTable from './components/PartTable.vue'
 
 const { t } = useI18n()
 const router = useRouter()
-const { isQMCManager } = usePermissions()
+const { canEditSubmittedForm } = usePermissions()
 
 const businessUnits = ref<string[]>([])
 const productPlatforms = ref<string[]>([])
@@ -116,8 +116,8 @@ const canEditSelectedPart = computed(() => {
   if (!selectedPart) return false
   // 未提交的售后件都可以编辑
   if (!selectedPart.partNumber) return true
-  // 已提交的售后件需要 QMC Manager 权限
-  return isQMCManager.value
+  // 已提交的售后件需要 QMC Leader 权限
+  return canEditSubmittedForm.value
 })
 
 // 检查选中的售后件是否可以删除
@@ -130,8 +130,8 @@ const canDeleteSelectedPart = computed(() => {
   })
   // 如果全部是未提交的售后件，任何人都可以删除
   if (!hasSubmittedPart) return true
-  // 如果有已提交的售后件被选中，只有 QMC Manager 可以删除
-  return isQMCManager.value
+  // 如果有已提交的售后件被选中，只有 QMC Leader 可以删除
+  return canEditSubmittedForm.value
 })
 
 onMounted(async () => {

@@ -6,7 +6,7 @@ import type { UserRole } from '@/stores/devUser'
 /**
  * Role that can edit submitted forms (non-draft status)
  */
-const EDIT_SUBMITTED_ROLE: UserRole = 'W_RBCC_AEP_WFAM_QMC_Manager'
+const EDIT_SUBMITTED_ROLE: UserRole = 'W_RBCC_AEP_WFAM_QMC_Leader'
 
 /**
  * Composable for checking user permissions
@@ -17,7 +17,7 @@ export function usePermissions() {
 
   /**
    * Check if current user has permission to edit submitted forms (non-draft status)
-   * Only QMC Manager can edit submitted forms
+   * Only QMC Leader can edit submitted forms
    */
   const canEditSubmittedForm = computed(() => {
     if (isDevMode.value) {

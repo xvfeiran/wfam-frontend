@@ -152,12 +152,12 @@ const orderId = computed(() => route.params.id as string)
 const isSubmitted = computed(() => !!form.orderNumber)
 
 // Permission check for editing submitted orders
-const { isQMCManager } = usePermissions()
+const { canEditSubmittedForm } = usePermissions()
 const canEditSubmittedOrder = computed(() => {
   // Draft orders can be edited by anyone
   if (!isSubmitted.value) return true
-  // Submitted orders can only be edited by QMC Manager
-  return isQMCManager.value
+  // Submitted orders can only be edited by QMC Leader
+  return canEditSubmittedForm.value
 })
 
 const customers = ref<Customer[]>([])

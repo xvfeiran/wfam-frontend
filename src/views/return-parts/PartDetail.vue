@@ -141,7 +141,7 @@ import AnalysisReportModal from './components/AnalysisReportModal.vue'
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const { isQMCManager } = usePermissions()
+const { canEditSubmittedForm } = usePermissions()
 const partId = computed(() => route.params.id as string)
 
 const part = ref<Part | null>(null)
@@ -157,7 +157,7 @@ const isQcVisible = computed(() => part.value ? QC_VISIBLE_STATUSES.includes(par
  * 检查当前用户是否有权限编辑已提交的售后件
  *
  * 权限角色：
- * - W_RBCC_AEP_WFAM_QMC_Manager（QMC 经理）
+ * - W_RBCC_AEP_WFAM_QMC_Leader（QMC 主管）
  * - W_RBCC_AEP_WFAM_SystemAdmin（系统管理员）
  *
  * @returns {boolean} 是否有权限编辑已提交的售后件
@@ -166,16 +166,9 @@ const canEditPart = computed(() => {
   if (!part.value) return false
   // 未提交的单据所有人都可以编辑
   if (!part.value.partNumber) return true
-  // 已提交的单据需要检查权限（当前写死返回true）
-  return canEditSubmittedPart()
+  // 已提交的单据需要检查权限
+  return canEditSubmittedForm.value
 })
-
-/**
- * 检查当前用户是否有"编辑已提交单据"的权限
- */
-const canEditSubmittedPart = (): boolean => {
-  return isQMCManager.value
-}
 
 const handleSubmitQcNo = async () => {
   if (!qcNoInput.value.trim()) {

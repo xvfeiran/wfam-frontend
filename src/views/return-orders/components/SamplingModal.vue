@@ -22,11 +22,11 @@
         disabled
         show-search
       />
-      <!-- QMC Manager 可以切换到可编辑模式 -->
+      <!-- QMC Leader 可以切换到可编辑模式 -->
       <div class="modal-footer">
         <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
         <a-button
-          v-if="isQMCManager"
+          v-if="canEditSubmittedForm"
           type="primary"
           @click="handleSwitchToEditMode"
         >
@@ -155,7 +155,7 @@ import type { ReturnOrder, Part } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
 
 const { t } = useI18n()
-const { isQMCManager } = usePermissions()
+const { canEditSubmittedForm } = usePermissions()
 
 const props = defineProps<{
   visible: boolean
