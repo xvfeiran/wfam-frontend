@@ -60,16 +60,12 @@
         </a-col>
         <a-col :span="12">
           <a-form-item :label="t('returnPart.businessUnit')">
-            <a-select
+            <a-input
               v-model:value="form.businessUnit"
-              :placeholder="t('validation.selectBusinessUnit')"
+              :placeholder="businessUnitPlaceholder"
               disabled
-            >
-              <a-select-option v-for="bu in businessUnits" :key="bu" :value="bu">
-                {{ bu }}
-              </a-select-option>
-            </a-select>
-            <div v-if="businessUnitDisabledHint" class="field-disabled-hint">{{ t('validation.autoFillFromPartCode') }}</div>
+            />
+            <div v-if="businessUnitHint" class="field-disabled-hint">{{ businessUnitHint }}</div>
           </a-form-item>
         </a-col>
       </a-row>
@@ -77,16 +73,12 @@
       <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('returnPart.productPlatform')">
-            <a-select
+            <a-input
               v-model:value="form.productPlatform"
-              :placeholder="t('validation.selectProductPlatform')"
+              :placeholder="productPlatformPlaceholder"
               disabled
-            >
-              <a-select-option v-for="pp in productPlatforms" :key="pp" :value="pp">
-                {{ pp }}
-              </a-select-option>
-            </a-select>
-            <div v-if="productPlatformDisabledHint" class="field-disabled-hint">{{ t('validation.autoFillFromPartCode') }}</div>
+            />
+            <div v-if="productPlatformHint" class="field-disabled-hint">{{ productPlatformHint }}</div>
           </a-form-item>
         </a-col>
         <a-col :span="12">
@@ -169,9 +161,37 @@ let partCodeSearchTimer: ReturnType<typeof setTimeout> | null = null
 // 零件号是否存在（用于验证）
 const partCodeExists = ref(false)
 
-// 显示禁用提示
-const businessUnitDisabledHint = computed(() => !!props.form.partCode)
-const productPlatformDisabledHint = computed(() => !!props.form.partCode)
+// 业务单元占位符和提示
+const businessUnitPlaceholder = computed(() => {
+  if (!props.form.partCode) {
+    return t('validation.selectBusinessUnit')
+  }
+  return props.form.businessUnit
+    ? t('validation.autoFillFromPartCode')
+    : t('validation.notConfiguredInDictionary')
+})
+
+const businessUnitHint = computed(() => {
+  if (!props.form.partCode) return ''
+  if (props.form.businessUnit) return t('validation.autoFillFromPartCode')
+  return t('validation.notConfiguredInDictionary')
+})
+
+// 产品平台占位符和提示
+const productPlatformPlaceholder = computed(() => {
+  if (!props.form.partCode) {
+    return t('validation.selectProductPlatform')
+  }
+  return props.form.productPlatform
+    ? t('validation.autoFillFromPartCode')
+    : t('validation.notConfiguredInDictionary')
+})
+
+const productPlatformHint = computed(() => {
+  if (!props.form.partCode) return ''
+  if (props.form.productPlatform) return t('validation.autoFillFromPartCode')
+  return t('validation.notConfiguredInDictionary')
+})
 
 // 零件号搜索（左匹配模糊搜索）
 const handlePartCodeSearch = (value: string) => {

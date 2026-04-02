@@ -371,6 +371,7 @@ export default {
     noPermissionToEdit: 'You do not have permission to edit this return order',
     partCodeNotFoundInDictionary: 'Part code not found in data dictionary',
     autoFillFromPartCode: 'Auto-filled from part code',
+    notConfiguredInDictionary: 'Not configured in data dictionary',
   },
   message: {
     searchComplete: 'Search completed',

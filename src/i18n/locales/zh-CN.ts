@@ -382,6 +382,7 @@ export default {
     noPermissionToEdit: '您没有权限编辑此退货单',
     partCodeNotFoundInDictionary: '零件号不存在于数据字典中',
     autoFillFromPartCode: '根据零件号自动填充',
+    notConfiguredInDictionary: '数据字典中未配置',
   },
   message: {
     searchComplete: '查询完成',
