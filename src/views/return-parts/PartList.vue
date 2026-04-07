@@ -78,35 +78,21 @@ const {
   loadData,
   handleBatchDelete,
   sortState,
-} = useTableList<Part>(async () => {
-  const params: any = {}
+} = useTableList<Part>(async (tableParams) => {
+  const params: any = {
+    page: (tableParams.page ?? 1) - 1,  // useTableList 用1-based，后端用0-based
+    size: tableParams.pageSize ?? 20,
+  }
   if (filters.value.orderNumber) params.orderNumber = filters.value.orderNumber
   if (filters.value.partCode) params.partCode = filters.value.partCode
   if (filters.value.businessUnit) params.businessUnit = filters.value.businessUnit
   if (filters.value.productPlatform) params.productPlatform = filters.value.productPlatform
   if (filters.value.status) params.status = filters.value.status
+  if (filters.value.qcCreated) params.qcCreated = filters.value.qcCreated
+  if (filters.value.analyst.trim()) params.analyst = filters.value.analyst.trim()
 
-  const result = await partApi.list(Object.keys(params).length > 0 ? params : undefined)
-
-  // Analyst filter on frontend
-  let filteredData = result
-  if (filters.value.analyst.trim()) {
-    const kw = filters.value.analyst.trim().toLowerCase()
-    filteredData = filteredData.filter(p => (p.analyst || '').toLowerCase().includes(kw))
-  }
-
-  // QC created status filter on frontend
-  if (filters.value.qcCreated === 'yes') {
-    filteredData = result.filter(p => (p as any).qcNo)
-  } else if (filters.value.qcCreated === 'no') {
-    filteredData = result.filter(p => !(p as any).qcNo)
-  }
-
-  // Return in the format expected by useTableList
-  return {
-    data: filteredData,
-    total: filteredData.length
-  }
+  const result = await partApi.list(params)
+  return { data: result.data, total: result.total }
 })
 
 // 检查选中的售后件是否可以编辑
@@ -135,18 +121,12 @@ const canDeleteSelectedPart = computed(() => {
 })
 
 onMounted(async () => {
-  loading.value = true
-  try {
-    const [partsData, lookups] = await Promise.all([
-      partApi.list(),
-      lookupApi.getAll(),
-    ])
-    parts.value = partsData
-    businessUnits.value = lookups.businessUnits
-    productPlatforms.value = lookups.productPlatforms
-  } finally {
-    loading.value = false
-  }
+  const [lookups] = await Promise.all([
+    lookupApi.getAll(),
+    loadData(),
+  ])
+  businessUnits.value = lookups.businessUnits
+  productPlatforms.value = lookups.productPlatforms
 })
 
 const handleSearch = async () => {

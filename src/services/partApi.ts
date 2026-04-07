@@ -8,11 +8,22 @@ export interface PartListParams {
   productPlatform?: string
   status?: string
   qcCreated?: string
+  analyst?: string
+  page?: number
+  size?: number
+}
+
+export interface PartListResponse {
+  data: Part[]
+  total: number
+  page: number
+  size: number
+  totalPages: number
 }
 
 export const partApi = {
-  list(params?: PartListParams): Promise<Part[]> {
-    return request.get('/parts', { params }) as unknown as Promise<Part[]>
+  list(params?: PartListParams): Promise<PartListResponse> {
+    return request.get('/parts', { params }) as unknown as Promise<PartListResponse>
   },
   getById(id: string): Promise<Part> {
     return request.get(`/parts/${id}`) as unknown as Promise<Part>
