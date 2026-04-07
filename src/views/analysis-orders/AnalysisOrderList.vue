@@ -15,13 +15,14 @@
           />
         </a-form-item>
         <a-form-item v-if="!isAnalyst" :label="t('partDetail.analyst')">
-          <a-input
+          <a-select
             v-model:value="searchForm.analyst"
-            :placeholder="t('partDetail.analyst')"
+            :placeholder="t('validation.pleaseSelect')"
             allow-clear
-            style="width: 150px"
-            @press-enter="handleSearch"
-          />
+            style="width: 160px"
+          >
+            <a-select-option v-for="u in analysts" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
+          </a-select>
         </a-form-item>
         <a-form-item :label="t('common.status')">
           <a-select
@@ -75,6 +76,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import type { TableProps } from 'ant-design-vue'
 import { analysisOrderApi } from '@/services/analysisOrderApi'
+import { userApi } from '@/services/userApi'
 import { ANALYSIS_ORDER_STATUS_MAP, AnalysisOrderStatus } from '@/types'
 import type { AnalysisOrder } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
@@ -83,11 +85,12 @@ const { t } = useI18n()
 const { isAnalyst } = usePermissions()
 const router = useRouter()
 const allOrders = ref<AnalysisOrder[]>([])
+const analysts = ref<{ id: string; loginName: string; displayName: string }[]>([])
 const loading = ref(false)
 
 const searchForm = reactive({
   orderNumber: '',
-  analyst: '',
+  analyst: undefined as string | undefined,
   status: undefined as AnalysisOrderStatus | undefined,
 })
 
@@ -125,9 +128,8 @@ const filteredOrders = computed(() => {
     const kw = searchForm.orderNumber.trim().toLowerCase()
     result = result.filter(o => (o.orderNumber || '').toLowerCase().includes(kw))
   }
-  if (searchForm.analyst.trim()) {
-    const kw = searchForm.analyst.trim().toLowerCase()
-    result = result.filter(o => (o.analyst || '').toLowerCase().includes(kw))
+  if (searchForm.analyst) {
+    result = result.filter(o => o.analyst === searchForm.analyst)
   }
   if (searchForm.status) {
     result = result.filter(o => o.status === searchForm.status)
@@ -187,7 +189,7 @@ const handleSearch = () => {
 
 const handleReset = () => {
   searchForm.orderNumber = ''
-  searchForm.analyst = ''
+  searchForm.analyst = undefined as any
   searchForm.status = undefined
   pagination.current = 1
 }
@@ -209,7 +211,12 @@ const goToDetail = (id: string) => {
 onMounted(async () => {
   loading.value = true
   try {
-    allOrders.value = await analysisOrderApi.list()
+    const [ordersData, analystsData] = await Promise.all([
+      analysisOrderApi.list(),
+      userApi.listAnalysts(),
+    ])
+    allOrders.value = ordersData
+    analysts.value = analystsData
   } finally {
     loading.value = false
   }

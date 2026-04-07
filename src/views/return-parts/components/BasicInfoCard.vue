@@ -111,7 +111,7 @@
         <a-col :span="12">
           <a-form-item :label="t('partDetail.analyst')" name="analyst">
             <a-select v-model:value="form.analyst" :placeholder="t('validation.pleaseSelect')" allowClear>
-              <a-select-option v-for="u in users" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
+              <a-select-option v-for="u in analysts" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
             </a-select>
           </a-form-item>
         </a-col>
@@ -147,6 +147,7 @@ interface Props {
   productPlatforms: string[]
   failureTypes: string[]
   users: { id: string; loginName: string; displayName: string }[]
+  analysts: { id: string; loginName: string; displayName: string }[]
 }
 
 const props = defineProps<Props>()

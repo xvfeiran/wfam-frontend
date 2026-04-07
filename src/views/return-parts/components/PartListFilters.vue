@@ -51,7 +51,9 @@
       <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('partDetail.analyst')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-            <a-input v-model:value="localFilters.analyst" :placeholder="t('partDetail.analyst')" allowClear />
+            <a-select v-model:value="localFilters.analyst" :placeholder="t('validation.pleaseSelect')" allowClear>
+              <a-select-option v-for="u in analysts" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
+            </a-select>
           </a-form-item>
         </a-col>
       </a-row>
@@ -85,13 +87,14 @@ interface Filters {
   productPlatform?: string
   status?: string
   qcCreated?: string
-  analyst: string
+  analyst?: string
 }
 
 interface Props {
   filters: Filters
   businessUnits: string[]
   productPlatforms: string[]
+  analysts: { id: string; loginName: string; displayName: string }[]
 }
 
 const props = defineProps<Props>()

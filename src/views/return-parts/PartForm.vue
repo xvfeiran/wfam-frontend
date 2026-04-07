@@ -25,6 +25,7 @@
       :product-platforms="productPlatforms"
       :failure-types="failureTypes"
       :users="users"
+      :analysts="analysts"
     />
 
     <!-- 客诉信息卡片 -->
@@ -96,6 +97,7 @@ const businessUnits = ref<string[]>([])
 const productPlatforms = ref<string[]>([])
 const failureTypes = ref<string[]>([])
 const users = ref<{ id: string; loginName: string; displayName: string }[]>([])
+const analysts = ref<{ id: string; loginName: string; displayName: string }[]>([])
 
 const hasPresetOrder = computed(() => {
   return !!route.query.orderNumber && !isEdit.value
@@ -132,10 +134,11 @@ const form = reactive({
 const { ocrLoading, hasOCRResults, handleOCRUpload, stopOCR, applyAllOCR } = useOCR(form)
 
 onMounted(async () => {
-  const [lookups, ordersData, usersData] = await Promise.all([
+  const [lookups, ordersData, usersData, analystsData] = await Promise.all([
     lookupApi.getAll(),
     returnOrderApi.list(), // 不限制数量
     userApi.list(),
+    userApi.listAnalysts(),
   ])
   businessUnits.value = lookups.businessUnits
   productPlatforms.value = lookups.productPlatforms
@@ -144,6 +147,7 @@ onMounted(async () => {
   const eligibleStatuses = ['draft', 'submitted']
   orders.value = ordersData.data.filter((order: any) => eligibleStatuses.includes(order.status))
   users.value = usersData
+  analysts.value = analystsData
 
   if (isEdit.value) {
     const part = await partApi.getById(partId.value)

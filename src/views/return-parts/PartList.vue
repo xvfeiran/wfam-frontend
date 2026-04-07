@@ -7,6 +7,7 @@
       v-model:filters="filters"
       :business-units="businessUnits"
       :product-platforms="productPlatforms"
+      :analysts="analysts"
       @search="handleSearch"
       @reset="handleReset"
     />
@@ -43,6 +44,7 @@ import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import { partApi } from '@/services/partApi'
 import { lookupApi } from '@/services/lookupApi'
+import { userApi } from '@/services/userApi'
 import type { Part } from '@/types'
 import { useTableList } from '@/composables/useTableList'
 import { usePermissions } from '@/composables/usePermissions'
@@ -56,6 +58,7 @@ const { canEditSubmittedForm } = usePermissions()
 
 const businessUnits = ref<string[]>([])
 const productPlatforms = ref<string[]>([])
+const analysts = ref<{ id: string; loginName: string; displayName: string }[]>([])
 
 const filters = ref({
   orderNumber: '',
@@ -64,7 +67,7 @@ const filters = ref({
   productPlatform: undefined as string | undefined,
   status: undefined as string | undefined,
   qcCreated: undefined as string | undefined,
-  analyst: '',
+  analyst: undefined as string | undefined,
 })
 
 const {
@@ -89,7 +92,7 @@ const {
   if (filters.value.productPlatform) params.productPlatform = filters.value.productPlatform
   if (filters.value.status) params.status = filters.value.status
   if (filters.value.qcCreated) params.qcCreated = filters.value.qcCreated
-  if (filters.value.analyst.trim()) params.analyst = filters.value.analyst.trim()
+  if (filters.value.analyst) params.analyst = filters.value.analyst
 
   const result = await partApi.list(params)
   return { data: result.data, total: result.total }
@@ -121,12 +124,14 @@ const canDeleteSelectedPart = computed(() => {
 })
 
 onMounted(async () => {
-  const [lookups] = await Promise.all([
+  const [lookups, analystsData] = await Promise.all([
     lookupApi.getAll(),
+    userApi.listAnalysts(),
     loadData(),
   ])
   businessUnits.value = lookups.businessUnits
   productPlatforms.value = lookups.productPlatforms
+  analysts.value = analystsData
 })
 
 const handleSearch = async () => {
@@ -142,7 +147,7 @@ const handleReset = async () => {
     productPlatform: undefined,
     status: undefined,
     qcCreated: undefined,
-    analyst: '',
+    analyst: undefined,
   }
   sortState.value = {}
   await loadData()
