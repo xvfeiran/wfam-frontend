@@ -14,7 +14,7 @@
         <a-form-item :label="t('importModule.importType')">
           <a-select v-model:value="importType" :placeholder="t('importModule.selectType')" style="width: 100%">
             <a-select-option value="return_order">{{ t('importModule.returnOrder') }}</a-select-option>
-            <a-select-option value="part" disabled>{{ t('importModule.part') }}</a-select-option>
+            <a-select-option value="part">{{ t('importModule.part') }}</a-select-option>
           </a-select>
         </a-form-item>
         <a-form-item :label="t('importModule.fileName')">
@@ -134,14 +134,31 @@ const importLogEntries = computed<ImportLogEntry[]>(() => {
   try { return JSON.parse(result.value.importLogs) } catch { return [] }
 })
 
-const importLogColumns = computed(() => [
-  { title: t('importModule.rowNum'),     key: 'row',         dataIndex: 'row',         width: 60  },
-  { title: t('common.status'),           key: 'status',      dataIndex: 'status',      width: 80  },
-  { title: t('importModule.orderNumber'),key: 'orderNumber', dataIndex: 'orderNumber', width: 120 },
-  { title: t('importModule.receiveDate'),key: 'receiveDate', dataIndex: 'receiveDate', width: 100 },
-  { title: t('importModule.trackingNumber'), key: 'trackingNumber', dataIndex: 'trackingNumber', width: 130 },
-  { title: t('importModule.errorOrData'),key: 'error',       dataIndex: 'error',       ellipsis: true },
-])
+const importLogColumns = computed(() => {
+  const baseColumns = [
+    { title: t('importModule.rowNum'), key: 'row', dataIndex: 'row', width: 60 },
+    { title: t('common.status'), key: 'status', dataIndex: 'status', width: 80 },
+  ]
+
+  if (importType.value === 'return_order') {
+    return [
+      ...baseColumns,
+      { title: t('importModule.orderNumber'), key: 'orderNumber', dataIndex: 'orderNumber', width: 120 },
+      { title: t('importModule.receiveDate'), key: 'receiveDate', dataIndex: 'receiveDate', width: 100 },
+      { title: t('importModule.trackingNumber'), key: 'trackingNumber', dataIndex: 'trackingNumber', width: 130 },
+      { title: t('importModule.errorOrData'), key: 'error', dataIndex: 'error', ellipsis: true },
+    ]
+  } else if (importType.value === 'part') {
+    return [
+      ...baseColumns,
+      { title: t('importModule.orderNumber'), key: 'orderNumber', dataIndex: 'orderNumber', width: 120 },
+      { title: t('importModule.partCode'), key: 'partCode', dataIndex: 'partCode', width: 150 },
+      { title: t('importModule.partNumber'), key: 'partNumber', dataIndex: 'partNumber', width: 130 },
+      { title: t('importModule.errorOrData'), key: 'error', dataIndex: 'error', ellipsis: true },
+    ]
+  }
+  return baseColumns
+})
 
 function handleBeforeUpload(file: File) {
   selectedFile.value = file
@@ -152,7 +169,14 @@ async function handleUpload() {
   if (!selectedFile.value || !importType.value) return
   uploading.value = true
   try {
-    const record = await importApi.importReturnOrders(selectedFile.value)
+    let record
+    if (importType.value === 'return_order') {
+      record = await importApi.importReturnOrders(selectedFile.value)
+    } else if (importType.value === 'part') {
+      record = await importApi.importParts(selectedFile.value)
+    } else {
+      throw new Error('不支持的导入类型')
+    }
     uploading.value = false
     if (record.status !== 'processing') {
       result.value = record

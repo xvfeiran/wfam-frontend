@@ -663,6 +663,8 @@ export default {
     orderNumber: 'Order Number',
     receiveDate: 'Receive Date',
     trackingNumber: 'Tracking Number',
+    partCode: 'Part Code',
+    partNumber: 'Part Number',
     errorOrData: 'Error / Raw Data',
     createdBy: 'Operator',
     createdAt: 'Import Time',

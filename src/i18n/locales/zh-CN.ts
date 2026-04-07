@@ -676,6 +676,8 @@ export default {
     orderNumber: '退货单号',
     receiveDate: '收货时间',
     trackingNumber: '快递单号',
+    partCode: '零件代码',
+    partNumber: '售后件编号',
     errorOrData: '失败原因 / 原始数据',
     createdBy: '操作人',
     createdAt: '导入时间',

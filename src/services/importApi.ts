@@ -24,6 +24,14 @@ export const importApi = {
     })
   },
 
+  importParts(file: File): Promise<ImportRecord> {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request.post('/imports/parts', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+
   getById(id: string): Promise<ImportRecord> {
     return request.get(`/imports/${id}`)
   },
