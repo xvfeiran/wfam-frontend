@@ -1,117 +1,450 @@
 <template>
-  <a-card class="ocr-card">
-    <div class="ocr-actions">
-      <a-space>
-        <a-upload
-          :before-upload="handleOCRUpload"
-          :show-upload-list="false"
-          accept="image/*"
-        >
-          <a-button type="primary" :loading="ocrLoading">
-            <CameraOutlined /> {{ t('returnPart.ocrRecognition') }}
-          </a-button>
-        </a-upload>
-        <a-button v-if="ocrLoading" @click="stopOCR">
-          {{ t('returnPart.stopRecognition') }}
+  <a-card class="ocr-zone-card" :title="t('returnPart.ocrRecognition')">
+    <!-- 隐藏文件输入：普通上传 -->
+    <input
+      ref="uploadInputRef"
+      type="file"
+      accept="image/jpeg,image/png,image/jpg"
+      style="display: none"
+      @change="onFileChange"
+    />
+    <!-- 隐藏文件输入：调用相机 -->
+    <input
+      ref="cameraInputRef"
+      type="file"
+      accept="image/jpeg,image/png,image/jpg"
+      capture="environment"
+      style="display: none"
+      @change="onFileChange"
+    />
+
+    <!-- 拍照区域主体 -->
+    <div
+      class="ocr-zone"
+      :class="`ocr-zone--${zoneState}`"
+    >
+      <!-- 空闲：两个入口按钮 -->
+      <template v-if="zoneState === 'idle'">
+        <div class="ocr-idle">
+          <div class="ocr-idle__buttons">
+            <div class="ocr-idle__btn" @click="triggerCamera">
+              <CameraOutlined class="ocr-idle__btn-icon" />
+              <span>{{ t('ocr.takePhoto') }}</span>
+            </div>
+            <div class="ocr-idle__divider" />
+            <div class="ocr-idle__btn" @click="triggerUpload">
+              <UploadOutlined class="ocr-idle__btn-icon" />
+              <span>{{ t('ocr.uploadPhoto') }}</span>
+            </div>
+          </div>
+          <p class="ocr-idle__hint">{{ t('returnPart.ocrTip') }}</p>
+        </div>
+      </template>
+
+      <!-- 上传中 -->
+      <template v-else-if="zoneState === 'uploading'">
+        <div class="ocr-status-overlay">
+          <a-image v-if="previewUrl" :src="previewUrl" class="ocr-preview" :preview="false" />
+          <div class="ocr-overlay">
+            <a-spin size="large" />
+            <p>{{ t('ocr.uploading') }}</p>
+          </div>
+        </div>
+      </template>
+
+      <!-- 识别中 -->
+      <template v-else-if="zoneState === 'processing'">
+        <div class="ocr-status-overlay">
+          <a-image v-if="previewUrl" :src="previewUrl" class="ocr-preview" :preview="false" />
+          <div class="ocr-overlay">
+            <a-spin size="large" />
+            <p>{{ t('returnPart.ocrLoading') }}</p>
+            <p class="ocr-overlay__hint">{{ t('ocr.processingHint') }}</p>
+          </div>
+        </div>
+      </template>
+
+      <!-- 识别成功 -->
+      <template v-else-if="zoneState === 'success'">
+        <div class="ocr-result-area">
+          <div class="ocr-result-area__preview">
+            <!-- a-image 内置大图预览，鼠标悬停显示放大镜图标 -->
+            <a-image
+              v-if="previewUrl"
+              :src="previewUrl"
+              :width="120"
+              :height="120"
+              class="ocr-preview-thumb"
+            />
+            <CheckCircleFilled class="ocr-result-area__badge ocr-result-area__badge--success" />
+          </div>
+          <div class="ocr-result-area__fields">
+            <p class="ocr-result-area__title">
+              <CheckCircleOutlined style="color: #52c41a; margin-right: 6px;" />
+              {{ t('returnPart.ocrComplete') }}
+            </p>
+            <div class="ocr-field-list">
+              <div
+                v-for="field in OCR_FIELDS"
+                :key="field"
+                class="ocr-field-item"
+                :class="{
+                  'ocr-field-item--success': ocrResults[field]?.status === 'success',
+                  'ocr-field-item--error': ocrResults[field]?.status === 'error',
+                }"
+              >
+                <span class="ocr-field-item__label">{{ t(`returnPart.${field}`) }}</span>
+                <span v-if="ocrResults[field]?.status === 'success'" class="ocr-field-item__value">
+                  {{ ocrResults[field].value }}
+                </span>
+                <span v-else class="ocr-field-item__miss">{{ t('ocr.fieldNotRecognized') }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 识别失败 -->
+      <template v-else-if="zoneState === 'failed'">
+        <div class="ocr-status-overlay">
+          <!-- 失败时图片也可点击查看大图 -->
+          <a-image
+            v-if="previewUrl"
+            :src="previewUrl"
+            class="ocr-preview"
+          />
+          <div class="ocr-overlay ocr-overlay--failed">
+            <CloseCircleFilled class="ocr-overlay__icon" />
+            <p>{{ t('ocr.degraded') }}</p>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div class="ocr-zone-actions">
+      <!-- 识别中：停止 -->
+      <a-button v-if="zoneState === 'processing' || zoneState === 'uploading'" @click="$emit('stopOCR')">
+        {{ t('returnPart.stopRecognition') }}
+      </a-button>
+
+      <!-- 成功 / 失败：重新选择 -->
+      <template v-if="zoneState === 'success' || zoneState === 'failed'">
+        <a-button @click="triggerCamera">
+          <CameraOutlined /> {{ t('ocr.takePhoto') }}
         </a-button>
-        <a-button v-if="hasOCRResults" @click="applyAllOCR">
-          {{ t('common.applyAll') }}
+        <a-button @click="triggerUpload">
+          <UploadOutlined /> {{ t('ocr.uploadPhoto') }}
         </a-button>
-      </a-space>
-      <div class="ocr-status">
-        <template v-if="ocrLoading">
-          <a-spin size="small" />
-          <span class="status-text loading">{{ t('returnPart.ocrLoading') }}</span>
-        </template>
-        <template v-else-if="hasOCRResults">
-          <CheckCircleOutlined class="status-icon success" />
-          <span class="status-text success">{{ t('returnPart.ocrComplete') }}</span>
-        </template>
-        <span v-else class="ocr-tip">{{ t('returnPart.ocrTip') }}</span>
-      </div>
+      </template>
     </div>
   </a-card>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { CameraOutlined, CheckCircleOutlined } from '@ant-design/icons-vue'
+import {
+  CameraOutlined,
+  UploadOutlined,
+  CheckCircleOutlined,
+  CheckCircleFilled,
+  CloseCircleFilled,
+} from '@ant-design/icons-vue'
+import type { OcrZoneState, OCRResultItem } from '@/composables/useOCR'
 
-interface Emits {
-  (e: 'handleOCRUpload', file: File): Promise<void>
-  (e: 'stopOCR'): void
-  (e: 'applyAllOCR'): void
-}
-
-const emit = defineEmits<Emits>()
+const OCR_FIELDS = [
+  'vehicleProductionDate',
+  'vehiclePurchaseDate',
+  'vehicleFailureDate',
+  'vehicleVIN',
+  'vehicleMileage',
+  'customerDescription',
+] as const
 
 interface Props {
-  ocrLoading: boolean
-  hasOCRResults: boolean
+  zoneState: OcrZoneState
+  previewUrl: string
+  ocrResults: Record<string, OCRResultItem>
 }
 
 withDefaults(defineProps<Props>(), {
-  ocrLoading: false,
-  hasOCRResults: false
+  zoneState: 'idle',
+  previewUrl: '',
 })
 
+const emit = defineEmits<{
+  (e: 'handleOCRUpload', file: File): void
+  (e: 'stopOCR'): void
+  (e: 'retake'): void
+}>()
+
 const { t } = useI18n()
+const uploadInputRef = ref<HTMLInputElement | null>(null)
+const cameraInputRef  = ref<HTMLInputElement | null>(null)
 
-const handleOCRUpload = (file: File) => {
-  emit('handleOCRUpload', file)
-  return false
+const triggerUpload = () => uploadInputRef.value?.click()
+const triggerCamera  = () => cameraInputRef.value?.click()
+
+const onFileChange = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (file) {
+    emit('handleOCRUpload', file)
+    input.value = ''
+  }
 }
-
-const stopOCR = () => {
-  emit('stopOCR')
-}
-
-const applyAllOCR = () => {
-  emit('applyAllOCR')
-}
-
-defineExpose({ handleOCRUpload })
 </script>
 
 <style lang="less" scoped>
-.ocr-card {
+.ocr-zone-card {
   margin-bottom: 16px;
 
-  .ocr-actions {
+  :deep(.ant-card-body) {
+    padding-bottom: 12px;
+  }
+}
+
+.ocr-zone {
+  border: 2px dashed #d9d9d9;
+  border-radius: 8px;
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.25s, background 0.25s;
+  overflow: hidden;
+  position: relative;
+
+  &--processing,
+  &--uploading {
+    border-color: #1890ff;
+    border-style: dashed;
+  }
+
+  &--success {
+    border-color: #52c41a;
+    border-style: solid;
+    align-items: flex-start;
+    min-height: 200px;
+  }
+
+  &--failed {
+    border-color: #ff4d4f;
+    border-style: dashed;
+  }
+}
+
+// ── 空闲状态：两个入口 ─────────────────────────────────────────
+.ocr-idle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 28px 24px;
+  width: 100%;
+
+  &__buttons {
     display: flex;
+    align-items: stretch;
+    gap: 0;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fafafa;
+  }
+
+  &__btn {
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px 40px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #595959;
+    transition: background 0.2s, color 0.2s;
+    user-select: none;
+    flex: 1;
 
-    .ocr-status {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    &:hover {
+      background: #e6f4ff;
+      color: #1890ff;
 
-      .status-icon {
-        font-size: 16px;
-
-        &.success {
-          color: #52c41a;
-        }
-      }
-
-      .status-text {
-        font-size: 14px;
-
-        &.loading {
-          color: #1890ff;
-        }
-
-        &.success {
-          color: #52c41a;
-        }
-      }
-
-      .ocr-tip {
-        color: #999;
-        font-size: 12px;
+      .ocr-idle__btn-icon {
+        color: #1890ff;
       }
     }
+
+    &:active {
+      background: #bae0ff;
+    }
   }
+
+  &__btn-icon {
+    font-size: 28px;
+    color: #8c8c8c;
+    transition: color 0.2s;
+  }
+
+  &__divider {
+    width: 1px;
+    background: #e8e8e8;
+    flex-shrink: 0;
+  }
+
+  &__hint {
+    margin: 0;
+    font-size: 12px;
+    color: #bfbfbf;
+  }
+}
+
+// ── 图片覆盖层（上传中 / 识别中 / 失败）──────────────────────────
+.ocr-status-overlay {
+  position: relative;
+  width: 100%;
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ocr-preview {
+  max-height: 200px;
+  max-width: 100%;
+  object-fit: contain;
+  display: block;
+
+  :deep(img) {
+    max-height: 200px;
+    max-width: 100%;
+    object-fit: contain;
+  }
+}
+
+.ocr-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.82);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #1890ff;
+  pointer-events: none; // 保证图片预览按钮仍可点击
+
+  &__hint {
+    font-size: 12px;
+    color: #8c8c8c;
+    margin: 0;
+  }
+
+  &__icon {
+    font-size: 32px;
+  }
+
+  &--failed {
+    color: #ff4d4f;
+    background: rgba(255, 77, 79, 0.06);
+    pointer-events: none;
+
+    p { margin: 0; }
+  }
+
+  p { margin: 0; }
+}
+
+// ── 识别成功结果区 ────────────────────────────────────────────
+.ocr-result-area {
+  display: flex;
+  width: 100%;
+  gap: 16px;
+  padding: 12px;
+
+  &__preview {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  &__badge {
+    position: absolute;
+    bottom: -6px;
+    right: -6px;
+    font-size: 20px;
+
+    &--success { color: #52c41a; }
+  }
+
+  &__fields {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title {
+    margin: 0 0 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #262626;
+  }
+}
+
+.ocr-preview-thumb {
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+  cursor: zoom-in;
+
+  :deep(img) {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+  }
+}
+
+.ocr-field-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ocr-field-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 3px 0;
+
+  &__label {
+    color: #8c8c8c;
+    flex-shrink: 0;
+    min-width: 80px;
+  }
+
+  &__value {
+    color: #262626;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__miss {
+    color: #bfbfbf;
+    font-style: italic;
+  }
+
+  &--success &__label { color: #52c41a; }
+  &--error  &__label { color: #bfbfbf; }
+}
+
+.ocr-zone-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  justify-content: flex-end;
 }
 </style>

@@ -28,8 +28,9 @@ export const partApi = {
   getById(id: string): Promise<Part> {
     return request.get(`/parts/${id}`) as unknown as Promise<Part>
   },
-  create(data: Partial<Part>): Promise<Part> {
-    return request.post('/parts', data) as unknown as Promise<Part>
+  create(data: Partial<Part>, ocrTaskId?: string | null): Promise<Part> {
+    const params = ocrTaskId ? { ocrTaskId } : undefined
+    return request.post('/parts', data, { params }) as unknown as Promise<Part>
   },
   update(id: string, data: Partial<Part>): Promise<Part> {
     return request.put(`/parts/${id}`, data) as unknown as Promise<Part>

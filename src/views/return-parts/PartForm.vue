@@ -5,13 +5,14 @@
       @back="handleBack"
     />
 
-    <!-- OCR操作区 - 置顶 -->
+    <!-- OCR拍照识别区 - 嵌入客诉信息卡上方 -->
     <OCRActionBar
-      :ocr-loading="ocrLoading"
-      :has-o-c-r-results="hasOCRResults"
+      :zone-state="zoneState"
+      :preview-url="previewUrl"
+      :ocr-results="ocrResults"
       @handle-o-c-r-upload="handleOCRUpload"
       @stop-o-c-r="stopOCR"
-      @apply-all-o-c-r="applyAllOCR"
+      @retake="retake"
     />
 
     <!-- 基础信息卡片 -->
@@ -131,7 +132,7 @@ const form = reactive({
   imageFiles: [] as any[],
 })
 
-const { ocrLoading, hasOCRResults, handleOCRUpload, stopOCR, applyAllOCR } = useOCR(form)
+const { zoneState, previewUrl, ocrResults, ocrTaskId, handleOCRUpload, stopOCR, retake } = useOCR(form, partId.value || undefined)
 
 onMounted(async () => {
   const [lookups, ordersData, usersData, analystsData] = await Promise.all([
@@ -212,7 +213,7 @@ const handleSave = async () => {
     if (isEdit.value) {
       await partApi.update(partId.value, buildPartPayload())
     } else {
-      await partApi.create(buildPartPayload())
+      await partApi.create(buildPartPayload(), ocrTaskId.value)
     }
     message.success(t('message.saveSuccess'))
 
@@ -238,7 +239,7 @@ const handleSubmit = async () => {
     if (isEdit.value) {
       await partApi.update(savedId, buildPartPayload())
     } else {
-      const created = await partApi.create(buildPartPayload())
+      const created = await partApi.create(buildPartPayload(), ocrTaskId.value)
       savedId = created.id
     }
     await partApi.submit(savedId)

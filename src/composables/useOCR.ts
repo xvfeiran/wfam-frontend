@@ -2,11 +2,14 @@ import { ref, reactive, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
+import { ocrApi } from '@/services/ocrApi'
+import type { OcrResult } from '@/services/ocrApi'
 
-interface OCRResultItem {
+export type OcrFieldStatus = 'loading' | 'success' | 'error'
+
+export interface OCRResultItem {
   value: string
-  status: 'loading' | 'success' | 'error'
-  confidence?: number
+  status: OcrFieldStatus
 }
 
 const OCR_FIELDS = [
@@ -18,71 +21,148 @@ const OCR_FIELDS = [
   'customerDescription',
 ] as const
 
-export function useOCR(form: Record<string, any>) {
+type OcrField = (typeof OCR_FIELDS)[number]
+
+/** 图片区域的展示状态 */
+export type OcrZoneState = 'idle' | 'uploading' | 'processing' | 'success' | 'failed'
+
+export function useOCR(form: Record<string, any>, partId?: string) {
   const { t } = useI18n()
 
-  const ocrLoading = ref(false)
-  const ocrResults = reactive<Record<string, OCRResultItem>>(
-    Object.fromEntries(OCR_FIELDS.map(f => [f, { value: '', status: 'loading' as const }])),
+  const zoneState = ref<OcrZoneState>('idle')
+  const previewUrl = ref<string>('')
+  const ocrResults = reactive<Record<OcrField, OCRResultItem>>(
+    Object.fromEntries(OCR_FIELDS.map(f => [f, { value: '', status: 'loading' as OcrFieldStatus }])) as Record<OcrField, OCRResultItem>,
   )
 
-  const hasOCRResults = computed(() => Object.values(ocrResults).some(r => r.status === 'success'))
+  const ocrLoading = computed(() => zoneState.value === 'uploading' || zoneState.value === 'processing')
 
-  const handleOCRUpload = (_file: File) => {
-    ocrLoading.value = true
-    OCR_FIELDS.forEach(key => {
-      ocrResults[key] = { value: '', status: 'loading' }
-    })
+  /** 当前 OCR 任务 ID（新建 Part 时提交表单需要传给后端以完成绑定） */
+  const ocrTaskId = ref<string | null>(null)
 
-    // 模拟OCR识别过程
-    setTimeout(() => {
-      ocrResults.vehicleProductionDate = { value: '2025-06-15', status: 'success', confidence: 0.95 }
-      ocrResults.vehiclePurchaseDate = { value: '2025-07-20', status: 'success', confidence: 0.92 }
-      ocrResults.vehicleFailureDate = { value: '2026-01-10', status: 'success', confidence: 0.88 }
-      ocrResults.vehicleVIN = { value: 'LSVAB2183E2123456', status: 'success', confidence: 0.96 }
-      ocrResults.vehicleMileage = { value: '15234', status: 'success', confidence: 0.90 }
-      ocrResults.customerDescription = { value: '发动机异响，怠速不稳', status: 'success', confidence: 0.85 }
-      ocrLoading.value = false
-      message.success(t('ocr.success'))
-    }, 2000)
+  let pollTimer: ReturnType<typeof setInterval> | null = null
+
+  const handleOCRUpload = async (file: File) => {
+    previewUrl.value = URL.createObjectURL(file)
+    zoneState.value = 'uploading'
+    ocrTaskId.value = null
+    resetResults()
+
+    try {
+      const task = await ocrApi.createTask(file, partId)
+      ocrTaskId.value = task.taskId
+      zoneState.value = 'processing'
+      startPolling(task.taskId)
+    } catch (e) {
+      zoneState.value = 'failed'
+      message.error(t('ocr.uploadFailed'))
+    }
 
     return false
   }
 
+  const startPolling = (taskId: string) => {
+    stopPolling()
+    pollTimer = setInterval(async () => {
+      try {
+        const task = await ocrApi.getTask(taskId)
+
+        if (task.status === 'SUCCESS') {
+          stopPolling()
+          writeResultsToForm(task.result)
+          zoneState.value = 'success'
+          message.success(t('ocr.success'))
+        } else if (task.status === 'FAILED') {
+          stopPolling()
+          setAllError()
+          zoneState.value = 'failed'
+          message.warning(t('ocr.degraded'))
+        }
+        // CREATED / PROCESSING：继续轮询
+      } catch (e) {
+        stopPolling()
+        setAllError()
+        zoneState.value = 'failed'
+        message.error(t('ocr.pollError'))
+      }
+    }, 3000)
+  }
+
+  const stopPolling = () => {
+    if (pollTimer) {
+      clearInterval(pollTimer)
+      pollTimer = null
+    }
+  }
+
   const stopOCR = () => {
-    ocrLoading.value = false
-    OCR_FIELDS.forEach(key => {
-      if (ocrResults[key].status === 'loading') {
-        ocrResults[key].status = 'error'
+    stopPolling()
+    zoneState.value = 'idle'
+  }
+
+  const retake = () => {
+    stopPolling()
+    previewUrl.value = ''
+    resetResults()
+    zoneState.value = 'idle'
+  }
+
+  // ── 私有辅助 ──────────────────────────────────────────────────
+
+  /** 识别成功后直接写入表单字段（覆盖已有值） */
+  function writeResultsToForm(result?: OcrResult) {
+    const map: Partial<Record<OcrField, string | number | undefined>> = {
+      vehicleProductionDate: result?.vehicleProductionDate,
+      vehiclePurchaseDate:   result?.vehiclePurchaseDate,
+      vehicleFailureDate:    result?.vehicleFailureDate,
+      vehicleVIN:            result?.vehicleVIN,
+      vehicleMileage:        result?.vehicleMileage,
+      customerDescription:   result?.customerDescription,
+    }
+
+    OCR_FIELDS.forEach(field => {
+      const val = map[field]
+      if (val != null) {
+        // 写入表单
+        switch (field) {
+          case 'vehicleProductionDate':
+          case 'vehiclePurchaseDate':
+          case 'vehicleFailureDate':
+            form[field] = dayjs(val as string)
+            break
+          case 'vehicleMileage':
+            form[field] = Number(val)
+            break
+          default:
+            form[field] = val
+        }
+        ocrResults[field] = { value: String(val), status: 'success' }
+      } else {
+        ocrResults[field] = { value: '', status: 'error' }
       }
     })
   }
 
-  const applyOCR = (field: string) => {
-    const result = ocrResults[field]
-    if (result.status !== 'success') return
-
-    switch (field) {
-      case 'vehicleProductionDate':
-      case 'vehiclePurchaseDate':
-      case 'vehicleFailureDate':
-        form[field] = dayjs(result.value)
-        break
-      case 'vehicleMileage':
-        form[field] = parseInt(result.value)
-        break
-      default:
-        form[field] = result.value
-    }
-    message.success(t('message.applied'))
-  }
-
-  const applyAllOCR = () => {
-    OCR_FIELDS.forEach(key => {
-      if (ocrResults[key].status === 'success') applyOCR(key)
+  function resetResults() {
+    OCR_FIELDS.forEach(f => {
+      ocrResults[f] = { value: '', status: 'loading' }
     })
-    message.success(t('message.allApplied'))
   }
 
-  return { ocrLoading, ocrResults, hasOCRResults, handleOCRUpload, stopOCR, applyOCR, applyAllOCR }
+  function setAllError() {
+    OCR_FIELDS.forEach(f => {
+      ocrResults[f] = { value: '', status: 'error' }
+    })
+  }
+
+  return {
+    zoneState,
+    previewUrl,
+    ocrLoading,
+    ocrResults,
+    ocrTaskId,
+    handleOCRUpload,
+    stopOCR,
+    retake,
+  }
 }
