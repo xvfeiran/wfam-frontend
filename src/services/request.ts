@@ -8,10 +8,13 @@ import i18n from '@/i18n'
 
 const { isDevMode } = useDevMode()
 
+const backendBaseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8102/aftermarket-parts-management-system/api/v1'
+const gatewayBaseUrl = import.meta.env.VITE_GATEWAY_URL || backendBaseUrl
+
 const request = axios.create({
   baseURL: isDevMode.value
-    ? import.meta.env.VITE_BACKEND_URL
-    : import.meta.env.VITE_GATEWAY_URL,
+    ? backendBaseUrl
+    : gatewayBaseUrl,
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
@@ -23,15 +26,7 @@ request.interceptors.request.use(
   (config) => {
     if (isDevMode.value) {
       // 调试模式：使用 devUserStore 中选中的用户
-      const { authHeader, currentUser } = useDevUserStore()
-      // 调试日志：检查认证头是否包含非 ASCII 字符
-      console.log('[Dev Mode] Current user:', currentUser)
-      console.log('[Dev Mode] Auth header (first 100 chars):', authHeader.substring(0, 100))
-      // 检查是否包含非 ASCII 字符
-      const hasNonAscii = /[^\x00-\x7F]/.test(authHeader)
-      if (hasNonAscii) {
-        console.error('[Dev Mode] Auth header contains non-ASCII characters!', authHeader)
-      }
+      const { authHeader } = useDevUserStore()
       config.headers['x-authentication-header'] = authHeader
     } else {
       // 子应用模式：从 Pinia store 读取父应用传入的 token，通过网关鉴权

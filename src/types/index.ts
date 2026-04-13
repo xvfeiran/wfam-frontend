@@ -207,12 +207,12 @@ export const ORDER_STATUS_MAP: Record<OrderStatus, { label: string; color: strin
 }
 
 export const ANALYSIS_ORDER_STATUS_MAP: Record<AnalysisOrderStatus, { label: string; color: string }> = {
-  [AnalysisOrderStatus.PENDING_SAMPLING]: { label: '待抽样', color: 'default' },
+  [AnalysisOrderStatus.PENDING_SAMPLING]: { label: '待抽样', color: 'warning' },
   [AnalysisOrderStatus.IN_DETAILED_ANALYSIS]: { label: '精分析中', color: 'processing' },
   [AnalysisOrderStatus.PENDING_APPROVAL]: { label: '精分析/审批中', color: 'warning' },
   [AnalysisOrderStatus.ANALYSIS_COMPLETED]: { label: '精分析/审批完成', color: 'success' },
-  [AnalysisOrderStatus.WORKON_SCRAP_IN_PROGRESS]: { label: 'WorkOn报废中', color: 'warning' },
-  [AnalysisOrderStatus.WORKON_SCRAPPED]: { label: '已报废', color: 'default' },
+  [AnalysisOrderStatus.WORKON_SCRAP_IN_PROGRESS]: { label: 'WorkOn报废中', color: 'error' },
+  [AnalysisOrderStatus.WORKON_SCRAPPED]: { label: '已报废', color: 'purple' },
 }
 
 export const PART_STATUS_MAP: Record<PartStatus, { label: string; color: string }> = {

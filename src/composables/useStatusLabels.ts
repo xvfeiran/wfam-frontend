@@ -10,6 +10,9 @@ export function useStatusLabels() {
   const statusI18nKeyMap: Record<string, string> = {
     draft: 'status.draft',
     submitted: 'status.submitted',
+    received: 'status.received',
+    in_progress: 'status.inProgress',
+    closed: 'status.closed',
     in_initial_analysis: 'status.inInitialAnalysis',
     in_detailed_analysis: 'status.inDetailedAnalysis',
     pending_approval: 'status.pendingApproval',
@@ -20,14 +23,22 @@ export function useStatusLabels() {
     pending_sampling: 'status.pendingSampling',
     sampling_completed: 'status.samplingCompleted',
     approved: 'status.approved',
+    pending: 'status.pendingProcessing',
+    analyzing: 'status.analyzing',
+    analyzed: 'status.analyzed',
     pending_scrap: 'status.pendingScrap',
     completed: 'status.completed',
     registered: 'status.registered',
     pending_detailed_analysis: 'status.pendingDetailedAnalysis',
+    workon_scrap_in_progress: 'status.scrapInProgress',
+    workon_scrapped: 'status.scrapped',
   }
 
+  const normalizeStatus = (status: string) => status.trim().toLowerCase()
+
   const getStatusLabel = (status: string) => {
-    const key = statusI18nKeyMap[status]
+    const normalizedStatus = normalizeStatus(status)
+    const key = statusI18nKeyMap[normalizedStatus]
     return key ? t(key) : status
   }
 
@@ -44,6 +55,7 @@ export function useStatusLabels() {
     }))
 
   return {
+    normalizeStatus,
     getStatusLabel,
     getOrderStatusFilters,
     getPartStatusFilters,

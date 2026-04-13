@@ -71,7 +71,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
 import { PlusOutlined } from '@ant-design/icons-vue'
 import { returnOrderApi } from '@/services/returnOrderApi'
 import { ORDER_STATUS_MAP, RETURN_METHOD_MAP, OrderStatus } from '@/types'
@@ -203,7 +203,23 @@ const handleEdit = () => {
   router.push(`/return-orders/${orderId.value}/edit`)
 }
 
+const confirmSubmit = () => {
+  return new Promise<boolean>((resolve) => {
+    Modal.confirm({
+      title: t('common.tip'),
+      content: t('message.submitConfirmWarning'),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
+      onOk: () => resolve(true),
+      onCancel: () => resolve(false),
+    })
+  })
+}
+
 const handleSubmit = async () => {
+  const confirmed = await confirmSubmit()
+  if (!confirmed) return
+
   try {
     order.value = await returnOrderApi.submit(orderId.value)
     message.success(t('message.submitSuccess'))

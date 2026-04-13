@@ -64,7 +64,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
 import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
 import { returnOrderApi } from '@/services/returnOrderApi'
@@ -233,11 +233,28 @@ const handleSave = async () => {
   }
 }
 
+const confirmSubmit = () => {
+  return new Promise<boolean>((resolve) => {
+    Modal.confirm({
+      title: t('common.tip'),
+      content: t('message.submitConfirmWarning'),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
+      onOk: () => resolve(true),
+      onCancel: () => resolve(false),
+    })
+  })
+}
+
 const handleSubmit = async () => {
   if (isOcrProcessing.value) {
     message.warning(t('ocr.submitBlockedWhileProcessing'))
     return
   }
+
+  const confirmed = await confirmSubmit()
+  if (!confirmed) return
+
   try {
     await basicInfoCardRef.value?.validate()
     let savedId = partId.value

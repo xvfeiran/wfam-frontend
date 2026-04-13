@@ -56,11 +56,6 @@
         @change="handleTableChange"
       >
         <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'status'">
-            <a-tag :color="ANALYSIS_ORDER_STATUS_MAP[record.status as AnalysisOrderStatus]?.color || 'default'">
-              {{ getStatusLabel(record.status) }}
-            </a-tag>
-          </template>
           <template v-if="column.key === 'action'">
             <a-button type="link" @click.stop="goToDetail(record.id)">{{ t('common.view') }}</a-button>
           </template>
@@ -71,9 +66,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted } from 'vue'
+import { ref, computed, reactive, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { Tag } from 'ant-design-vue'
 import type { TableProps } from 'ant-design-vue'
 import { analysisOrderApi } from '@/services/analysisOrderApi'
 import { userApi } from '@/services/userApi'
@@ -114,11 +110,21 @@ const statusKeyMap: Record<AnalysisOrderStatus, string> = {
 
 const statusOptions = Object.values(AnalysisOrderStatus)
 
+const normalizeStatus = (status: AnalysisOrderStatus | string) => status.trim().toLowerCase()
+
 const getStatusLabel = (status: AnalysisOrderStatus | string) => {
-  const key = status in statusKeyMap
-    ? statusKeyMap[status as AnalysisOrderStatus]
+  const normalizedStatus = normalizeStatus(status)
+  const key = normalizedStatus in statusKeyMap
+    ? statusKeyMap[normalizedStatus as AnalysisOrderStatus]
     : undefined
   return key ? t(key) : status
+}
+
+const getStatusColor = (status: AnalysisOrderStatus | string) => {
+  const normalizedStatus = normalizeStatus(status)
+  return normalizedStatus in ANALYSIS_ORDER_STATUS_MAP
+    ? ANALYSIS_ORDER_STATUS_MAP[normalizedStatus as AnalysisOrderStatus].color
+    : 'default'
 }
 
 // 应用中搜索过滤
@@ -159,6 +165,9 @@ const columns = computed<TableProps['columns']>(() => [
     key: 'status',
     sorter: (a: AnalysisOrder, b: AnalysisOrder) =>
       (a.status || '').localeCompare(b.status || ''),
+    customRender: ({ record }: { record: AnalysisOrder }) => {
+      return h(Tag, { color: getStatusColor(record.status) }, () => getStatusLabel(record.status))
+    },
   },
   {
     title: t('analysisOrder.createdAt'),

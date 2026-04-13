@@ -8,20 +8,13 @@
     :loading="loading"
     :custom-row="customRow"
     @change="handleChange"
-  >
-    <template #bodyCell="{ column, record }">
-      <template v-if="column.key === 'status'">
-        <a-tag :color="getPartStatusColor(record.status)">
-          {{ getStatusLabel(record.status) }}
-        </a-tag>
-      </template>
-    </template>
-  </a-table>
+  />
 </template>
 
 <script setup lang="ts">
 import { computed, h } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Tag } from 'ant-design-vue'
 import { PART_STATUS_MAP, PartStatus } from '@/types'
 import type { Part } from '@/types'
 import { useStatusLabels } from '@/composables/useStatusLabels'
@@ -44,12 +37,19 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { getStatusLabel } = useStatusLabels()
+const { getStatusLabel, normalizeStatus } = useStatusLabels()
+const legacyPartStatusColorMap: Record<string, string> = {
+  pending: 'default',
+  analyzing: 'processing',
+  analyzed: 'success',
+  closed: 'default',
+}
 
 const getPartStatusColor = (status: PartStatus | string) => {
-  return status in PART_STATUS_MAP
-    ? PART_STATUS_MAP[status as PartStatus].color
-    : 'default'
+  const normalizedStatus = normalizeStatus(status)
+  return normalizedStatus in PART_STATUS_MAP
+    ? PART_STATUS_MAP[normalizedStatus as PartStatus].color
+    : legacyPartStatusColorMap[normalizedStatus] || 'default'
 }
 
 const columns = computed(() => [
@@ -94,7 +94,15 @@ const columns = computed(() => [
   { title: t('returnPart.businessUnit'), dataIndex: 'businessUnit', key: 'businessUnit', sorter: true },
   { title: t('returnPart.productPlatform'), dataIndex: 'productPlatform', key: 'productPlatform', sorter: true },
   { title: t('partDetail.analyst'), dataIndex: 'analyst', key: 'analyst', sorter: true },
-  { title: t('common.status'), dataIndex: 'status', key: 'status', sorter: true },
+  {
+    title: t('common.status'),
+    dataIndex: 'status',
+    key: 'status',
+    sorter: true,
+    customRender: ({ record }: { record: Part }) => {
+      return h(Tag, { color: getPartStatusColor(record.status) }, () => getStatusLabel(record.status))
+    },
+  },
 ])
 
 const handleSelectionChange = (keys: string[]) => {

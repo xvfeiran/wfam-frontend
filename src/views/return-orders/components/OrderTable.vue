@@ -8,20 +8,13 @@
     :loading="loading"
     :custom-row="customRow"
     @change="handleChange"
-  >
-    <template #bodyCell="{ column, record }">
-      <template v-if="column.key === 'status'">
-        <a-tag :color="getOrderStatusColor(record.status)">
-          {{ getStatusLabel(record.status) }}
-        </a-tag>
-      </template>
-    </template>
-  </a-table>
+  />
 </template>
 
 <script setup lang="ts">
 import { computed, h } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Tag } from 'ant-design-vue'
 import { ORDER_STATUS_MAP, OrderStatus } from '@/types'
 import type { ReturnOrder } from '@/types'
 import type { Customer } from '@/services/customerApi'
@@ -45,12 +38,19 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { getStatusLabel } = useStatusLabels()
+const { getStatusLabel, normalizeStatus } = useStatusLabels()
+const legacyOrderStatusColorMap: Record<string, string> = {
+  received: 'default',
+  in_progress: 'processing',
+  completed: 'success',
+  closed: 'default',
+}
 
 const getOrderStatusColor = (status: OrderStatus | string) => {
-  return status in ORDER_STATUS_MAP
-    ? ORDER_STATUS_MAP[status as OrderStatus].color
-    : 'default'
+  const normalizedStatus = normalizeStatus(status)
+  return normalizedStatus in ORDER_STATUS_MAP
+    ? ORDER_STATUS_MAP[normalizedStatus as OrderStatus].color
+    : legacyOrderStatusColorMap[normalizedStatus] || 'default'
 }
 
 const columns = computed(() => [
@@ -88,6 +88,9 @@ const columns = computed(() => [
     dataIndex: 'status',
     key: 'status',
     sorter: true,
+    customRender: ({ record }: { record: ReturnOrder }) => {
+      return h(Tag, { color: getOrderStatusColor(record.status) }, () => getStatusLabel(record.status))
+    },
   },
 ])
 
