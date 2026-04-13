@@ -641,6 +641,7 @@ export default {
     retrying: 'Retrying recognition, please wait...',
     retryFailed: 'Retry recognition failed, please try again later',
     noRetryTask: 'No OCR task available for retry',
+    submitBlockedWhileProcessing: 'Only save is allowed while OCR is processing. Submit after recognition completes.',
     pollError: 'Failed to query recognition result, please try again',
     fieldNotRecognized: 'Not recognized',
     retake: 'Retake Photo',

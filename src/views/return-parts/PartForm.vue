@@ -45,11 +45,11 @@
         <!-- 草稿状态：显示保存和提交按钮 -->
         <template v-if="!isSubmitted">
           <a-button @click="handleSave">{{ t('common.save') }}</a-button>
-          <a-button type="primary" @click="handleSubmit">{{ t('common.submit') }}</a-button>
+          <a-button type="primary" :disabled="isOcrProcessing" @click="handleSubmit">{{ t('common.submit') }}</a-button>
         </template>
         <!-- 已提交状态且有权限：只显示提交按钮（不允许暂存） -->
         <template v-else-if="canEditSubmittedPart">
-          <a-button type="primary" @click="handleSubmit">{{ t('common.submit') }}</a-button>
+          <a-button type="primary" :disabled="isOcrProcessing" @click="handleSubmit">{{ t('common.submit') }}</a-button>
         </template>
         <!-- 已提交状态且无权限：显示不可编辑提示 -->
         <template v-else>
@@ -134,6 +134,8 @@ const form = reactive({
 })
 
 const { zoneState, previewUrl, ocrResults, ocrTaskId, handleOCRUpload, retryOCR, stopOCR, retake } = useOCR(form, partId.value || undefined)
+
+const isOcrProcessing = computed(() => zoneState.value === 'uploading' || zoneState.value === 'processing')
 
 onMounted(async () => {
   const [lookups, ordersData, usersData, analystsData] = await Promise.all([
@@ -232,6 +234,10 @@ const handleSave = async () => {
 }
 
 const handleSubmit = async () => {
+  if (isOcrProcessing.value) {
+    message.warning(t('ocr.submitBlockedWhileProcessing'))
+    return
+  }
   try {
     await basicInfoCardRef.value?.validate()
     let savedId = partId.value

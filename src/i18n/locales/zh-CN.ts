@@ -654,6 +654,7 @@ export default {
     retrying: '正在重新识别，请稍候...',
     retryFailed: '重新识别失败，请稍后重试',
     noRetryTask: '当前没有可重试的识别任务',
+    submitBlockedWhileProcessing: 'OCR识别中仅允许暂存，识别完成后方可提交',
     pollError: '查询识别结果失败，请重试',
     fieldNotRecognized: '未识别',
     retake: '重新拍照',
