@@ -22,7 +22,7 @@
             <a-select
               v-model:value="form.orderId"
               :placeholder="t('validation.selectOrder')"
-              :disabled="hasPresetOrder"
+              :disabled="isOrderSelectDisabled"
               :filter-option="filterOrderOption"
               show-search
             >
@@ -32,6 +32,7 @@
               </a-select-option>
             </a-select>
             <div v-if="hasPresetOrder" class="preset-order-hint">{{ t('returnPart.presetOrderHint') }}</div>
+            <div v-if="isCurrentOrderInvalid" class="order-invalid-hint">{{ t('returnPart.orderClosedHint') }}</div>
           </a-form-item>
         </a-col>
       </a-row>
@@ -153,6 +154,18 @@ interface Props {
 const props = defineProps<Props>()
 
 const { t } = useI18n()
+
+// 当前订单是否无效（状态不是 draft/submitted）
+const isCurrentOrderInvalid = computed(() => {
+  if (!props.form.orderId) return false
+  const order = props.orders.find(o => o.id === props.form.orderId)
+  return !order
+})
+
+// 下拉是否应被禁用
+const isOrderSelectDisabled = computed(() => {
+  return props.hasPresetOrder || isCurrentOrderInvalid.value
+})
 
 // 零件号选项（用于下拉搜索）
 const partCodeOptions = ref<any[]>([])
@@ -325,6 +338,12 @@ defineExpose({
   .preset-order-hint {
     margin-top: 4px;
     color: #999;
+    font-size: 12px;
+  }
+
+  .order-invalid-hint {
+    margin-top: 4px;
+    color: #fa8c16;
     font-size: 12px;
   }
 

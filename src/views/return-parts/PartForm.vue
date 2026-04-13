@@ -137,16 +137,14 @@ const { zoneState, previewUrl, ocrResults, ocrTaskId, handleOCRUpload, stopOCR, 
 onMounted(async () => {
   const [lookups, ordersData, usersData, analystsData] = await Promise.all([
     lookupApi.getAll(),
-    returnOrderApi.list(), // 不限制数量
+    returnOrderApi.list({ statuses: ['draft', 'submitted'], pageSize: 100 }),
     userApi.list(),
     userApi.listAnalysts(),
   ])
   businessUnits.value = lookups.businessUnits
   productPlatforms.value = lookups.productPlatforms
   failureTypes.value = lookups.failureTypes
-  // 只显示草稿或已提交状态的退货单
-  const eligibleStatuses = ['draft', 'submitted']
-  orders.value = ordersData.data.filter((order: any) => eligibleStatuses.includes(order.status))
+  orders.value = ordersData.data
   users.value = usersData
   analysts.value = analystsData
 

@@ -130,6 +130,8 @@ export default {
     detailedAnalysis: 'Detailed Analysis',
     analysisReport: 'Analysis Report',
     presetOrderHint: 'Created from return order page, cannot be modified',
+    orderClosed: 'Closed',
+    orderClosedHint: 'The associated return order status does not allow adding parts',
     confirmDelete: 'Are you sure to delete selected warranty parts?',
     vinPlaceholder: '17 characters',
     customerDescPlaceholder: 'Please enter the customer reported failure phenomenon',

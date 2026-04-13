@@ -130,6 +130,8 @@ export default {
     detailedAnalysis: '精分析',
     analysisReport: '精分析报告',
     presetOrderHint: '从退货单页面创建，不可修改',
+    orderClosed: '已关闭',
+    orderClosedHint: '关联的退货单状态不允许添加售后件',
     confirmDelete: '确定删除选中的售后件？',
     vinPlaceholder: '17位字符',
     customerDescPlaceholder: '请输入客户描述的失效现象',
