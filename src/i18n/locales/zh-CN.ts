@@ -236,6 +236,7 @@ export default {
     uploadBy: '上传人',
     download: '下载',
     confirmDeleteTemplate: '确定删除此模板？',
+    templateInUseCannotDelete: '该模板已被使用，不能删除',
     templateNamePlaceholder: '请输入模板名称（留空则自动生成）',
     uploadTemplateTitle: '上传精分析模板',
     templateFile: '模板文件',

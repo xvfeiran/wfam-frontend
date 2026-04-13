@@ -307,13 +307,35 @@ const handleDownloadTemplate = async (record: TemplateItem) => {
   }
 }
 
+const getApiErrorMessage = (error: unknown): string | undefined => {
+  const apiError = error as {
+    response?: {
+      status?: number
+      data?: {
+        message?: string
+      }
+    }
+    message?: string
+  }
+
+  if (apiError.response?.data?.message) {
+    return apiError.response.data.message
+  }
+
+  if (apiError.response?.status === 409) {
+    return t('settings.templateInUseCannotDelete')
+  }
+
+  return undefined
+}
+
 const handleDeleteTemplate = async (id: string) => {
   try {
     await reportsApi.deleteTemplate(id)
     await loadTemplates()
     message.success(t('message.deleteSuccess'))
-  } catch {
-    message.error(t('message.deleteFailed'))
+  } catch (error) {
+    message.error(getApiErrorMessage(error) || t('message.deleteFailed'))
   }
 }
 

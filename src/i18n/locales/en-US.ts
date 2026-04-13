@@ -236,6 +236,7 @@ export default {
     uploadBy: 'Uploaded By',
     download: 'Download',
     confirmDeleteTemplate: 'Are you sure to delete this template?',
+    templateInUseCannotDelete: 'This template is already in use and cannot be deleted',
     templateNamePlaceholder: 'Enter template name (leave blank to auto-generate)',
     uploadTemplateTitle: 'Upload Analysis Template',
     templateFile: 'Template File',
