@@ -535,6 +535,9 @@ export default {
     taskOverdue: '精分析超期',
     taskApproval: '精分析报告待审批',
     taskScrapConfirm: '报废审批确认',
+    taskFilterApplied: '已按任务类型自动应用筛选条件',
+    linkNotConfigured: '{name} 链接未配置，请联系管理员补充地址',
+    helpHint: '以下为当前可访问的帮助与外部系统入口。IQIS/SAP 链接由环境变量配置。',
   },
   analysisOrder: {
     detailTitle: '分析单详情 - {orderNumber}',

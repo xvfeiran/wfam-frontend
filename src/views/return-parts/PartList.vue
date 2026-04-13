@@ -38,8 +38,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import { partApi } from '@/services/partApi'
@@ -54,6 +54,7 @@ import PartTable from './components/PartTable.vue'
 
 const { t } = useI18n()
 const router = useRouter()
+const route = useRoute()
 const { canEditSubmittedForm } = usePermissions()
 
 const businessUnits = ref<string[]>([])
@@ -66,6 +67,7 @@ const filters = ref({
   businessUnit: undefined as string | undefined,
   productPlatform: undefined as string | undefined,
   status: undefined as string | undefined,
+  alertType: undefined as string | undefined,
   qcCreated: undefined as string | undefined,
   analyst: undefined as string | undefined,
 })
@@ -91,6 +93,7 @@ const {
   if (filters.value.businessUnit) params.businessUnit = filters.value.businessUnit
   if (filters.value.productPlatform) params.productPlatform = filters.value.productPlatform
   if (filters.value.status) params.status = filters.value.status
+  if (filters.value.alertType) params.alertType = filters.value.alertType
   if (filters.value.qcCreated) params.qcCreated = filters.value.qcCreated
   if (filters.value.analyst) params.analyst = filters.value.analyst
 
@@ -124,6 +127,7 @@ const canDeleteSelectedPart = computed(() => {
 })
 
 onMounted(async () => {
+  applyTaskFiltersFromQuery()
   const [lookups, analystsData] = await Promise.all([
     lookupApi.getAll(),
     userApi.listAnalysts(),
@@ -146,6 +150,7 @@ const handleReset = async () => {
     businessUnit: undefined,
     productPlatform: undefined,
     status: undefined,
+    alertType: undefined,
     qcCreated: undefined,
     analyst: undefined,
   }
@@ -174,6 +179,33 @@ const handleBatchDeleteWrapper = async () => {
 const goToOrder = (orderId: string) => {
   router.push(`/return-orders/${orderId}`)
 }
+
+function applyTaskFiltersFromQuery() {
+  const status = typeof route.query.status === 'string' ? route.query.status : undefined
+  const alert = typeof route.query.alert === 'string' ? route.query.alert : undefined
+  const fromTask = typeof route.query.fromTask === 'string' ? route.query.fromTask : undefined
+
+  if (status) {
+    filters.value.status = status
+  }
+
+  if (alert) {
+    filters.value.alertType = alert
+  }
+
+  if (fromTask) {
+    message.info(t('dashboard.taskFilterApplied'))
+  }
+}
+
+watch(
+  () => route.query,
+  async () => {
+    applyTaskFiltersFromQuery()
+    pagination.current = 1
+    await loadData()
+  },
+)
 </script>
 
 <style lang="less" scoped>

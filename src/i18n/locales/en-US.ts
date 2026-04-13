@@ -524,6 +524,9 @@ export default {
     taskOverdue: 'Analysis Overdue',
     taskApproval: 'Report Pending Approval',
     taskScrapConfirm: 'Scrap Approval Confirmation',
+    taskFilterApplied: 'Task filter has been applied automatically',
+    linkNotConfigured: '{name} link is not configured yet. Please contact administrator.',
+    helpHint: 'Available help and external entry links are listed below. IQIS/SAP links are configured by environment variables.',
   },
   analysisOrder: {
     detailTitle: 'Analysis Order Detail - {orderNumber}',

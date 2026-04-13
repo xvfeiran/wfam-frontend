@@ -13,7 +13,6 @@
       <a-form layout="vertical">
         <a-form-item :label="t('importModule.importType')">
           <a-select v-model:value="importType" :placeholder="t('importModule.selectType')" style="width: 100%">
-            <a-select-option value="return_order">{{ t('importModule.returnOrder') }}</a-select-option>
             <a-select-option value="part">{{ t('importModule.part') }}</a-select-option>
           </a-select>
         </a-form-item>
@@ -120,7 +119,7 @@ const { t } = useI18n()
 type Phase = 'select' | 'processing' | 'result'
 
 const phase        = ref<Phase>('select')
-const importType   = ref<string | undefined>(undefined)
+const importType   = ref<string | undefined>('part')
 const selectedFile = ref<File | null>(null)
 const uploading    = ref(false)
 const polling      = ref(false)
@@ -234,7 +233,7 @@ function handleDone() { emit('success'); handleClose() }
 function handleClose() {
   stopPoll()
   phase.value = 'select'
-  importType.value = undefined
+  importType.value = 'part'
   selectedFile.value = null
   uploading.value = false
   result.value = null

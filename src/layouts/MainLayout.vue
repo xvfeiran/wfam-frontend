@@ -139,6 +139,7 @@ const currentPageTitle = computed(() => {
     '/approval': 'menu.approval',
     '/imports': 'menu.imports',
     '/settings': 'menu.settings',
+    '/help': 'dashboard.helpManual',
   }
 
   // Find matching route by pattern matching
@@ -188,6 +189,8 @@ watch(
       selectedKeys.value = ['/imports']
     } else if (path.startsWith('/settings')) {
       selectedKeys.value = ['/settings']
+    } else if (path.startsWith('/help')) {
+      selectedKeys.value = ['/dashboard']
     } else {
       selectedKeys.value = ['/dashboard']
     }

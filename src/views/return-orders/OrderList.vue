@@ -39,8 +39,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, h } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, computed, h, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message, Modal } from 'ant-design-vue'
 import { ExclamationCircleOutlined } from '@ant-design/icons-vue'
@@ -57,6 +57,7 @@ import OrderTable from './components/OrderTable.vue'
 
 const { t } = useI18n()
 const router = useRouter()
+const route = useRoute()
 const { canEditSubmittedForm } = usePermissions()
 
 const customers = ref<Customer[]>([])
@@ -64,6 +65,7 @@ const filters = ref({
   orderNumber: '',
   customerId: undefined as string | undefined,
   receiveDate: null as any,
+  status: undefined as string | undefined,
 })
 
 const {
@@ -82,6 +84,7 @@ const {
   }
   if (filters.value.orderNumber) apiParams.orderNumber = filters.value.orderNumber
   if (filters.value.customerId) apiParams.customer = filters.value.customerId
+  if (filters.value.status) apiParams.status = filters.value.status
   // Handle date range - convert array to start/end parameters and format to ISO
   if (filters.value.receiveDate && Array.isArray(filters.value.receiveDate)) {
     apiParams.receiveDateStart = dayjs(filters.value.receiveDate[0]).format('YYYY-MM-DD')
@@ -122,6 +125,7 @@ const canDeleteSelectedOrder = computed(() => {
 })
 
 onMounted(async () => {
+  applyTaskFiltersFromQuery()
   loading.value = true
   try {
     await Promise.all([
@@ -146,11 +150,34 @@ const handleReset = async () => {
     orderNumber: '',
     customerId: undefined,
     receiveDate: null,
+    status: undefined,
   }
   sortState.value = {}
   paginationConfig.current = 1 // Reset to first page
   await loadData()
 }
+
+function applyTaskFiltersFromQuery() {
+  const status = typeof route.query.status === 'string' ? route.query.status : undefined
+  const fromTask = typeof route.query.fromTask === 'string' ? route.query.fromTask : undefined
+
+  if (status) {
+    filters.value.status = status
+  }
+
+  if (fromTask) {
+    message.info(t('dashboard.taskFilterApplied'))
+  }
+}
+
+watch(
+  () => route.query,
+  async () => {
+    applyTaskFiltersFromQuery()
+    paginationConfig.current = 1
+    await loadData()
+  },
+)
 
 const handleCreate = () => {
   router.push('/return-orders/new')

@@ -134,7 +134,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
@@ -182,6 +182,10 @@ onMounted(async () => {
   myAnalysisApplications.value = myAnalysis
   pendingAnalysisApprovals.value = pendingAnalysis
 
+  if (route.query.tab === 'pendingApproval') {
+    mainTab.value = 'pendingApproval'
+  }
+
   // 处理从精分析弹窗跳转过来的路由参数
   if (route.query.tab === 'myApplications') {
     mainTab.value = 'myApplications'
@@ -194,6 +198,15 @@ onMounted(async () => {
     }
   }
 })
+
+watch(
+  () => route.query.tab,
+  (tab) => {
+    if (tab === 'myApplications' || tab === 'pendingApproval') {
+      mainTab.value = tab
+    }
+  },
+)
 
 const { myAnalysisColumns, approvalAnalysisColumns } = useApprovalColumns()
 

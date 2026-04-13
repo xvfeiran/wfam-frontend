@@ -66,9 +66,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted, h } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, reactive, onMounted, h, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { message } from 'ant-design-vue'
 import { Tag } from 'ant-design-vue'
 import type { TableProps } from 'ant-design-vue'
 import { analysisOrderApi } from '@/services/analysisOrderApi'
@@ -80,6 +81,7 @@ import { usePermissions } from '@/composables/usePermissions'
 const { t } = useI18n()
 const { isAnalyst } = usePermissions()
 const router = useRouter()
+const route = useRoute()
 const allOrders = ref<AnalysisOrder[]>([])
 const analysts = ref<{ id: string; loginName: string; displayName: string }[]>([])
 const loading = ref(false)
@@ -218,6 +220,7 @@ const goToDetail = (id: string) => {
 }
 
 onMounted(async () => {
+  applyTaskFiltersFromQuery()
   loading.value = true
   try {
     const [ordersData, analystsData] = await Promise.all([
@@ -226,10 +229,31 @@ onMounted(async () => {
     ])
     allOrders.value = ordersData
     analysts.value = analystsData
+    handleSearch()
   } finally {
     loading.value = false
   }
 })
+
+function applyTaskFiltersFromQuery() {
+  const status = typeof route.query.status === 'string' ? route.query.status : undefined
+  const fromTask = typeof route.query.fromTask === 'string' ? route.query.fromTask : undefined
+
+  if (status && Object.values(AnalysisOrderStatus).includes(status as AnalysisOrderStatus)) {
+    searchForm.status = status as AnalysisOrderStatus
+  }
+  if (fromTask) {
+    message.info(t('dashboard.taskFilterApplied'))
+  }
+}
+
+watch(
+  () => route.query,
+  () => {
+    applyTaskFiltersFromQuery()
+    handleSearch()
+  },
+)
 </script>
 
 <style lang="less" scoped>

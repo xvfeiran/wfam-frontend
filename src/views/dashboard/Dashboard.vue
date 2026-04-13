@@ -3,7 +3,7 @@
     <!-- 数据统计卡片 -->
     <a-row :gutter="16" class="stat-cards">
       <a-col :span="6">
-        <a-card class="stat-card hover-card" @click="goToOrders">
+        <a-card class="stat-card hover-card" :loading="statsLoading" @click="goToOrders">
           <a-statistic
             :title="t('dashboard.totalOrders')"
             :value="stats.totalOrders"
@@ -13,13 +13,10 @@
               <FileTextOutlined />
             </template>
           </a-statistic>
-          <div class="trend up">
-            <ArrowUpOutlined /> 12% {{ t('dashboard.comparedToLastMonth') }}
-          </div>
         </a-card>
       </a-col>
       <a-col :span="6">
-        <a-card class="stat-card hover-card" @click="goToParts">
+        <a-card class="stat-card hover-card" :loading="statsLoading" @click="goToParts">
           <a-statistic
             :title="t('dashboard.totalParts')"
             :value="stats.totalParts"
@@ -29,13 +26,10 @@
               <ToolOutlined />
             </template>
           </a-statistic>
-          <div class="trend up">
-            <ArrowUpOutlined /> 8% {{ t('dashboard.comparedToLastMonth') }}
-          </div>
         </a-card>
       </a-col>
       <a-col :span="6">
-        <a-card class="stat-card hover-card">
+        <a-card class="stat-card hover-card" :loading="statsLoading">
           <a-statistic
             :title="t('dashboard.pendingTasks')"
             :value="stats.pendingTasks"
@@ -45,13 +39,10 @@
               <ClockCircleOutlined />
             </template>
           </a-statistic>
-          <div class="trend down">
-            <ArrowDownOutlined /> 5% {{ t('dashboard.comparedToLastMonth') }}
-          </div>
         </a-card>
       </a-col>
       <a-col :span="6">
-        <a-card class="stat-card hover-card" @click="goToReports">
+        <a-card class="stat-card hover-card" :loading="statsLoading" @click="goToReports">
           <a-statistic
             :title="t('dashboard.completionRate')"
             :value="stats.completionRate"
@@ -62,9 +53,6 @@
               <CheckCircleOutlined />
             </template>
           </a-statistic>
-          <div class="trend up">
-            <ArrowUpOutlined /> 3% {{ t('dashboard.comparedToLastMonth') }}
-          </div>
         </a-card>
       </a-col>
     </a-row>
@@ -72,7 +60,7 @@
     <!-- 趋势图表 + 任务中心 -->
     <a-row :gutter="16" class="chart-row">
       <a-col :span="16">
-        <a-card :title="t('dashboard.quantityTrend')" class="chart-card">
+        <a-card :title="t('dashboard.quantityTrend')" class="chart-card" :loading="trendLoading">
           <template #extra>
             <a-radio-group v-model:value="timeRange" size="small" @change="handleTimeRangeChange">
               <a-radio-button value="day">{{ t('dashboard.day') }}</a-radio-button>
@@ -87,7 +75,7 @@
         </a-card>
       </a-col>
       <a-col :span="8">
-        <a-card :title="t('dashboard.taskCenter')" class="task-card">
+        <a-card :title="t('dashboard.taskCenter')" class="task-card" :loading="tasksLoading">
           <a-list :data-source="tasks" :split="false">
             <template #renderItem="{ item }">
               <a-list-item class="task-item" @click="handleTaskClick(item)">
@@ -125,14 +113,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { message } from 'ant-design-vue'
 import VChart from 'vue-echarts'
 import {
   FileTextOutlined,
   ToolOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined,
   PlusCircleOutlined,
   BarChartOutlined,
   ExportOutlined,
@@ -148,6 +135,9 @@ import type { Task } from '@/types'
 const { t } = useI18n()
 const router = useRouter()
 const timeRange = ref('month')
+const statsLoading = ref(false)
+const tasksLoading = ref(false)
+const trendLoading = ref(false)
 
 // 统计数据
 const stats = ref<DashboardStats>({ totalOrders: 0, totalParts: 0, pendingTasks: 0, completionRate: 0 })
@@ -223,26 +213,66 @@ const quickLinks = [
   { key: 'new-part', i18nKey: 'newPart', icon: FormOutlined, path: '/return-parts/new', external: false },
   { key: 'reports', i18nKey: 'dataStatistics', icon: BarChartOutlined, path: '/reports', external: false },
   { key: 'workon', i18nKey: 'scrapWorkon', icon: ExportOutlined, url: 'https://rb-wam-ap.bosch.com/workon01ap/secure/CreateIssue.jspa?pid=10360&issuetype=162', external: true },
-  { key: 'iqis', i18nKey: 'qcIqis', icon: AppstoreOutlined, url: '#', external: true },
-  { key: 'sap', i18nKey: 'sap', icon: AppstoreOutlined, url: '#', external: true },
+  { key: 'iqis', i18nKey: 'qcIqis', icon: AppstoreOutlined, url: import.meta.env.VITE_IQIS_URL, external: true },
+  { key: 'sap', i18nKey: 'sap', icon: AppstoreOutlined, url: import.meta.env.VITE_SAP_URL, external: true },
   { key: 'll', i18nKey: 'lessonsLearned', icon: AppstoreOutlined, url: 'https://cng-edlls.apac.bosch.com:10443/www/index.html#/', external: true },
   { key: 'help', i18nKey: 'helpManual', icon: QuestionCircleOutlined, path: '/help', external: false },
 ]
 
 const handleTimeRangeChange = async () => {
   const days = {
-    day: 7,
-    week: 28,
+    day: 1,
+    week: 7,
     month: 30,
     year: 365,
   }[timeRange.value] || 30
-  trendData.value = await dashboardApi.getTrend(days)
+  trendLoading.value = true
+  try {
+    trendData.value = await dashboardApi.getTrend(days)
+  } catch {
+    message.error(t('common.failed'))
+  } finally {
+    trendLoading.value = false
+  }
 }
 
 onMounted(async () => {
-  stats.value = await dashboardApi.getStats()
-  tasks.value = await dashboardApi.getTasks()
-  trendData.value = await dashboardApi.getTrend(30)
+  statsLoading.value = true
+  tasksLoading.value = true
+  trendLoading.value = true
+
+  dashboardApi.getStats()
+    .then((statsData) => {
+      stats.value = statsData
+    })
+    .catch(() => {
+      message.error(t('common.failed'))
+    })
+    .finally(() => {
+      statsLoading.value = false
+    })
+
+  dashboardApi.getTasks()
+    .then((tasksData) => {
+      tasks.value = tasksData
+    })
+    .catch(() => {
+      message.error(t('common.failed'))
+    })
+    .finally(() => {
+      tasksLoading.value = false
+    })
+
+  dashboardApi.getTrend(30)
+    .then((trend) => {
+      trendData.value = trend
+    })
+    .catch(() => {
+      message.error(t('common.failed'))
+    })
+    .finally(() => {
+      trendLoading.value = false
+    })
 })
 
 const getTaskBadgeStatus = (priority: string) => {
@@ -266,17 +296,39 @@ const getTaskCountStyle = (priority: string) => {
 }
 
 const handleTaskClick = (task: Task) => {
-  // 根据任务类型跳转到对应页面
-  if (task.type === 'initial_analysis' || task.type === 'approval' || task.type === 'scrap_confirm') {
-    router.push('/return-orders')
-  } else {
-    router.push('/return-parts')
+  if (task.type === 'initial_analysis') {
+    router.push({ path: '/return-orders', query: { status: 'submitted', fromTask: task.type } })
+    return
   }
+  if (task.type === 'detailed_analysis') {
+    router.push({ path: '/return-parts', query: { status: 'in_detailed_analysis', fromTask: task.type } })
+    return
+  }
+  if (task.type === 'warning') {
+    router.push({ path: '/return-parts', query: { status: 'in_detailed_analysis', alert: 'warning', fromTask: task.type } })
+    return
+  }
+  if (task.type === 'overdue') {
+    router.push({ path: '/return-parts', query: { status: 'in_detailed_analysis', alert: 'overdue', fromTask: task.type } })
+    return
+  }
+  if (task.type === 'approval') {
+    router.push({ path: '/approval', query: { tab: 'pendingApproval', fromTask: task.type } })
+    return
+  }
+  if (task.type === 'scrap_confirm') {
+    router.push({ path: '/analysis-orders', query: { status: 'workon_scrap_in_progress', fromTask: task.type } })
+    return
+  }
+  router.push('/dashboard')
 }
 
-const handleQuickLink = (link: { path?: string; url?: string; external: boolean }) => {
+const handleQuickLink = (link: { path?: string; url?: string; external: boolean; i18nKey?: string; key?: string }) => {
   if (link.external && link.url) {
-    window.open(link.url, '_blank')
+    window.open(link.url, '_blank', 'noopener,noreferrer')
+  } else if (link.external && !link.url) {
+    const name = t(`dashboard.${link.i18nKey || link.key || ''}`)
+    message.warning(t('dashboard.linkNotConfigured', { name }))
   } else if (link.path) {
     router.push(link.path)
   }
@@ -293,21 +345,6 @@ const goToReports = () => router.push('/reports')
 
   .stat-cards {
     margin-bottom: 16px;
-
-    .stat-card {
-      .trend {
-        margin-top: 8px;
-        font-size: 12px;
-
-        &.up {
-          color: #52c41a;
-        }
-
-        &.down {
-          color: #ff4d4f;
-        }
-      }
-    }
   }
 
   .chart-row {
