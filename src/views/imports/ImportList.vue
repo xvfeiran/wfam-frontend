@@ -32,12 +32,11 @@
         </template>
         <template v-else-if="column.key === 'action'">
           <a-button
-            v-if="record.failCount > 0"
             type="link"
             size="small"
-            @click="viewLogs(record)"
+            @click="goDetail(record.id)"
           >
-            {{ t('importModule.viewLogs') }}
+            {{ t('importModule.viewDetail') }}
           </a-button>
         </template>
       </template>
@@ -48,39 +47,25 @@
       @success="handleImportSuccess"
     />
 
-    <!-- 失败日志弹窗 -->
-    <a-modal
-      v-model:open="logsVisible"
-      :title="t('importModule.failLogs')"
-      :footer="null"
-      width="640px"
-    >
-      <a-table
-        :data-source="currentFailLogs"
-        :columns="failLogColumns"
-        :pagination="false"
-        size="small"
-        row-key="row"
-      />
-    </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { message } from 'ant-design-vue'
 import { ImportOutlined } from '@ant-design/icons-vue'
 import { importApi } from '@/services/importApi'
 import type { ImportRecord } from '@/types'
 import ImportModal from './components/ImportModal.vue'
 
 const { t } = useI18n()
+const router = useRouter()
 
 const records = ref<ImportRecord[]>([])
 const loading = ref(false)
 const showModal = ref(false)
-const logsVisible = ref(false)
-const currentFailLogs = ref<Array<{ row: number; error: string }>>([])
 
 const currentPage = ref(1)
 const pageSize = ref(10)
@@ -107,11 +92,6 @@ const columns = computed(() => [
   { title: t('common.operation'), key: 'action', width: 100 },
 ])
 
-const failLogColumns = computed(() => [
-  { title: t('importModule.rowNum'), dataIndex: 'row', key: 'row', width: 80 },
-  { title: t('importModule.errorMsg'), dataIndex: 'error', key: 'error' },
-])
-
 function formatDateTime(raw: string | undefined): string {
   if (!raw) return '—'
   try {
@@ -126,13 +106,16 @@ function formatDateTime(raw: string | undefined): string {
 function statusColor(status: string): string {
   if (status === 'completed') return 'success'
   if (status === 'processing') return 'processing'
-  return 'error'
+  if (status === 'deleting') return 'warning'
+  if (status === 'rolled_back') return 'default'
+  return 'default'
 }
 
 function statusLabel(status: string): string {
-  if (status === 'completed') return t('common.success')
-  if (status === 'processing') return t('importModule.uploading')
-  return t('common.failed')
+  if (status === 'processing') return t('importModule.statusImporting')
+  if (status === 'deleting') return t('importModule.statusDeleting')
+  if (status === 'rolled_back') return t('importModule.statusDeleted')
+  return t('importModule.statusFinished')
 }
 
 async function fetchData() {
@@ -141,6 +124,11 @@ async function fetchData() {
     const res = await importApi.list({ page: currentPage.value, pageSize: pageSize.value })
     records.value = res.data
     total.value = res.total
+  } catch (error: any) {
+    records.value = []
+    total.value = 0
+    const errMsg = error?.response?.data?.message || error?.message || t('common.failed')
+    message.error(errMsg)
   } finally {
     loading.value = false
   }
@@ -157,16 +145,13 @@ function handleImportSuccess() {
   fetchData()
 }
 
-function viewLogs(record: ImportRecord) {
-  try {
-    currentFailLogs.value = JSON.parse(record.failLogs || '[]')
-  } catch {
-    currentFailLogs.value = []
-  }
-  logsVisible.value = true
+function goDetail(id: string) {
+  router.push(`/imports/${id}`)
 }
 
-onMounted(fetchData)
+onMounted(async () => {
+  await fetchData()
+})
 </script>
 
 <style scoped>

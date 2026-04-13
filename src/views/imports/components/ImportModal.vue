@@ -16,21 +16,41 @@
             <a-select-option value="part">{{ t('importModule.part') }}</a-select-option>
           </a-select>
         </a-form-item>
+        <a-form-item :label="t('importModule.importSource')">
+          <a-radio-group v-model:value="sourceType">
+            <a-radio value="file">{{ t('importModule.sourceFile') }}</a-radio>
+            <a-radio value="folder">{{ t('importModule.sourceFolder') }}</a-radio>
+          </a-radio-group>
+        </a-form-item>
         <a-form-item :label="t('importModule.fileName')">
-          <a-upload :before-upload="handleBeforeUpload" :show-upload-list="false" accept=".xlsx,.xls">
+          <a-upload v-if="sourceType === 'file'" :before-upload="handleBeforeUpload" :show-upload-list="false" accept=".xlsx,.xls">
             <a-button>
               <template #icon><upload-outlined /></template>
               {{ selectedFile ? selectedFile.name : t('importModule.selectFile') }}
             </a-button>
           </a-upload>
-          <div v-if="selectedFile" style="margin-top: 4px; color: #888; font-size: 12px;">
+          <a-input
+            v-else
+            v-model:value="folderPath"
+            :placeholder="t('importModule.folderPathPlaceholder')"
+            allow-clear
+          />
+          <div v-if="sourceType === 'file' && selectedFile" style="margin-top: 4px; color: #888; font-size: 12px;">
             {{ selectedFile.name }} — {{ (selectedFile.size / 1024).toFixed(1) }} KB
+          </div>
+          <div v-else-if="sourceType === 'folder'" style="margin-top: 4px; color: #888; font-size: 12px;">
+            {{ t('importModule.folderImportHint') }}
           </div>
         </a-form-item>
       </a-form>
       <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
         <a-button @click="handleClose">{{ t('common.cancel') }}</a-button>
-        <a-button type="primary" :loading="uploading" :disabled="!importType || !selectedFile" @click="handleUpload">
+        <a-button
+          type="primary"
+          :loading="uploading"
+          :disabled="!importType || (sourceType === 'file' ? !selectedFile : !folderPath.trim())"
+          @click="handleUpload"
+        >
           {{ uploading ? t('importModule.uploading') : t('common.confirm') }}
         </a-button>
       </div>
@@ -120,10 +140,13 @@ type Phase = 'select' | 'processing' | 'result'
 
 const phase        = ref<Phase>('select')
 const importType   = ref<string | undefined>('part')
+const sourceType   = ref<'file' | 'folder'>('file')
 const selectedFile = ref<File | null>(null)
+const folderPath   = ref('')
 const uploading    = ref(false)
 const polling      = ref(false)
 const result       = ref<ImportRecord | null>(null)
+const shouldRefreshOnClose = ref(false)
 
 let pollTimer: ReturnType<typeof setTimeout> | null = null
 let pollStart = 0
@@ -142,6 +165,7 @@ const importLogColumns = computed(() => {
   if (importType.value === 'return_order') {
     return [
       ...baseColumns,
+      { title: t('importModule.fileName'), key: 'fileName', dataIndex: 'fileName', width: 180 },
       { title: t('importModule.orderNumber'), key: 'orderNumber', dataIndex: 'orderNumber', width: 120 },
       { title: t('importModule.receiveDate'), key: 'receiveDate', dataIndex: 'receiveDate', width: 100 },
       { title: t('importModule.trackingNumber'), key: 'trackingNumber', dataIndex: 'trackingNumber', width: 130 },
@@ -150,6 +174,7 @@ const importLogColumns = computed(() => {
   } else if (importType.value === 'part') {
     return [
       ...baseColumns,
+      { title: t('importModule.fileName'), key: 'fileName', dataIndex: 'fileName', width: 180 },
       { title: t('importModule.orderNumber'), key: 'orderNumber', dataIndex: 'orderNumber', width: 120 },
       { title: t('importModule.partCode'), key: 'partCode', dataIndex: 'partCode', width: 150 },
       { title: t('importModule.partNumber'), key: 'partNumber', dataIndex: 'partNumber', width: 130 },
@@ -165,18 +190,29 @@ function handleBeforeUpload(file: File) {
 }
 
 async function handleUpload() {
-  if (!selectedFile.value || !importType.value) return
+  if (!importType.value) return
   uploading.value = true
   try {
     let record
     if (importType.value === 'return_order') {
+      if (!selectedFile.value) {
+        throw new Error(t('importModule.selectFile'))
+      }
       record = await importApi.importReturnOrders(selectedFile.value)
     } else if (importType.value === 'part') {
-      record = await importApi.importParts(selectedFile.value)
+      if (sourceType.value === 'folder') {
+        record = await importApi.importPartsByFolder(folderPath.value.trim())
+      } else {
+        if (!selectedFile.value) {
+          throw new Error(t('importModule.selectFile'))
+        }
+        record = await importApi.importParts(selectedFile.value)
+      }
     } else {
       throw new Error('不支持的导入类型')
     }
     uploading.value = false
+    shouldRefreshOnClose.value = true
     if (record.status !== 'processing') {
       result.value = record
       phase.value = 'result'
@@ -200,7 +236,9 @@ async function doPoll(id: string) {
   if (Date.now() - pollStart > POLL_TIMEOUT_MS) {
     polling.value = false
     result.value = {
-      id, importType: 'return_order', fileName: selectedFile.value?.name ?? '',
+      id,
+      importType: importType.value || 'part',
+      fileName: sourceType.value === 'folder' ? folderPath.value : (selectedFile.value?.name ?? ''),
       status: 'failed', totalCount: 0, successCount: 0, failCount: 0,
       failLogs: '[]',
       importLogs: JSON.stringify([{ row: 0, status: 'failed', error: '处理超时，请联系管理员查看日志' }]),
@@ -228,16 +266,27 @@ function stopPoll() {
   polling.value = false
 }
 
-function handleDone() { emit('success'); handleClose() }
+function handleDone() {
+  shouldRefreshOnClose.value = false
+  emit('success')
+  handleClose()
+}
 
 function handleClose() {
+  const needsRefresh = shouldRefreshOnClose.value
   stopPoll()
   phase.value = 'select'
   importType.value = 'part'
+  sourceType.value = 'file'
   selectedFile.value = null
+  folderPath.value = ''
   uploading.value = false
   result.value = null
+  shouldRefreshOnClose.value = false
   emit('update:visible', false)
+  if (needsRefresh) {
+    emit('success')
+  }
 }
 
 onUnmounted(stopPoll)

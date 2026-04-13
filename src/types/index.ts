@@ -246,8 +246,10 @@ export interface ImportRecord {
 }
 
 export interface ImportLogEntry {
+  fileName?: string
   row: number
   status: 'success' | 'failed'
+  errorCode?: string
   // 成功时有
   orderId?: string
   orderNumber?: string
