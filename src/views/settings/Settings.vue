@@ -27,15 +27,6 @@
         <EmailConfig ref="emailConfigRef" />
       </a-tab-pane>
 
-      <!-- 主数据同步 -->
-      <a-tab-pane key="sync" :tab="t('settings.dataSync')">
-        <DataSync
-          :sync-info="syncInfo"
-          :syncing="syncing"
-          @sync="handleSync"
-        />
-      </a-tab-pane>
-
       <!-- 数据字典 -->
       <a-tab-pane key="dictionary" :tab="t('settings.dataDictionary')">
         <a-tabs v-model:activeKey="dictionaryTab">
@@ -104,7 +95,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { message, Modal } from 'ant-design-vue'
+import { message } from 'ant-design-vue'
 import { lookupApi } from '@/services/lookupApi'
 import { customerApi } from '@/services/customerApi'
 import { partCodeApi } from '@/services/partCodeApi'
@@ -114,7 +105,6 @@ import type { PartCode } from '@/services/partCodeApi'
 import TemplateManagement from './components/TemplateManagement.vue'
 import NotificationConfig from './components/NotificationConfig.vue'
 import EmailConfig from './components/EmailConfig.vue'
-import DataSync from './components/DataSync.vue'
 import CustomerManagement from './components/CustomerManagement.vue'
 import PartCodeManagement from './components/PartCodeManagement.vue'
 import TemplateUploadModal from './components/TemplateUploadModal.vue'
@@ -123,9 +113,8 @@ import PartCodeModal from './components/PartCodeModal.vue'
 
 const { t } = useI18n()
 
-type SettingsTab = 'templates' | 'notifications' | 'email' | 'sync' | 'dictionary'
+type SettingsTab = 'templates' | 'notifications' | 'email' | 'dictionary'
 type DictionaryTab = 'customers' | 'partCodes'
-type SyncStatus = 'success' | 'failed' | 'idle'
 
 interface TemplateItem {
   id: string
@@ -137,20 +126,11 @@ interface TemplateItem {
   fields?: any[]
 }
 
-interface SyncInfo {
-  lastSyncTime: string
-  status: SyncStatus
-  statusText: string
-  platformCount: number
-  recordCount: number
-}
-
 const activeTab = ref<SettingsTab>('templates')
 const dictionaryTab = ref<DictionaryTab>('customers')
 const templateModalVisible = ref(false)
 const customerModalVisible = ref(false)
 const partCodeModalVisible = ref(false)
-const syncing = ref(false)
 
 const productPlatformOptions = ref<string[]>([])
 const failureTypeOptions = ref<string[]>([])
@@ -252,14 +232,6 @@ const notificationConfig = reactive({
   warningThreshold: 3,
   overdueCron: '0 9 * * *',
   overdueRecipients: ['user1', 'user2'],
-})
-
-const syncInfo = ref<SyncInfo>({
-  lastSyncTime: '2026-02-03 08:00:00',
-  status: 'success',
-  statusText: t('settings.syncSuccess'),
-  platformCount: 5,
-  recordCount: 156,
 })
 
 const customerForm = reactive({
@@ -499,26 +471,6 @@ const handleSavePartCode = async () => {
   }
 }
 
-const handleSync = () => {
-  Modal.confirm({
-    title: t('settings.confirmSyncTitle'),
-    content: t('settings.confirmSync'),
-    onOk: () => {
-      syncing.value = true
-      setTimeout(() => {
-        syncing.value = false
-        syncInfo.value = {
-          lastSyncTime: new Date().toLocaleString(),
-          status: 'success',
-          statusText: t('settings.syncSuccess'),
-          platformCount: 5,
-          recordCount: 162,
-        }
-        message.success(t('message.syncComplete'))
-      }, 2000)
-    },
-  })
-}
 </script>
 
 <style lang="less" scoped>
