@@ -130,6 +130,9 @@
 
       <!-- 成功 / 失败：重新选择 -->
       <template v-if="zoneState === 'success' || zoneState === 'failed'">
+        <a-button v-if="zoneState === 'failed'" type="primary" @click="$emit('retryOCR')">
+          {{ t('ocr.retryRecognition') }}
+        </a-button>
         <a-button @click="triggerCamera">
           <CameraOutlined /> {{ t('ocr.takePhoto') }}
         </a-button>
@@ -175,6 +178,7 @@ withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   (e: 'handleOCRUpload', file: File): void
+  (e: 'retryOCR'): void
   (e: 'stopOCR'): void
   (e: 'retake'): void
 }>()

@@ -11,6 +11,7 @@
       :preview-url="previewUrl"
       :ocr-results="ocrResults"
       @handle-o-c-r-upload="handleOCRUpload"
+      @retry-o-c-r="retryOCR"
       @stop-o-c-r="stopOCR"
       @retake="retake"
     />
@@ -132,7 +133,7 @@ const form = reactive({
   imageFiles: [] as any[],
 })
 
-const { zoneState, previewUrl, ocrResults, ocrTaskId, handleOCRUpload, stopOCR, retake } = useOCR(form, partId.value || undefined)
+const { zoneState, previewUrl, ocrResults, ocrTaskId, handleOCRUpload, retryOCR, stopOCR, retake } = useOCR(form, partId.value || undefined)
 
 onMounted(async () => {
   const [lookups, ordersData, usersData, analystsData] = await Promise.all([

@@ -39,7 +39,7 @@
 
       <a-row :gutter="24">
         <a-col :span="12">
-          <a-form-item :label="t('returnPart.partCode')" name="partCode">
+          <a-form-item :label="t('returnPart.partCode')" name="partCode" required>
             <a-select
               v-model:value="form.partCode"
               :placeholder="t('validation.inputPartCode')"
@@ -47,6 +47,7 @@
               :filter-option="false"
               :not-found-content="partCodeSearching ? undefined : null"
               @search="handlePartCodeSearch"
+              @dropdownVisibleChange="handlePartCodeDropdownVisibleChange"
               @select="handlePartCodeSelect"
               allowClear
             >
@@ -208,6 +209,22 @@ const productPlatformHint = computed(() => {
 })
 
 // 零件号搜索（左匹配模糊搜索）
+const loadPartCodeOptions = async (keyword?: string) => {
+  partCodeSearching.value = true
+  try {
+    const result = await partCodeApi.page({
+      partCode: keyword && keyword.trim() ? keyword.trim() : undefined,
+      pageSize: 50, // 限制返回数量
+    })
+    partCodeOptions.value = result.data || []
+  } catch (error) {
+    console.error('Failed to search part codes:', error)
+    partCodeOptions.value = []
+  } finally {
+    partCodeSearching.value = false
+  }
+}
+
 const handlePartCodeSearch = (value: string) => {
   // 清空之前的定时器
   if (partCodeSearchTimer) {
@@ -220,21 +237,15 @@ const handlePartCodeSearch = (value: string) => {
   }
 
   // 防抖：300ms 后执行搜索
-  partCodeSearchTimer = setTimeout(async () => {
-    partCodeSearching.value = true
-    try {
-      const result = await partCodeApi.page({
-        partCode: value.trim(),
-        pageSize: 50, // 限制返回数量
-      })
-      partCodeOptions.value = result.data
-    } catch (error) {
-      console.error('Failed to search part codes:', error)
-      partCodeOptions.value = []
-    } finally {
-      partCodeSearching.value = false
-    }
+  partCodeSearchTimer = setTimeout(() => {
+    loadPartCodeOptions(value)
   }, 300)
+}
+
+const handlePartCodeDropdownVisibleChange = (open: boolean) => {
+  if (open && partCodeOptions.value.length === 0) {
+    loadPartCodeOptions()
+  }
 }
 
 // 零件号选择时自动填充产品类型和BU

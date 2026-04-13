@@ -1,4 +1,4 @@
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
@@ -42,6 +42,12 @@ export function useOCR(form: Record<string, any>, partId?: string) {
 
   let pollTimer: ReturnType<typeof setInterval> | null = null
 
+  onMounted(() => {
+    if (partId) {
+      loadLatestOcrForPart(partId)
+    }
+  })
+
   const handleOCRUpload = async (file: File) => {
     previewUrl.value = URL.createObjectURL(file)
     zoneState.value = 'uploading'
@@ -76,7 +82,7 @@ export function useOCR(form: Record<string, any>, partId?: string) {
           stopPolling()
           setAllError()
           zoneState.value = 'failed'
-          message.warning(t('ocr.degraded'))
+          message.warning(task.errorMessage || t('ocr.degraded'))
         }
         // CREATED / PROCESSING：继续轮询
       } catch (e) {
@@ -107,34 +113,93 @@ export function useOCR(form: Record<string, any>, partId?: string) {
     zoneState.value = 'idle'
   }
 
+  const loadLatestOcrForPart = async (currentPartId: string) => {
+    try {
+      const task = await ocrApi.getLatestTaskByPartId(currentPartId)
+      if (!task?.taskId) return
+      ocrTaskId.value = task.taskId
+
+      try {
+        const imageBlob = await ocrApi.getTaskImage(task.taskId)
+        previewUrl.value = URL.createObjectURL(imageBlob)
+      } catch {
+        previewUrl.value = ''
+      }
+
+      if (task.status === 'SUCCESS') {
+        if (task.result) {
+          writeResultsToForm(task.result, false)
+        } else {
+          setAllError()
+        }
+        zoneState.value = 'success'
+        return
+      }
+
+      if (task.status === 'FAILED') {
+        setAllError()
+        zoneState.value = 'failed'
+        return
+      }
+
+      if (task.status === 'PROCESSING' || task.status === 'CREATED') {
+        zoneState.value = 'processing'
+        startPolling(task.taskId)
+      }
+    } catch {
+      // 无历史 OCR 图片时静默处理，保持 idle
+    }
+  }
+
+  const retryOCR = async () => {
+    if (!ocrTaskId.value) {
+      message.warning(t('ocr.noRetryTask'))
+      return
+    }
+
+    try {
+      resetResults()
+      zoneState.value = 'processing'
+      const task = await ocrApi.retryTask(ocrTaskId.value)
+      ocrTaskId.value = task.taskId
+      startPolling(task.taskId)
+      message.info(t('ocr.retrying'))
+    } catch {
+      zoneState.value = 'failed'
+      message.error(t('ocr.retryFailed'))
+    }
+  }
+
   // ── 私有辅助 ──────────────────────────────────────────────────
 
   /** 识别成功后直接写入表单字段（覆盖已有值） */
-  function writeResultsToForm(result?: OcrResult) {
+  function writeResultsToForm(result?: OcrResult, applyToForm = true) {
     const map: Partial<Record<OcrField, string | number | undefined>> = {
       vehicleProductionDate: result?.vehicleProductionDate,
-      vehiclePurchaseDate:   result?.vehiclePurchaseDate,
-      vehicleFailureDate:    result?.vehicleFailureDate,
-      vehicleVIN:            result?.vehicleVIN,
-      vehicleMileage:        result?.vehicleMileage,
-      customerDescription:   result?.customerDescription,
+      vehiclePurchaseDate: result?.vehiclePurchaseDate,
+      vehicleFailureDate: result?.vehicleFailureDate,
+      vehicleVIN: result?.vehicleVIN,
+      vehicleMileage: result?.vehicleMileage,
+      customerDescription: result?.customerDescription,
     }
 
     OCR_FIELDS.forEach(field => {
       const val = map[field]
       if (val != null) {
-        // 写入表单
-        switch (field) {
-          case 'vehicleProductionDate':
-          case 'vehiclePurchaseDate':
-          case 'vehicleFailureDate':
-            form[field] = dayjs(val as string)
-            break
-          case 'vehicleMileage':
-            form[field] = Number(val)
-            break
-          default:
-            form[field] = val
+        if (applyToForm) {
+          // 写入表单
+          switch (field) {
+            case 'vehicleProductionDate':
+            case 'vehiclePurchaseDate':
+            case 'vehicleFailureDate':
+              form[field] = dayjs(val as string)
+              break
+            case 'vehicleMileage':
+              form[field] = Number(val)
+              break
+            default:
+              form[field] = val
+          }
         }
         ocrResults[field] = { value: String(val), status: 'success' }
       } else {
@@ -162,6 +227,7 @@ export function useOCR(form: Record<string, any>, partId?: string) {
     ocrResults,
     ocrTaskId,
     handleOCRUpload,
+    retryOCR,
     stopOCR,
     retake,
   }
