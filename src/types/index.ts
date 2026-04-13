@@ -216,7 +216,7 @@ export const ANALYSIS_ORDER_STATUS_MAP: Record<AnalysisOrderStatus, { label: str
 }
 
 export const PART_STATUS_MAP: Record<PartStatus, { label: string; color: string }> = {
-  [PartStatus.IN_INITIAL_ANALYSIS]: { label: '初分析中', color: 'processing' },
+  [PartStatus.IN_INITIAL_ANALYSIS]: { label: '信息录入中', color: 'processing' },
   [PartStatus.IN_DETAILED_ANALYSIS]: { label: '精分析中', color: 'processing' },
   [PartStatus.PENDING_APPROVAL]: { label: '精分析/审批中', color: 'warning' },
   [PartStatus.ANALYSIS_COMPLETED]: { label: '精分析/审批完成', color: 'success' },
