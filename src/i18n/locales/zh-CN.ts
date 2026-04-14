@@ -527,8 +527,6 @@ export default {
     newPart: '新增售后件',
     dataStatistics: '售后数据统计',
     scrapWorkon: '报废申请WorkON',
-    qcIqis: 'QC录入IQIS',
-    sap: 'SAP',
     lessonsLearned: 'Lessons Learned',
     helpManual: '帮助手册FAQ',
     taskInitialAnalysis: '待初分析',
@@ -539,7 +537,7 @@ export default {
     taskScrapConfirm: '报废审批确认',
     taskFilterApplied: '已按任务类型自动应用筛选条件',
     linkNotConfigured: '{name} 链接未配置，请联系管理员补充地址',
-    helpHint: '以下为当前可访问的帮助与外部系统入口。IQIS/SAP 链接由环境变量配置。',
+    helpHint: '以下为当前可访问的帮助与外部系统入口。',
   },
   analysisOrder: {
     detailTitle: '分析单详情 - {orderNumber}',

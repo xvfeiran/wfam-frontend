@@ -97,7 +97,7 @@
     <!-- 快捷跳转 -->
     <a-card :title="t('dashboard.quickLinks')" class="quick-links">
       <a-row :gutter="16">
-        <a-col :span="6" v-for="link in quickLinks" :key="link.key">
+        <a-col :xs="12" :sm="8" :lg="8" v-for="link in quickLinks" :key="link.key">
           <div class="quick-link-item hover-card" @click="handleQuickLink(link)">
             <component :is="link.icon" class="link-icon" />
             <span class="link-text">{{ t(`dashboard.${link.i18nKey || link.key}`) }}</span>
@@ -213,8 +213,6 @@ const quickLinks = [
   { key: 'new-part', i18nKey: 'newPart', icon: FormOutlined, path: '/return-parts/new', external: false },
   { key: 'reports', i18nKey: 'dataStatistics', icon: BarChartOutlined, path: '/reports', external: false },
   { key: 'workon', i18nKey: 'scrapWorkon', icon: ExportOutlined, url: 'https://rb-wam-ap.bosch.com/workon01ap/secure/CreateIssue.jspa?pid=10360&issuetype=162', external: true },
-  { key: 'iqis', i18nKey: 'qcIqis', icon: AppstoreOutlined, url: import.meta.env.VITE_IQIS_URL, external: true },
-  { key: 'sap', i18nKey: 'sap', icon: AppstoreOutlined, url: import.meta.env.VITE_SAP_URL, external: true },
   { key: 'll', i18nKey: 'lessonsLearned', icon: AppstoreOutlined, url: 'https://cng-edlls.apac.bosch.com:10443/www/index.html#/', external: true },
   { key: 'help', i18nKey: 'helpManual', icon: QuestionCircleOutlined, path: '/help', external: false },
 ]

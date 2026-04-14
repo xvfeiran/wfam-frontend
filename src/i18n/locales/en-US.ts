@@ -516,8 +516,6 @@ export default {
     newPart: 'New Part',
     dataStatistics: 'Data Statistics',
     scrapWorkon: 'Scrap WorkON',
-    qcIqis: 'QC IQIS',
-    sap: 'SAP',
     lessonsLearned: 'Lessons Learned',
     helpManual: 'Help Manual FAQ',
     taskInitialAnalysis: 'Pending Initial Analysis',
@@ -528,7 +526,7 @@ export default {
     taskScrapConfirm: 'Scrap Approval Confirmation',
     taskFilterApplied: 'Task filter has been applied automatically',
     linkNotConfigured: '{name} link is not configured yet. Please contact administrator.',
-    helpHint: 'Available help and external entry links are listed below. IQIS/SAP links are configured by environment variables.',
+    helpHint: 'Available help and external entry links are listed below.',
   },
   analysisOrder: {
     detailTitle: 'Analysis Order Detail - {orderNumber}',
