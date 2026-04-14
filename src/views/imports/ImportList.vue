@@ -21,6 +21,7 @@
         </template>
         <template v-else-if="column.key === 'status'">
           <a-tag :color="statusColor(record.status)">
+            <LoadingOutlined v-if="record.status === 'processing'" style="margin-right: 4px" />
             {{ statusLabel(record.status) }}
           </a-tag>
         </template>
@@ -51,11 +52,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
-import { ImportOutlined } from '@ant-design/icons-vue'
+import { ImportOutlined, LoadingOutlined } from '@ant-design/icons-vue'
 import { importApi } from '@/services/importApi'
 import type { ImportRecord } from '@/types'
 import ImportModal from './components/ImportModal.vue'
@@ -70,6 +71,7 @@ const showModal = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+let pollTimer: ReturnType<typeof setTimeout> | null = null
 
 const pagination = computed(() => ({
   current: currentPage.value,
@@ -107,6 +109,7 @@ function statusColor(status: string): string {
   if (status === 'completed') return 'success'
   if (status === 'processing') return 'processing'
   if (status === 'deleting') return 'warning'
+  if (status === 'timeout') return 'error'
   if (status === 'rolled_back') return 'default'
   return 'default'
 }
@@ -114,6 +117,7 @@ function statusColor(status: string): string {
 function statusLabel(status: string): string {
   if (status === 'processing') return t('importModule.statusImporting')
   if (status === 'deleting') return t('importModule.statusDeleting')
+  if (status === 'timeout') return t('importModule.statusTimeout')
   if (status === 'rolled_back') return t('importModule.statusDeleted')
   return t('importModule.statusFinished')
 }
@@ -124,13 +128,32 @@ async function fetchData() {
     const res = await importApi.list({ page: currentPage.value, pageSize: pageSize.value })
     records.value = res.data
     total.value = res.total
+    schedulePollIfNeeded()
   } catch (error: any) {
     records.value = []
     total.value = 0
+    stopPoll()
     const errMsg = error?.response?.data?.message || error?.message || t('common.failed')
     message.error(errMsg)
   } finally {
     loading.value = false
+  }
+}
+
+function schedulePollIfNeeded() {
+  stopPoll()
+  if (!records.value.some(record => record.status === 'processing')) {
+    return
+  }
+  pollTimer = setTimeout(() => {
+    fetchData()
+  }, 3000)
+}
+
+function stopPoll() {
+  if (pollTimer !== null) {
+    clearTimeout(pollTimer)
+    pollTimer = null
   }
 }
 
@@ -151,6 +174,10 @@ function goDetail(id: string) {
 
 onMounted(async () => {
   await fetchData()
+})
+
+onUnmounted(() => {
+  stopPoll()
 })
 </script>
 

@@ -4,6 +4,13 @@
       <a-button @click="goBack">{{ t('common.back') }}</a-button>
       <div class="title">{{ t('importModule.importDetail') }} #{{ record?.id || '' }}</div>
       <a-button
+        v-if="record?.status === 'processing'"
+        :loading="summaryLoading || filesLoading || logsLoading"
+        @click="fetchDetail"
+      >
+        {{ t('common.refresh') }}
+      </a-button>
+      <a-button
         danger
         :loading="deleteLoading"
         :disabled="!record || !canDelete(record.status) || deleteCompleted"
@@ -19,7 +26,12 @@
         <a-descriptions-item :label="t('importModule.importType')">
           {{ record.importType === 'return_order' ? t('importModule.returnOrder') : t('importModule.part') }}
         </a-descriptions-item>
-        <a-descriptions-item :label="t('common.status')">{{ statusLabel(record.status) }}</a-descriptions-item>
+        <a-descriptions-item :label="t('common.status')">
+          <a-tag :color="statusColor(record.status)">
+            <LoadingOutlined v-if="record.status === 'processing'" style="margin-right: 4px" />
+            {{ statusLabel(record.status) }}
+          </a-tag>
+        </a-descriptions-item>
         <a-descriptions-item :label="t('importModule.totalCount')">{{ record.totalCount }}</a-descriptions-item>
         <a-descriptions-item :label="t('importModule.successCount')">{{ record.successCount }}</a-descriptions-item>
         <a-descriptions-item :label="t('importModule.failCount')">{{ record.failCount }}</a-descriptions-item>
@@ -70,6 +82,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Modal, message } from 'ant-design-vue'
+import { LoadingOutlined } from '@ant-design/icons-vue'
 import { importApi, type ImportFileSummary } from '@/services/importApi'
 import type { ImportRecord, ImportLogEntry } from '@/types'
 
@@ -148,12 +161,22 @@ const columns = computed(() => [
 function statusLabel(status: string): string {
   if (status === 'processing') return t('importModule.statusImporting')
   if (status === 'deleting') return t('importModule.statusDeleting')
+  if (status === 'timeout') return t('importModule.statusTimeout')
   if (status === 'rolled_back') return t('importModule.statusDeleted')
   return t('importModule.statusFinished')
 }
 
+function statusColor(status: string): string {
+  if (status === 'completed') return 'success'
+  if (status === 'processing') return 'processing'
+  if (status === 'deleting') return 'warning'
+  if (status === 'timeout') return 'error'
+  if (status === 'rolled_back') return 'default'
+  return 'default'
+}
+
 function canDelete(status: string): boolean {
-  return status === 'completed'
+  return status === 'completed' || status === 'timeout'
 }
 
 function formatDateTime(raw: string | undefined): string {

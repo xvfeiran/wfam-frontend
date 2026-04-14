@@ -714,6 +714,7 @@ export default {
     closeAndContinue: '关闭，在历史记录中查看结果',
     statusImporting: '导入中',
     statusDeleting: '正在删除',
+    statusTimeout: '已超时',
     statusFinished: '结束',
     statusDeleted: '已删除',
     resultSuccess: '导入完成：成功 {success} 条',

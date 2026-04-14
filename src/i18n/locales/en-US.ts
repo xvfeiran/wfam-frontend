@@ -702,6 +702,7 @@ export default {
     closeAndContinue: 'Close and check result in history',
     statusImporting: 'Importing',
     statusDeleting: 'Deleting',
+    statusTimeout: 'Timed Out',
     statusFinished: 'Finished',
     statusDeleted: 'Deleted',
     resultSuccess: 'Import complete: {success} succeeded',
