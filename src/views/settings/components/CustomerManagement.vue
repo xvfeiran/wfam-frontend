@@ -34,6 +34,8 @@
         :pagination="paginationConfig"
         :loading="loading"
         row-key="id"
+        size="middle"
+        :bordered="false"
         :sort-state="sortState"
         @change="handleTableChange"
       >

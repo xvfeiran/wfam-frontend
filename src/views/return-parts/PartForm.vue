@@ -281,7 +281,7 @@ const handleSubmit = async () => {
 
 <style lang="less" scoped>
 .part-form {
-  padding: 24px;
+  padding: 0;
 
   .form-footer {
     margin-top: 24px;

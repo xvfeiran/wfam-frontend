@@ -433,7 +433,7 @@ const handleSubmit = async () => {
   }
 
   .template-name {
-    color: #1890ff;
+    color: #1677ff;
   }
 }
 </style>

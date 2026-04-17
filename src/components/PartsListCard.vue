@@ -74,6 +74,8 @@
       :pagination="pagination"
       :loading="loading"
       row-key="id"
+      size="middle"
+      :bordered="false"
       :custom-row="customRow"
       @change="handleTableChange"
     >
@@ -193,7 +195,7 @@ const baseColumns = computed(() => [
         return h('span', { style: { color: '#999' } }, text)
       }
       return h('a', {
-        style: { color: '#1890ff' },
+        style: { color: '#1677ff' },
         onClick: (e: Event) => {
           e.stopPropagation()
           router.push(`/return-parts/${record.id}`)

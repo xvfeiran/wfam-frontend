@@ -31,12 +31,12 @@
         <a-card :title="t('partDetail.basicInfo')" class="info-card">
           <a-descriptions :column="2" bordered>
             <a-descriptions-item :label="t('returnPart.partNumber')">
-              <a v-if="canEditPart && part?.partNumber" style="color: #1890ff" @click="handleEdit">{{ part.partNumber }}</a>
-              <span v-else-if="part?.partNumber" style="color: #1890ff">{{ part.partNumber }}</span>
+              <a v-if="canEditPart && part?.partNumber" style="color: #1677ff" @click="handleEdit">{{ part.partNumber }}</a>
+              <span v-else-if="part?.partNumber" style="color: #1677ff">{{ part.partNumber }}</span>
               <span v-else style="color: #999">{{ t('validation.unsubmitted') }}</span>
             </a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.relatedOrder')">
-              <a v-if="part?.orderNumber" style="color: #1890ff; cursor: pointer; text-decoration: underline" @click="goToOrder($event)">{{ part.orderNumber }}</a>
+              <a v-if="part?.orderNumber" style="color: #1677ff; cursor: pointer; text-decoration: underline" @click="goToOrder($event)">{{ part.orderNumber }}</a>
               <span v-else style="color: #999">{{ t('validation.unsubmitted') }}</span>
             </a-descriptions-item>
             <a-descriptions-item :label="t('returnPart.partCode')">{{ part?.partCode }}</a-descriptions-item>
@@ -302,7 +302,7 @@ const handleExportReport = () => {
 
 <style lang="less" scoped>
 .part-detail {
-  padding: 24px;
+  padding: 0;
 
   .qc-card, .info-card, .vehicle-card, .image-card, .status-card, .report-card {
     margin-bottom: 16px;

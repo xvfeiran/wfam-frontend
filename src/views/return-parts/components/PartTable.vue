@@ -5,6 +5,9 @@
     :row-selection="{ selectedRowKeys, onChange: handleSelectionChange }"
     :pagination="pagination"
     row-key="id"
+    size="middle"
+    :bordered="false"
+    :sticky="true"
     :loading="loading"
     :custom-row="customRow"
     @change="handleChange"
@@ -64,7 +67,7 @@ const columns = computed(() => [
         return h('span', { style: { color: '#999' } }, text)
       }
       return h('a', {
-        style: { color: '#1890ff' },
+        style: { color: '#1677ff' },
         onClick: (e: Event) => {
           e.stopPropagation()
           emit('view', record.id)
@@ -82,7 +85,7 @@ const columns = computed(() => [
         return h('span', { style: { color: '#999' } }, t('validation.unsubmitted'))
       }
       return h('a', {
-        style: { color: '#1890ff' },
+        style: { color: '#1677ff' },
         onClick: (e: Event) => {
           e.stopPropagation()
           emit('go-to-order', record.orderId)

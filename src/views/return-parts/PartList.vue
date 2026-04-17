@@ -23,6 +23,7 @@
     />
 
     <!-- 列表区 -->
+    <a-card :body-style="{ padding: 0 }">
     <PartTable
       :parts="filteredParts"
       :selected-row-keys="selectedRowKeys"
@@ -34,6 +35,7 @@
       @view="handleView"
       @go-to-order="goToOrder"
     />
+    </a-card>
   </div>
 </template>
 
@@ -210,6 +212,6 @@ watch(
 
 <style lang="less" scoped>
 .part-list {
-  padding: 24px;
+  padding: 0;
 }
 </style>

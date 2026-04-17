@@ -7,7 +7,7 @@
           <a-statistic
             :title="t('dashboard.totalOrders')"
             :value="stats.totalOrders"
-            :value-style="{ color: '#0066B2' }"
+            :value-style="{ color: '#1677ff' }"
           >
             <template #prefix>
               <FileTextOutlined />
@@ -193,8 +193,8 @@ const trendChartOption = computed(() => ({
       type: 'line',
       smooth: true,
       data: trendData.value.map(d => d.orders),
-      itemStyle: { color: '#0066B2' },
-      areaStyle: { color: 'rgba(0, 102, 178, 0.1)' },
+      itemStyle: { color: '#1677ff' },
+      areaStyle: { color: 'rgba(22, 119, 255, 0.1)' },
     },
     {
       name: t('dashboard.warrantyParts'),
@@ -286,7 +286,7 @@ const getTaskBadgeStatus = (priority: string) => {
 const getTaskCountStyle = (priority: string) => {
   const styleMap: Record<string, { backgroundColor: string }> = {
     low: { backgroundColor: '#d9d9d9' },
-    medium: { backgroundColor: '#1890ff' },
+    medium: { backgroundColor: '#1677ff' },
     high: { backgroundColor: '#faad14' },
     urgent: { backgroundColor: '#ff4d4f' },
   }
@@ -339,7 +339,7 @@ const goToReports = () => router.push('/reports')
 
 <style lang="less" scoped>
 .dashboard {
-  padding: 24px;
+  padding: 0;
 
   .stat-cards {
     margin-bottom: 16px;
@@ -387,13 +387,13 @@ const goToReports = () => router.push('/reports')
       justify-content: center;
       padding: 24px 16px;
       background: #fafafa;
-      border-radius: 8px;
+      border-radius: 4px;
       cursor: pointer;
       position: relative;
 
       .link-icon {
         font-size: 32px;
-        color: #0066B2;
+        color: #1677ff;
         margin-bottom: 12px;
       }
 
@@ -411,16 +411,6 @@ const goToReports = () => router.push('/reports')
         color: #999;
       }
     }
-  }
-}
-
-.hover-card {
-  transition: all 0.3s;
-  cursor: pointer;
-
-  &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
   }
 }
 </style>

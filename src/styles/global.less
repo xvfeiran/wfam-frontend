@@ -6,12 +6,12 @@
 
 html, body, #app {
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-// Bosch 蓝色主题
+// Design Token CSS Variables (aligned with DESIGN.md §1.2)
 :root {
-  --primary-color: #0066B2;
+  --primary-color: #1677ff;
   --success-color: #52c41a;
   --warning-color: #faad14;
   --error-color: #ff4d4f;
@@ -19,56 +19,97 @@ html, body, #app {
   --text-secondary: #666;
   --border-color: #d9d9d9;
   --bg-color: #f5f5f5;
+  --bg-container: #ffffff;
 }
 
-// 覆盖 Ant Design 主题色
-.ant-btn-primary {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
+// ===== Status Tag Colors (DESIGN.md §4.1) =====
+// Pending (待处理) -> blue
+// Processing (进行中) -> orange
+// Completed (已完成) -> success/green
+// Rejected (异常/拒绝) -> error/red
+// Scrapped (已报废) -> default/grey
 
-  &:hover {
-    background-color: #0077cc;
-    border-color: #0077cc;
-  }
-}
-
-// 状态标签样式
 .status-tag {
-  &.pending { background: #fff7e6; border-color: #ffd591; color: #d46b08; }
-  &.in-progress { background: #e6f7ff; border-color: #91d5ff; color: #096dd9; }
+  &.pending   { background: #e6f7ff; border-color: #91d5ff; color: #1677ff; }
+  &.processing { background: #fff7e6; border-color: #ffd591; color: #d46b08; }
   &.completed { background: #f6ffed; border-color: #b7eb8f; color: #389e0d; }
-  &.urgent { background: #fff1f0; border-color: #ffa39e; color: #cf1322; }
+  &.rejected  { background: #fff1f0; border-color: #ffa39e; color: #cf1322; }
+  &.scrapped  { background: #fafafa; border-color: #d9d9d9; color: #999; }
 }
 
-// 卡片悬停效果
+// ===== Card Hover Effect =====
 .hover-card {
   transition: all 0.3s;
   cursor: pointer;
 
   &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     transform: translateY(-2px);
   }
 }
 
-// 页面容器
+// ===== Page Container =====
 .page-container {
   padding: 24px;
-  background: #fff;
-  min-height: calc(100vh - 64px - 48px);
+  background: var(--bg-color);
+  min-height: calc(100vh - 64px);
 }
 
-// 筛选表单
-.filter-form {
+// ===== Filter Form Card (DESIGN.md §2.2) =====
+.filter-card {
   margin-bottom: 16px;
-  padding: 16px;
-  background: #fafafa;
-  border-radius: 4px;
 }
 
-// 操作按钮区
+// ===== Action Bar (DESIGN.md §2.2) =====
 .action-bar {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   display: flex;
   gap: 8px;
+}
+
+// ===== CSS Utility Classes (DESIGN.md §6) =====
+// Text ellipsis
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Flex center
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Spacing helpers - 8px principle (8, 16, 24, 32)
+.mt-8  { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.mt-32 { margin-top: 32px; }
+
+.mb-8  { margin-bottom: 8px; }
+.mb-12 { margin-bottom: 12px; }
+.mb-16 { margin-bottom: 16px; }
+.mb-24 { margin-bottom: 24px; }
+.mb-32 { margin-bottom: 32px; }
+
+.ml-8  { margin-left: 8px; }
+.ml-16 { margin-left: 16px; }
+
+.mr-8  { margin-right: 8px; }
+.mr-16 { margin-right: 16px; }
+
+.p-16  { padding: 16px; }
+.p-24  { padding: 24px; }
+
+// ===== Table Enhancements (DESIGN.md §3.1) =====
+// Clickable row hover
+:global(.ant-table-tbody > tr.clickable-row) {
+  cursor: pointer;
+}
+
+// Time column standard width
+.col-time {
+  width: 180px;
 }

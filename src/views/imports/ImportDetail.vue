@@ -422,7 +422,7 @@ onMounted(fetchDetail)
 
 <style scoped>
 .import-detail {
-  padding: 24px;
+  padding: 0;
 }
 .header {
   display: flex;

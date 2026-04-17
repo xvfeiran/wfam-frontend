@@ -54,6 +54,6 @@ function openLink(url: string) {
 
 <style scoped lang="less">
 .help-manual {
-  padding: 24px;
+  padding: 0;
 }
 </style>

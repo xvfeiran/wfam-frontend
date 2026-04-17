@@ -1,11 +1,11 @@
 <template>
-  <a-config-provider :locale="antdLocale">
+  <a-config-provider :locale="antdLocale" :theme="themeConfig">
     <router-view />
   </a-config-provider>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { computed, onMounted, onUnmounted, watch, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 import zhCN from 'ant-design-vue/es/locale/zh_CN'
 import enUS from 'ant-design-vue/es/locale/en_US'
@@ -16,6 +16,16 @@ import { useUserInfoStore } from '@/stores/userInfo'
 
 const { locale } = useI18n()
 const userInfoStore = useUserInfoStore()
+
+const themeConfig = reactive({
+  token: {
+    colorPrimary: '#1677ff',
+    borderRadius: 4,
+    fontFamily: `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`,
+    colorBgLayout: '#f5f5f5',
+    colorBgContainer: '#ffffff',
+  },
+})
 
 // 将父应用的 locale（'zh'|'en'）映射为子应用的 locale（'zh-CN'|'en-US'）
 const applyLocale = (parentLocale: string) => {

@@ -497,6 +497,6 @@ const handleSavePartCode = async () => {
 
 <style lang="less" scoped>
 .settings-page {
-  padding: 24px;
+  padding: 0;
 }
 </style>

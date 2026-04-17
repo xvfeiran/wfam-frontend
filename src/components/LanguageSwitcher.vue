@@ -43,13 +43,13 @@ const handleChange = ({ key }: { key: string }) => {
   color: #666;
 
   &:hover {
-    color: #0066B2;
-    background: rgba(0, 102, 178, 0.05);
+    color: #1677ff;
+    background: rgba(22, 119, 255, 0.05);
   }
 }
 
 .active {
-  color: #0066B2;
+  color: #1677ff;
   font-weight: 500;
 }
 </style>

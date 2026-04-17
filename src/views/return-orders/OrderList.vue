@@ -23,7 +23,8 @@
       @delete="handleBatchDeleteWrapper"
     />
 
-    <!-- 列表区 -->
+    <!-- 列表区 (Card wrapping per DESIGN.md §2.2) -->
+    <a-card :body-style="{ padding: 0 }">
     <OrderTable
       :orders="filteredOrders"
       :selected-row-keys="selectedRowKeys"
@@ -35,6 +36,7 @@
       @table-change="handleTableChange"
       @view="handleView"
     />
+    </a-card>
   </div>
 </template>
 
@@ -375,6 +377,6 @@ const executeDelete = async (ids: string[], cascade: boolean) => {
 
 <style lang="less" scoped>
 .order-list {
-  padding: 24px;
+  padding: 0;
 }
 </style>

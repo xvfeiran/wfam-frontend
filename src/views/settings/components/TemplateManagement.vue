@@ -6,7 +6,7 @@
           <PlusOutlined /> {{ t('settings.uploadTemplate') }}
         </a-button>
       </template>
-      <a-table :columns="columns" :data-source="templates" :pagination="false" row-key="id">
+      <a-table :columns="columns" :data-source="templates" :pagination="false" row-key="id" size="middle" :bordered="false">
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'action'">
             <a-space>

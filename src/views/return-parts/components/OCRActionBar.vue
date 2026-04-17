@@ -222,7 +222,7 @@ const onFileChange = (event: Event) => {
 
   &--processing,
   &--uploading {
-    border-color: #1890ff;
+    border-color: #1677ff;
     border-style: dashed;
   }
 
@@ -274,10 +274,10 @@ const onFileChange = (event: Event) => {
 
     &:hover {
       background: #e6f4ff;
-      color: #1890ff;
+      color: #1677ff;
 
       .ocr-idle__btn-icon {
-        color: #1890ff;
+        color: #1677ff;
       }
     }
 
@@ -338,7 +338,7 @@ const onFileChange = (event: Event) => {
   justify-content: center;
   gap: 10px;
   font-size: 14px;
-  color: #1890ff;
+  color: #1677ff;
   pointer-events: none; // 保证图片预览按钮仍可点击
 
   &__hint {

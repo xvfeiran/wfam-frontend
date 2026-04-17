@@ -51,6 +51,9 @@
         :data-source="filteredOrders"
         :loading="loading"
         row-key="id"
+        size="middle"
+        :bordered="false"
+        :sticky="true"
         :custom-row="customRow"
         :pagination="pagination"
         @change="handleTableChange"
@@ -258,7 +261,7 @@ watch(
 
 <style lang="less" scoped>
 .analysis-order-list {
-  padding: 24px;
+  padding: 0;
 
   .search-card {
     margin-bottom: 16px;

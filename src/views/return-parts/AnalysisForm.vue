@@ -210,7 +210,7 @@ const handleDownload = () => {
 
 <style lang="less" scoped>
 .analysis-form {
-  padding: 24px;
+  padding: 0;
 
   .template-hint {
     background: #f5f5f5;

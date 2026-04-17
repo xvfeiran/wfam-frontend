@@ -360,7 +360,7 @@ const handleExport = () => {
 
 <style lang="less" scoped>
 .reports-page {
-  padding: 24px;
+  padding: 0;
 
   .filter-collapse {
     margin-bottom: 16px;

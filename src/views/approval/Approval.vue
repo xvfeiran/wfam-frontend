@@ -11,6 +11,9 @@
             :data-source="myAnalysisApplications"
             :pagination="tablePagination"
             row-key="id"
+            size="middle"
+            :bordered="false"
+            :sticky="true"
           >
             <template #bodyCell="{ column, record }">
               <template v-if="column.key === 'status'">
@@ -47,6 +50,9 @@
             :data-source="pendingAnalysisApprovals"
             :pagination="tablePagination"
             row-key="id"
+            size="middle"
+            :bordered="false"
+            :sticky="true"
           >
             <template #bodyCell="{ column, record }">
               <template v-if="column.key === 'status'">
@@ -296,7 +302,7 @@ const handleConfirmReject = async () => {
 
 <style lang="less" scoped>
 .approval-page {
-  padding: 24px;
+  padding: 0;
 
   .main-tabs {
     :deep(.ant-tabs-nav) {

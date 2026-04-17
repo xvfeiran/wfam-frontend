@@ -13,6 +13,8 @@
       :loading="loading"
       :pagination="pagination"
       row-key="id"
+      size="middle"
+      :bordered="false"
       @change="handleTableChange"
     >
       <template #bodyCell="{ column, record }">
@@ -183,7 +185,7 @@ onUnmounted(() => {
 
 <style scoped>
 .import-list {
-  padding: 24px;
+  padding: 0;
 }
 .toolbar {
   margin-bottom: 16px;

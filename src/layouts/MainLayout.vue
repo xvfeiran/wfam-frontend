@@ -4,13 +4,15 @@
 
   <!-- 调试模式：完整布局（URL 加 ?dev=1 开启） -->
   <a-layout v-else class="main-layout">
-    <!-- 侧边栏 -->
+    <!-- 侧边栏 (DESIGN.md §2.1: light theme, 200/80 widths) -->
     <a-layout-sider
       v-model:collapsed="collapsed"
       :trigger="null"
       collapsible
-      width="220"
-      theme="dark"
+      :width="200"
+      :collapsed-width="80"
+      theme="light"
+      class="sider"
     >
       <div class="logo">
         <img src="@/assets/logo.svg" alt="Logo" class="logo-img" />
@@ -18,7 +20,7 @@
       </div>
       <a-menu
         v-model:selectedKeys="selectedKeys"
-        theme="dark"
+        theme="light"
         mode="inline"
         @click="handleMenuClick"
       >
@@ -208,13 +210,22 @@ const handleMenuClick = ({ key }: { key: string }) => {
   min-height: 100vh;
 }
 
+.sider {
+  border-right: 1px solid #f0f0f0;
+
+  :deep(.ant-layout-sider-children) {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
 .logo {
   height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid #f0f0f0;
 
   .logo-img {
     width: 32px;
@@ -222,20 +233,21 @@ const handleMenuClick = ({ key }: { key: string }) => {
   }
 
   .logo-text {
-    font-size: 20px;
-    font-weight: bold;
-    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1677ff;
     letter-spacing: 2px;
   }
 }
 
 .header {
+  height: 64px;
   background: #fff;
   padding: 0 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
 
   .header-left {
     display: flex;
@@ -248,7 +260,7 @@ const handleMenuClick = ({ key }: { key: string }) => {
       transition: color 0.3s;
 
       &:hover {
-        color: #0066B2;
+        color: #1677ff;
       }
     }
 
@@ -263,7 +275,7 @@ const handleMenuClick = ({ key }: { key: string }) => {
       cursor: pointer;
 
       &:hover {
-        color: #0066B2;
+        color: #1677ff;
       }
     }
 
@@ -278,9 +290,9 @@ const handleMenuClick = ({ key }: { key: string }) => {
 }
 
 .content {
-  margin: 24px;
-  background: #fff;
-  border-radius: 4px;
+  margin: 0;
+  padding: 24px;
+  background: #f5f5f5;
   min-height: 280px;
 }
 </style>

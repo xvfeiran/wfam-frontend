@@ -42,8 +42,8 @@ export function useReportCharts(
         type: 'line',
         smooth: true,
         data: trendData.value.map(d => d.orders),
-        itemStyle: { color: '#0066B2' },
-        areaStyle: { color: 'rgba(0, 102, 178, 0.1)' },
+        itemStyle: { color: '#1677ff' },
+        areaStyle: { color: 'rgba(22, 119, 255, 0.1)' },
       },
       {
         name: t('reports.parts'),
@@ -77,7 +77,7 @@ export function useReportCharts(
       {
         type: 'bar',
         data: customerRankingData.value.map(c => c.value).reverse(),
-        itemStyle: { color: '#0066B2' },
+        itemStyle: { color: '#1677ff' },
         label: { show: true, position: 'right' },
       },
     ],
@@ -140,7 +140,7 @@ export function useReportCharts(
         data: failureModeData.value.map((d, i) => ({
           ...d,
           itemStyle: {
-            color: ['#0066B2', '#52c41a', '#faad14', '#ff4d4f'][i],
+            color: ['#1677ff', '#52c41a', '#faad14', '#ff4d4f'][i],
           },
         })),
       },
@@ -164,7 +164,7 @@ export function useReportCharts(
         data: buDistributionData.value.map((d, i) => ({
           ...d,
           itemStyle: {
-            color: ['#0066B2', '#52c41a', '#722ed1', '#faad14'][i],
+            color: ['#1677ff', '#52c41a', '#722ed1', '#faad14'][i],
           },
         })),
         emphasis: {

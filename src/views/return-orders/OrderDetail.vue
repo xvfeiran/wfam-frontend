@@ -238,7 +238,7 @@ const handleAddPart = () => {
 
 <style lang="less" scoped>
 .order-detail {
-  padding: 24px;
+  padding: 0;
 
   .info-card, .status-card {
     margin-bottom: 16px;

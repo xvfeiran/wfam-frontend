@@ -16,14 +16,14 @@
       <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('returnPart.businessUnit')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-            <a-select v-model:value="localFilters.businessUnit" :placeholder="t('validation.selectBusinessUnit')" allowClear>
+            <a-select v-model:value="localFilters.businessUnit" :placeholder="t('validation.selectBusinessUnit')" allowClear showSearch>
               <a-select-option v-for="bu in businessUnits" :key="bu" :value="bu">{{ bu }}</a-select-option>
             </a-select>
           </a-form-item>
         </a-col>
         <a-col :span="12">
           <a-form-item :label="t('returnPart.productPlatform')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-            <a-select v-model:value="localFilters.productPlatform" :placeholder="t('validation.selectProductPlatform')" allowClear>
+            <a-select v-model:value="localFilters.productPlatform" :placeholder="t('validation.selectProductPlatform')" allowClear showSearch>
               <a-select-option v-for="pp in productPlatforms" :key="pp" :value="pp">{{ pp }}</a-select-option>
             </a-select>
           </a-form-item>
@@ -32,7 +32,7 @@
       <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('common.status')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-            <a-select v-model:value="localFilters.status" :placeholder="t('validation.pleaseSelect')" allowClear>
+            <a-select v-model:value="localFilters.status" :placeholder="t('validation.pleaseSelect')" allowClear showSearch>
               <a-select-option v-for="status in statusOptions" :key="status" :value="status">
                 {{ getStatusLabel(status) }}
               </a-select-option>
@@ -51,7 +51,7 @@
       <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('partDetail.analyst')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-            <a-select v-model:value="localFilters.analyst" :placeholder="t('validation.pleaseSelect')" allowClear>
+            <a-select v-model:value="localFilters.analyst" :placeholder="t('validation.pleaseSelect')" allowClear showSearch>
               <a-select-option v-for="u in analysts" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
             </a-select>
           </a-form-item>

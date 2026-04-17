@@ -38,7 +38,7 @@
         <a-card :title="t('orderDetail.basicInfo')" class="info-card">
           <a-descriptions :column="2" bordered>
             <a-descriptions-item :label="t('returnOrder.orderNumber')">
-              <a v-if="order?.orderId" style="color: #1890ff" @click="router.push(`/return-orders/${order.orderId}`)">{{ returnOrder?.orderNumber || order?.orderNumber || '-' }}</a>
+              <a v-if="order?.orderId" style="color: #1677ff" @click="router.push(`/return-orders/${order.orderId}`)">{{ returnOrder?.orderNumber || order?.orderNumber || '-' }}</a>
               <span v-else>{{ returnOrder?.orderNumber || order?.orderNumber || '-' }}</span>
             </a-descriptions-item>
             <a-descriptions-item :label="t('returnOrder.customer')">{{ returnOrder?.customer || '-' }}</a-descriptions-item>
@@ -244,7 +244,7 @@ onMounted(loadData)
 
 <style lang="less" scoped>
 .analysis-order-detail {
-  padding: 24px;
+  padding: 0;
 
   .info-card, .parts-card, .status-card {
     margin-bottom: 16px;

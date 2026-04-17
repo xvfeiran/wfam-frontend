@@ -59,7 +59,7 @@ const currentRoleLabel = computed(() => devUserStore.currentRoleLabel)
 
 // 根据用户名生成头像颜色
 const getAvatarColor = () => {
-  const colors = ['#0066B2', '#52C41A', '#FAAD14', '#F5222D', '#722ED1', '#EB2F96']
+  const colors = ['#1677ff', '#52C41A', '#FAAD14', '#F5222D', '#722ED1', '#EB2F96']
   const index = parseInt(currentUser.value.id) % colors.length
   return colors[index]
 }

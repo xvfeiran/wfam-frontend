@@ -360,7 +360,7 @@ defineExpose({
 
   .field-disabled-hint {
     margin-top: 4px;
-    color: #1890ff;
+    color: #1677ff;
     font-size: 12px;
   }
 }
