@@ -40,6 +40,52 @@
       </a-descriptions>
     </a-card>
 
+    <a-card
+      v-if="record"
+      :bordered="false"
+      class="errors-card"
+      size="small"
+    >
+      <a-collapse v-model:active-key="errorsPanelKey" ghost>
+        <a-collapse-panel key="errors">
+          <template #header>
+            <span class="errors-card-title">
+              {{ t('importModule.errorLogSummary') }}
+              <a-tag v-if="errorsTotal > 0" color="error" style="margin-left: 8px">
+                {{ t('importModule.errorLogTotalCount', { count: errorsTotal }) }}
+              </a-tag>
+              <a-tag v-else color="success" style="margin-left: 8px">
+                {{ t('importModule.errorLogEmpty') }}
+              </a-tag>
+            </span>
+          </template>
+          <div class="errors-hint">{{ t('importModule.errorLogSummaryHint') }}</div>
+          <a-table
+            :loading="errorsLoading"
+            :data-source="errors"
+            :columns="errorColumns"
+            :pagination="errorsPagination"
+            size="small"
+            row-key="_key"
+            :scroll="{ x: 1000 }"
+            @change="handleErrorsTableChange"
+          >
+            <template #bodyCell="{ column, record: row }">
+              <template v-if="column.key === 'rawData'">
+                <a-tooltip v-if="row.rawData" placement="topLeft">
+                  <template #title>
+                    <pre class="raw-data-pre">{{ formatRawData(row.rawData) }}</pre>
+                  </template>
+                  <a-button type="link" size="small">{{ t('importModule.rawData') }}</a-button>
+                </a-tooltip>
+                <span v-else>-</span>
+              </template>
+            </template>
+          </a-table>
+        </a-collapse-panel>
+      </a-collapse>
+    </a-card>
+
     <a-row :gutter="16" class="body-row">
       <a-col :span="7">
         <a-card :title="t('importModule.fileTree')" size="small" :loading="filesLoading">
@@ -105,6 +151,13 @@ const logsTotal = ref(0)
 const deleteLoading = ref(false)
 const deleteCompleted = ref(false)
 
+const errors = ref<Array<Record<string, any> & { _key: string }>>([])
+const errorsPage = ref(1)
+const errorsPageSize = ref(20)
+const errorsTotal = ref(0)
+const errorsLoading = ref(false)
+const errorsPanelKey = ref<string[]>([])
+
 const selectedTreeKeys = computed(() => [selectedFile.value])
 
 const logsPagination = computed(() => ({
@@ -157,6 +210,23 @@ const columns = computed(() => [
   { title: t('importModule.partCode'), dataIndex: 'partCode', key: 'partCode', width: 130 },
   { title: t('importModule.partNumber'), dataIndex: 'partNumber', key: 'partNumber', width: 140 },
 ])
+
+const errorColumns = computed(() => [
+  { title: t('importModule.fileName'), dataIndex: 'fileName', key: 'fileName', width: 260, ellipsis: true },
+  { title: t('importModule.rowNum'), dataIndex: 'row', key: 'row', width: 80 },
+  { title: t('importModule.errorCode'), dataIndex: 'errorCode', key: 'errorCode', width: 180 },
+  { title: t('importModule.errorMsg'), dataIndex: 'error', key: 'error', ellipsis: true },
+  { title: t('importModule.rawData'), dataIndex: 'rawData', key: 'rawData', width: 110 },
+])
+
+const errorsPagination = computed(() => ({
+  current: errorsPage.value,
+  pageSize: errorsPageSize.value,
+  total: errorsTotal.value,
+  size: 'small' as const,
+  showSizeChanger: true,
+  showTotal: (total: number) => t('importModule.errorLogTotalCount', { count: total }),
+}))
 
 function statusLabel(status: string): string {
   if (status === 'processing') return t('importModule.statusImporting')
@@ -222,6 +292,22 @@ function handleLogsTableChange(pagination: any) {
   fetchLogsByFile()
 }
 
+function handleErrorsTableChange(pagination: any) {
+  errorsPage.value = pagination.current
+  errorsPageSize.value = pagination.pageSize
+  fetchErrors()
+}
+
+function formatRawData(raw: any): string {
+  if (!raw) return ''
+  if (typeof raw === 'string') return raw
+  try {
+    return JSON.stringify(raw, null, 2)
+  } catch {
+    return String(raw)
+  }
+}
+
 function goBack() {
   router.push('/imports')
 }
@@ -276,9 +362,35 @@ async function fetchDetail() {
       logs.value = []
       logsTotal.value = 0
     }
+
+    fetchErrors()
   } finally {
     summaryLoading.value = false
     filesLoading.value = false
+  }
+}
+
+async function fetchErrors() {
+  const id = String(route.params.id || '')
+  if (!id) return
+
+  errorsLoading.value = true
+  try {
+    const res = await importApi.listErrors(id, {
+      page: errorsPage.value,
+      pageSize: errorsPageSize.value,
+    })
+    const rows = (res.data || []) as Array<Record<string, any>>
+    errors.value = rows.map((row, idx) => ({
+      ...row,
+      _key: `${row.fileName || ''}-${row.row}-${idx}`,
+    }))
+    errorsTotal.value = res.total || 0
+    if (errorsTotal.value > 0 && errorsPanelKey.value.length === 0) {
+      errorsPanelKey.value = ['errors']
+    }
+  } finally {
+    errorsLoading.value = false
   }
 }
 
@@ -324,5 +436,24 @@ onMounted(fetchDetail)
 }
 .summary-card {
   margin-bottom: 12px;
+}
+.errors-card {
+  margin-bottom: 12px;
+}
+.errors-card-title {
+  font-weight: 600;
+}
+.errors-hint {
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.raw-data-pre {
+  max-width: 480px;
+  max-height: 320px;
+  overflow: auto;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 </style>

@@ -69,6 +69,13 @@ export const importApi = {
     return request.get(`/imports/${id}/logs`, { params: adaptedParams })
   },
 
+  listErrors(id: string, params: { page?: number; pageSize?: number } = {}): Promise<PageResult<Record<string, any>>> {
+    const adaptedParams: any = {}
+    if (params.page !== undefined) adaptedParams.page = params.page - 1
+    if (params.pageSize !== undefined) adaptedParams.size = params.pageSize
+    return request.get(`/imports/${id}/errors`, { params: adaptedParams })
+  },
+
   list(params?: ImportListParams): Promise<PageResult<ImportRecord>> {
     const adaptedParams: any = params ? { ...params } : {}
     if (adaptedParams.page !== undefined) {

@@ -736,5 +736,10 @@ export default {
     deleteImportedDataTimeout: '删除执行超时，请刷新后查看状态',
     createdBy: '操作人',
     createdAt: '导入时间',
+    errorLogSummary: '错误日志汇总',
+    errorLogSummaryHint: '显示本次导入的全部失败行（包含文件、行号、错误代码、错误信息）',
+    errorLogEmpty: '本次导入没有错误',
+    errorLogTotalCount: '共 {count} 条错误',
+    rawData: '原始数据',
   },
 }

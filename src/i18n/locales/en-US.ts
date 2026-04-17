@@ -724,5 +724,10 @@ export default {
     deleteImportedDataTimeout: 'Delete task timed out, please refresh and check status',
     createdBy: 'Operator',
     createdAt: 'Import Time',
+    errorLogSummary: 'Error Log Summary',
+    errorLogSummaryHint: 'Shows all failed rows from this import (file, row number, error code, error message)',
+    errorLogEmpty: 'No errors in this import',
+    errorLogTotalCount: '{count} error(s) total',
+    rawData: 'Raw Data',
   },
 }
