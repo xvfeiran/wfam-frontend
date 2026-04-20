@@ -32,7 +32,14 @@
           </a-col>
         </a-row>
         <div class="form-actions">
-          <a-button type="primary" @click="$emit('save-config')">{{ t('settings.saveConfig') }}</a-button>
+          <a-button
+            type="primary"
+            :disabled="debounce.isDebouncing"
+            :loading="debounce.isDebouncing"
+            @click="handleSave"
+          >
+            {{ t('settings.saveConfig') }}
+          </a-button>
         </div>
       </a-form>
     </a-card>
@@ -40,7 +47,9 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useDebouncedClick } from '@/composables/useDebouncedClick'
 
 interface NotificationConfig {
   warningCron: string
@@ -56,11 +65,18 @@ interface Props {
 
 defineProps<Props>()
 
+
 defineEmits<{
   (e: 'save-config'): void
 }>()
 
+const handleSave = () => debounce.execute(async () => {
+  await new Promise(resolve => setTimeout(resolve, 500))
+  emit('save-config')
+})
+
 const { t } = useI18n()
+const debounce = useDebouncedClick({ delay: 1000 })
 </script>
 
 <style lang="less" scoped>
