@@ -59,8 +59,7 @@ export interface Part {
   boschFailureType?: string   // 博世失效类型（BA代码）
   responsibleEngineer?: string
   analyst?: string
-  repairStation?: string
-  complaintLocation?: string
+  repairStationLocation?: string
   vehicleProductionDate?: string
   vehiclePurchaseDate?: string
   vehicleFailureDate?: string
