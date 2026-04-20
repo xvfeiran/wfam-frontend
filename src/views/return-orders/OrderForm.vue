@@ -111,12 +111,12 @@
         <a-button @click="handleBack">{{ t('common.cancel') }}</a-button>
         <!-- 草稿状态：显示保存和提交按钮 -->
         <template v-if="!isSubmitted">
-          <a-button @click="handleSave">{{ t('common.save') }}</a-button>
-          <a-button type="primary" @click="handleSubmit">{{ t('common.submit') }}</a-button>
+          <a-button :disabled="saveDebounce.isDebouncing" :loading="saveDebounce.isDebouncing" @click="handleSave">{{ t('common.save') }}</a-button>
+          <a-button type="primary" :disabled="submitDebounce.isDebouncing" :loading="submitDebounce.isDebouncing" @click="handleSubmit">{{ t('common.submit') }}</a-button>
         </template>
         <!-- 已提交状态且有数据校订权限：只显示提交按钮（用于更新） -->
         <template v-else-if="canEditSubmittedOrder">
-          <a-button type="primary" @click="handleSaveForSubmitted">{{ t('common.submit') }}</a-button>
+          <a-button type="primary" :disabled="submitDebounce.isDebouncing" :loading="submitDebounce.isDebouncing" @click="handleSaveForSubmitted">{{ t('common.submit') }}</a-button>
         </template>
         <!-- 已提交状态且无权限：显示不可编辑提示 -->
         <template v-else>
@@ -138,9 +138,14 @@ import type { Dayjs } from 'dayjs'
 import { returnOrderApi } from '@/services/returnOrderApi'
 import { customerApi } from '@/services/customerApi'
 import { usePermissions } from '@/composables/usePermissions'
+import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import type { Customer } from '@/services/customerApi'
 
 const { t } = useI18n()
+
+// 防抖处理
+const saveDebounce = useDebouncedClick({ delay: 1000 })
+const submitDebounce = useDebouncedClick({ delay: 1000 })
 
 const route = useRoute()
 const router = useRouter()
@@ -290,7 +295,7 @@ const buildPayload = () => {
   return payload
 }
 
-const handleSave = async () => {
+const handleSave = () => saveDebounce.execute(async () => {
   try {
     await formRef.value?.validate()
     if (isEdit.value) {
@@ -307,10 +312,10 @@ const handleSave = async () => {
       message.error(t('message.saveFailed'))
     }
   }
-}
+})
 
 // Save handler for submitted orders - only updates, does not call submit again
-const handleSaveForSubmitted = async () => {
+const handleSaveForSubmitted = () => submitDebounce.execute(async () => {
   try {
     await formRef.value?.validate()
     await returnOrderApi.update(orderId.value, buildPayload())
@@ -323,9 +328,9 @@ const handleSaveForSubmitted = async () => {
       message.error(t('message.saveFailed'))
     }
   }
-}
+})
 
-const handleSubmit = async () => {
+const handleSubmit = () => submitDebounce.execute(async () => {
   try {
     await formRef.value?.validate()
     let savedId = orderId.value
@@ -345,7 +350,7 @@ const handleSubmit = async () => {
       message.error(t('message.submitFailed'))
     }
   }
-}
+})
 </script>
 
 <style lang="less" scoped>
