@@ -5,7 +5,7 @@
     width="600px"
     @cancel="handleCancel"
     @ok="handleSubmit"
-    :confirm-loading="submitting"
+    :confirm-loading="submitDebounce.isDebouncing"
   >
     <a-alert
       :message="t('message.workOnAlert')"
@@ -52,7 +52,7 @@
 
     <template #footer>
       <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
-      <a-button type="primary" @click="handleSubmit" :loading="submitting" :disabled="isScrapped">
+      <a-button type="primary" @click="handleSubmit" :loading="submitDebounce.isDebouncing" :disabled="isScrapped || submitDebounce.isDebouncing">
         {{ isScrapped ? t('common.viewOnly') : t('modal.markAsConfirmed') }}
       </a-button>
     </template>
@@ -65,6 +65,7 @@ import { message } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import { LinkOutlined } from '@ant-design/icons-vue'
 import { returnOrderApi } from '@/services/returnOrderApi'
+import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import type { ReturnOrder } from '@/types'
 import { ORDER_STATUS_MAP } from '@/types'
 
@@ -82,7 +83,8 @@ const form = reactive({
   scrapStatus: 'pending_workon' as 'pending_workon' | 'completed_workon',
 })
 
-const submitting = ref(false)
+// 防抖处理
+const submitDebounce = useDebouncedClick({ delay: 1000 })
 
 const getCurrentStatus = () => props.order?.status as string | undefined
 
@@ -164,8 +166,7 @@ const handleSubmit = async () => {
     return
   }
 
-  submitting.value = true
-  try {
+  submitDebounce.execute(async () => {
     // 详情页模式：处理单个订单
     if (props.order) {
       // 如果是已报废状态，不需要操作
@@ -193,13 +194,7 @@ const handleSubmit = async () => {
       emit('success')
       emit('update:visible', false)
     }
-  } catch (error: any) {
-    console.error('Scrap failed:', error)
-    const errorMsg = error?.response?.data?.message || error?.message || t('message.scrapFailed')
-    message.error(errorMsg)
-  } finally {
-    submitting.value = false
-  }
+  })
 }
 </script>
 
