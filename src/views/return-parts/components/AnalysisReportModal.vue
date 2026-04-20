@@ -108,8 +108,8 @@
         <a-button type="primary" @click="handleViewApproval">{{ t('analysisForm.viewApprovalProgress') }}</a-button>
       </template>
       <template v-else>
-        <a-button @click="handleSaveDraft" :disabled="!selectedTemplate">{{ t('common.save') }}</a-button>
-        <a-button type="primary" @click="handleSubmit" :disabled="!selectedTemplate">{{ t('analysisForm.submitApproval') }}</a-button>
+        <a-button :disabled="!selectedTemplate || saveDraftDebounce.isDebouncing" :loading="saveDraftDebounce.isDebouncing" @click="handleSaveDraft">{{ t('common.save') }}</a-button>
+        <a-button type="primary" :disabled="!selectedTemplate || submitDebounce.isDebouncing" :loading="submitDebounce.isDebouncing" @click="handleSubmit">{{ t('analysisForm.submitApproval') }}</a-button>
       </template>
     </template>
   </a-modal>
@@ -124,6 +124,7 @@ import { reportsApi } from '@/services/reportsApi'
 import { lookupApi } from '@/services/lookupApi'
 import { PartStatus } from '@/types'
 import type { Part, ReportTemplate } from '@/types'
+import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import dayjs from 'dayjs'
 
 const { t } = useI18n()
@@ -138,7 +139,10 @@ const emit = defineEmits(['update:visible', 'success', 'view-approval'])
 const formRef = ref()
 const templates = ref<ReportTemplate[]>([])
 const reportId = ref<string>()
-const loading = ref(false)
+
+// 防抖处理（替代现有的 loading ref）
+const saveDraftDebounce = useDebouncedClick({ delay: 1000 })
+const submitDebounce = useDebouncedClick({ delay: 1000 })
 
 // 匹配条件状态
 const matchConditions = reactive({
@@ -307,34 +311,33 @@ const handleViewApproval = () => {
 
 const handleSaveDraft = async () => {
   if (!props.part?.id || !selectedTemplate.value) return
-  try {
-    loading.value = true
-    await formRef.value?.validate()
+  saveDraftDebounce.execute(async () => {
+    try {
+      await formRef.value?.validate()
 
-    // 格式化日期字段
-    const formattedContent: Record<string, any> = {}
-    for (const [key, value] of Object.entries(form.content)) {
-      if (dayjs.isDayjs(value)) {
-        formattedContent[key] = value.format('YYYY-MM-DD')
-      } else {
-        formattedContent[key] = value
+      // 格式化日期字段
+      const formattedContent: Record<string, any> = {}
+      for (const [key, value] of Object.entries(form.content)) {
+        if (dayjs.isDayjs(value)) {
+          formattedContent[key] = value.format('YYYY-MM-DD')
+        } else {
+          formattedContent[key] = value
+        }
       }
-    }
 
-    const report = await reportsApi.saveReport({
-      partId: props.part.id,
-      templateId: selectedTemplate.value.id,
-      content: formattedContent,
-      summary: form.summary,
-      status: 'draft',
-    })
-    reportId.value = report.id
-    message.success(t('message.draftSaved'))
-  } catch {
-    message.error(t('validation.formError'))
-  } finally {
-    loading.value = false
-  }
+      const report = await reportsApi.saveReport({
+        partId: props.part.id,
+        templateId: selectedTemplate.value.id,
+        content: formattedContent,
+        summary: form.summary,
+        status: 'draft',
+      })
+      reportId.value = report.id
+      message.success(t('message.draftSaved'))
+    } catch {
+      message.error(t('validation.formError'))
+    }
+  })
 }
 
 const handleDownload = async () => {
@@ -343,7 +346,6 @@ const handleDownload = async () => {
     return
   }
   try {
-    loading.value = true
     const blob = await reportsApi.exportReport(reportId.value)
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -354,41 +356,38 @@ const handleDownload = async () => {
     message.success(t('message.downloadSuccess'))
   } catch {
     message.error(t('message.exportFailed'))
-  } finally {
-    loading.value = false
   }
 }
 
 const handleSubmit = async () => {
   if (!props.part?.id || !selectedTemplate.value) return
-  try {
-    loading.value = true
-    await formRef.value?.validate()
+  submitDebounce.execute(async () => {
+    try {
+      await formRef.value?.validate()
 
-    // 格式化日期字段
-    const formattedContent: Record<string, any> = {}
-    for (const [key, value] of Object.entries(form.content)) {
-      if (dayjs.isDayjs(value)) {
-        formattedContent[key] = value.format('YYYY-MM-DD')
-      } else {
-        formattedContent[key] = value
+      // 格式化日期字段
+      const formattedContent: Record<string, any> = {}
+      for (const [key, value] of Object.entries(form.content)) {
+        if (dayjs.isDayjs(value)) {
+          formattedContent[key] = value.format('YYYY-MM-DD')
+        } else {
+          formattedContent[key] = value
+        }
       }
-    }
 
-    const report = await reportsApi.saveReport({
-      partId: props.part.id,
-      templateId: selectedTemplate.value.id,
-      content: formattedContent,
-      summary: form.summary,
-      status: 'submitted',
-    })
-    reportId.value = report.id
-    emit('success')
-  } catch {
-    message.error(t('validation.formError'))
-  } finally {
-    loading.value = false
-  }
+      const report = await reportsApi.saveReport({
+        partId: props.part.id,
+        templateId: selectedTemplate.value.id,
+        content: formattedContent,
+        summary: form.summary,
+        status: 'submitted',
+      })
+      reportId.value = report.id
+      emit('success')
+    } catch {
+      message.error(t('validation.formError'))
+    }
+  })
 }
 </script>
 
