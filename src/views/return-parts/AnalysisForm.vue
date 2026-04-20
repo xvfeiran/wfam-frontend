@@ -6,8 +6,8 @@
     >
       <template #extra>
         <a-space>
-          <a-button @click="handleSaveDraft">{{ t('analysisForm.saveDraft') }}</a-button>
-          <a-button type="primary" @click="handleSubmit">{{ t('analysisForm.submitApproval') }}</a-button>
+          <a-button :disabled="saveDraftDebounce.isDebouncing" :loading="saveDraftDebounce.isDebouncing" @click="handleSaveDraft">{{ t('analysisForm.saveDraft') }}</a-button>
+          <a-button type="primary" :disabled="submitDebounce.isDebouncing" :loading="submitDebounce.isDebouncing" @click="handleSubmit">{{ t('analysisForm.submitApproval') }}</a-button>
           <a-button @click="handleDownload">
             <DownloadOutlined /> {{ t('analysisForm.downloadReport') }}
           </a-button>
@@ -158,12 +158,17 @@ import { message } from 'ant-design-vue'
 import { DownloadOutlined, PlusOutlined } from '@ant-design/icons-vue'
 import { partApi } from '@/services/partApi'
 import { COMPLAINT_TYPES } from '@/constants/complaintTypes'
+import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import type { Part } from '@/types'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const formRef = ref()
+
+// 防抖处理
+const saveDraftDebounce = useDebouncedClick({ delay: 1000 })
+const submitDebounce = useDebouncedClick({ delay: 1000 })
 
 const partId = computed(() => route.params.id as string)
 const part = ref<Part | null>(null)
@@ -186,11 +191,12 @@ const handleBack = () => {
   router.back()
 }
 
-const handleSaveDraft = () => {
+const handleSaveDraft = () => saveDraftDebounce.execute(async () => {
+  // TODO: 实现保存草稿逻辑
   message.success(t('message.draftSaved'))
-}
+})
 
-const handleSubmit = async () => {
+const handleSubmit = () => submitDebounce.execute(async () => {
   try {
     await formRef.value?.validate()
     message.success(t('analysisForm.submitSuccess', t('message.submitSuccess')))
@@ -198,7 +204,7 @@ const handleSubmit = async () => {
   } catch {
     message.error(t('validation.formError'))
   }
-}
+})
 
 const handleDownload = () => {
   message.success(t('message.generatingReport'))
