@@ -134,7 +134,7 @@
           <a-button
             type="primary"
             :disabled="selectedPartIds.length === 0"
-            :loading="submitting"
+            :loading="confirmDebounce.isDebouncing.value"
             @click="handleConfirmSampling"
           >
             {{ t('message.confirmSampling') }}（{{ selectedPartIds.length }}）
@@ -151,6 +151,7 @@ import { message } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import { StopOutlined, FilterOutlined, ThunderboltOutlined } from '@ant-design/icons-vue'
 import { returnOrderApi } from '@/services/returnOrderApi'
+import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import type { ReturnOrder, Part } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
 
@@ -179,6 +180,9 @@ const sampledCount = ref<number>(0)
 const submitting = ref(false)
 const updating = ref(false)
 const availableParts = ref<Part[]>([])
+
+// 防抖处理
+const confirmDebounce = useDebouncedClick({ delay: 1000 })
 // 是否已完成抽样（基于售后件的 isSample 字段判断）
 const isSampled = computed(() => {
   if (!props.order) return false
@@ -321,21 +325,19 @@ const handleNoSampling = async () => {
 }
 
 // 确认抽样
-const handleConfirmSampling = async () => {
+const handleConfirmSampling = () => confirmDebounce.execute(async () => {
   if (selectedPartIds.value.length === 0) {
     message.warning(t('message.pleaseSelectAtLeastOnePart'))
     return
   }
-  submitting.value = true
   try {
     await returnOrderApi.sampling(props.order!.id, { sampledPartIds: selectedPartIds.value })
     message.success(t('message.samplingSuccessMsg', { count: selectedPartIds.value.length }))
     emit('success')
     emit('update:visible', false)
   } finally {
-    submitting.value = false
   }
-}
+})
 </script>
 
 <style lang="less" scoped>

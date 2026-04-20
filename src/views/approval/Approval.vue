@@ -97,6 +97,7 @@
       :title="t('approval.rejectTitle')"
       @ok="handleConfirmReject"
       @cancel="rejectModalVisible = false"
+      :confirm-loading="rejectDebounce.isDebouncing.value"
     >
       <a-form layout="vertical">
         <a-form-item :label="t('approval.rejectReason')" :rules="[{ required: true, message: t('approval.inputRejectReason') }]">
@@ -153,6 +154,7 @@ import {
 } from '@/types'
 import { approvalApi } from '@/services/approvalApi'
 import { useApprovalColumns } from '@/composables/useApprovalColumns'
+import { useDebouncedClick } from '@/composables/useDebouncedClick'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -166,6 +168,9 @@ const reportModalVisible = ref(false)
 const rejectReason = ref('')
 const currentRejectRecord = ref<AnalysisApplication | null>(null)
 const currentReport = ref<AnalysisApplication | null>(null)
+
+// 防抖处理
+const rejectDebounce = useDebouncedClick({ delay: 1000 })
 
 // 通用分页配置
 const tablePagination = {
@@ -282,7 +287,7 @@ const handleReject = (record: AnalysisApplication) => {
 }
 
 // 确认驳回
-const handleConfirmReject = async () => {
+const handleConfirmReject = () => rejectDebounce.execute(async () => {
   if (!rejectReason.value.trim()) {
     message.error(t('approval.inputRejectReason'))
     return
@@ -297,7 +302,7 @@ const handleConfirmReject = async () => {
 
   rejectModalVisible.value = false
   message.success(t('message.rejectComplete'))
-}
+})
 </script>
 
 <style lang="less" scoped>

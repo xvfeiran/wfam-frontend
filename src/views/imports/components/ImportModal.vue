@@ -47,11 +47,11 @@
         <a-button @click="handleClose">{{ t('common.cancel') }}</a-button>
         <a-button
           type="primary"
-          :loading="uploading"
+          :loading="uploadDebounce.isDebouncing.value"
           :disabled="!importType || (sourceType === 'file' ? !selectedFile : !folderPath.trim())"
           @click="handleUpload"
         >
-          {{ uploading ? t('importModule.uploading') : t('common.confirm') }}
+          {{ uploadDebounce.isDebouncing.value ? t('importModule.uploading') : t('common.confirm') }}
         </a-button>
       </div>
     </div>
@@ -127,6 +127,7 @@ import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import { UploadOutlined } from '@ant-design/icons-vue'
 import { importApi } from '@/services/importApi'
+import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import type { ImportRecord, ImportLogEntry } from '@/types'
 
 const POLL_INTERVAL_MS = 2000
@@ -147,6 +148,9 @@ const uploading    = ref(false)
 const polling      = ref(false)
 const result       = ref<ImportRecord | null>(null)
 const shouldRefreshOnClose = ref(false)
+
+	// 防抖处理
+	const uploadDebounce = useDebouncedClick({ delay: 1000 })
 
 let pollTimer: ReturnType<typeof setTimeout> | null = null
 let pollStart = 0
@@ -191,41 +195,40 @@ function handleBeforeUpload(file: File) {
 
 async function handleUpload() {
   if (!importType.value) return
-  uploading.value = true
-  try {
-    let record
-    if (importType.value === 'return_order') {
-      if (!selectedFile.value) {
-        throw new Error(t('importModule.selectFile'))
-      }
-      record = await importApi.importReturnOrders(selectedFile.value)
-    } else if (importType.value === 'part') {
-      if (sourceType.value === 'folder') {
-        record = await importApi.importPartsByFolder(folderPath.value.trim())
-      } else {
+  uploadDebounce.execute(async () => {
+    try {
+      let record
+      if (importType.value === 'return_order') {
         if (!selectedFile.value) {
           throw new Error(t('importModule.selectFile'))
         }
-        record = await importApi.importParts(selectedFile.value)
+        record = await importApi.importReturnOrders(selectedFile.value)
+      } else if (importType.value === 'part') {
+        if (sourceType.value === 'folder') {
+          record = await importApi.importPartsByFolder(folderPath.value.trim())
+        } else {
+          if (!selectedFile.value) {
+            throw new Error(t('importModule.selectFile'))
+          }
+          record = await importApi.importParts(selectedFile.value)
+        }
+      } else {
+        throw new Error('不支持的导入类型')
       }
-    } else {
-      throw new Error('不支持的导入类型')
+      shouldRefreshOnClose.value = true
+      if (record.status !== 'processing') {
+        result.value = record
+        phase.value = 'result'
+      } else {
+        phase.value = 'processing'
+        polling.value = true
+        pollStart = Date.now()
+        schedulePoll(record.id)
+      }
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || e?.message || t('common.failed'))
     }
-    uploading.value = false
-    shouldRefreshOnClose.value = true
-    if (record.status !== 'processing') {
-      result.value = record
-      phase.value = 'result'
-    } else {
-      phase.value = 'processing'
-      polling.value = true
-      pollStart = Date.now()
-      schedulePoll(record.id)
-    }
-  } catch (e: any) {
-    uploading.value = false
-    message.error(e?.response?.data?.message || e?.message || t('common.failed'))
-  }
+  })()
 }
 
 function schedulePoll(id: string) {

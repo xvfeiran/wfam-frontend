@@ -161,7 +161,7 @@
           <a-button
             type="primary"
             :disabled="selectedPartIds.length === 0"
-            :loading="submitting"
+            :loading="confirmDebounce.isDebouncing.value"
             @click="handleConfirmSampling"
           >
             {{ t('message.confirmSampling') }}（{{ selectedPartIds.length }}）
@@ -242,7 +242,7 @@
           <a-button
             type="primary"
             :disabled="selectedPartIds.length === 0"
-            :loading="submitting"
+            :loading="confirmDebounce.isDebouncing.value"
             @click="handleConfirmSampling"
           >
             {{ t('message.confirmSampling') }}（{{ selectedPartIds.length }}）
@@ -284,6 +284,7 @@ import { message } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import { StopOutlined, FilterOutlined, ThunderboltOutlined, ClearOutlined } from '@ant-design/icons-vue'
 import { analysisOrderApi } from '@/services/analysisOrderApi'
+import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import { AnalysisOrderStatus, PART_STATUS_MAP } from '@/types'
 import type { AnalysisOrder, Part } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
@@ -316,6 +317,9 @@ const submitting = ref(false)
 const updating = ref(false)
 const availableParts = ref<Part[]>([])
 const detailVisible = ref(false)
+
+// 防抖处理
+const confirmDebounce = useDebouncedClick({ delay: 1000 })
 const detailPart = ref<Part | null>(null)
 
 // 手动抽样搜索状态
@@ -518,21 +522,19 @@ const handleNoSampling = async () => {
 }
 
 // 确认抽样
-const handleConfirmSampling = async () => {
+const handleConfirmSampling = () => confirmDebounce.execute(async () => {
   if (selectedPartIds.value.length === 0) {
     message.warning(t('message.pleaseSelectAtLeastOnePart'))
     return
   }
-  submitting.value = true
   try {
     await analysisOrderApi.sampling(props.order!.id, { sampledPartIds: selectedPartIds.value })
     message.success(t('message.samplingSuccessMsg', { count: selectedPartIds.value.length }))
     emit('success')
     emit('update:visible', false)
   } finally {
-    submitting.value = false
   }
-}
+})
 </script>
 
 <style lang="less" scoped>
