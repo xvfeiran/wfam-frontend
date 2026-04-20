@@ -5,7 +5,7 @@
     width="600px"
     @cancel="handleCancel"
     @ok="handleSubmit"
-    :confirm-loading="submitting"
+    :confirm-loading="submitDebounce.isDebouncing"
   >
     <!-- 报废限制提示 -->
     <a-alert
@@ -63,7 +63,7 @@
 
     <template #footer>
       <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
-      <a-button type="primary" @click="handleSubmit" :loading="submitting" :disabled="hasScrapRestriction || isScrapped">
+      <a-button type="primary" @click="handleSubmit" :loading="submitDebounce.isDebouncing" :disabled="hasScrapRestriction || isScrapped">
         {{ isScrapped ? t('common.viewOnly') : hasScrapRestriction ? t('common.confirm') : t('modal.markAsConfirmed') }}
       </a-button>
     </template>
@@ -76,6 +76,7 @@ import { message } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import { LinkOutlined } from '@ant-design/icons-vue'
 import { analysisOrderApi } from '@/services/analysisOrderApi'
+import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import type { AnalysisOrder } from '@/types'
 import { ANALYSIS_ORDER_STATUS_MAP, AnalysisOrderStatus, PartStatus } from '@/types'
 
@@ -92,7 +93,8 @@ const form = reactive({
   scrapStatus: 'pending_workon' as 'pending_workon' | 'completed_workon',
 })
 
-const submitting = ref(false)
+// 防抖处理
+const submitDebounce = useDebouncedClick({ delay: 1000 })
 
 const getCurrentStatus = () => props.order?.status as string | undefined
 
@@ -197,21 +199,20 @@ const handleSubmit = async () => {
   }
   if (!props.order) return
 
-  submitting.value = true
-  try {
-    if (form.scrapStatus === 'completed_workon' && isScrapInProgress.value) {
-      await analysisOrderApi.workonConfirm(props.order.id)
-    } else {
-      await analysisOrderApi.scrap(props.order.id)
+  submitDebounce.execute(async () => {
+    try {
+      if (form.scrapStatus === 'completed_workon' && isScrapInProgress.value) {
+        await analysisOrderApi.workonConfirm(props.order.id)
+      } else {
+        await analysisOrderApi.scrap(props.order.id)
+      }
+      emit('success')
+      emit('update:visible', false)
+    } catch (error: any) {
+      const errorMsg = error?.response?.data?.message || error?.message || t('message.scrapFailed')
+      message.error(errorMsg)
     }
-    emit('success')
-    emit('update:visible', false)
-  } catch (error: any) {
-    const errorMsg = error?.response?.data?.message || error?.message || t('message.scrapFailed')
-    message.error(errorMsg)
-  } finally {
-    submitting.value = false
-  }
+  })
 }
 </script>
 
