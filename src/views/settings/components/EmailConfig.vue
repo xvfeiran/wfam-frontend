@@ -116,8 +116,8 @@
           <a-button @click="openTestModal" :disabled="hasUnsavedChanges">
             {{ t('settings.testConnection') }}
           </a-button>
-          <a-button type="primary" @click="handleSave" :loading="saving">
-            {{ saving ? t('settings.saving') : t('settings.saveConfig') }}
+          <a-button type="primary" :disabled="saveDebounce.isDebouncing" :loading="saveDebounce.isDebouncing" @click="handleSave">
+            {{ t('settings.saveConfig') }}
           </a-button>
         </div>
         <div v-if="hasUnsavedChanges" class="unsaved-hint">
@@ -163,6 +163,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import { emailConfigApi, type EmailConfig } from '@/services/emailConfigApi'
+import { useDebouncedClick } from '@/composables/useDebouncedClick'
 
 const { t } = useI18n()
 
@@ -190,9 +191,11 @@ const originalConfig = reactive<EmailConfig>({
 
 const formRef = ref()
 const testing = ref(false)
-const saving = ref(false)
 const testModalVisible = ref(false)
 const testEmailAddress = ref('')
+
+// Initialize debounce instance for save button
+const saveDebounce = useDebouncedClick({ delay: 1000 })
 
 const testResult = ref<{ type: 'success' | 'error'; message: string; description?: string } | null>(null)
 
@@ -294,31 +297,30 @@ const handleTest = async () => {
   }
 }
 
-const handleSave = async () => {
-  try {
-    await formRef.value.validate()
-    saving.value = true
+const handleSave = () => {
+  saveDebounce.execute(async () => {
+    try {
+      await formRef.value.validate()
 
-    await emailConfigApi.saveConfig({
-      smtpHost: config.smtpHost,
-      smtpPort: config.smtpPort,
-      smtpUsername: config.smtpUsername,
-      smtpDomain: config.smtpDomain,
-      emailFrom: config.emailFrom,
-      emailFromDisplayName: config.emailFromDisplayName,
-      emailPassword: config.emailPassword,
-      enableSsl: config.enableSsl,
-    })
+      await emailConfigApi.saveConfig({
+        smtpHost: config.smtpHost,
+        smtpPort: config.smtpPort,
+        smtpUsername: config.smtpUsername,
+        smtpDomain: config.smtpDomain,
+        emailFrom: config.emailFrom,
+        emailFromDisplayName: config.emailFromDisplayName,
+        emailPassword: config.emailPassword,
+        enableSsl: config.enableSsl,
+      })
 
-    await loadConfig()
-    testResult.value = null
-    message.success(t('message.configSaveSuccess'))
-  } catch (error: any) {
-    const errorMsg = error?.response?.data?.message || error?.message || t('message.saveFailed')
-    message.error(errorMsg)
-  } finally {
-    saving.value = false
-  }
+      await loadConfig()
+      testResult.value = null
+      message.success(t('message.configSaveSuccess'))
+    } catch (error: any) {
+      const errorMsg = error?.response?.data?.message || error?.message || t('message.saveFailed')
+      message.error(errorMsg)
+    }
+  })
 }
 
 const handleReset = () => {
