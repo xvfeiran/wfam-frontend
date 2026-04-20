@@ -7,13 +7,15 @@
     >
       <a-row :gutter="24">
         <a-col :span="12">
-          <a-form-item :label="t('partDetail.repairStation')">
-            <a-input v-model:value="form.repairStation" />
-          </a-form-item>
-        </a-col>
-        <a-col :span="12">
-          <a-form-item :label="t('partDetail.complaintLocation')">
-            <a-input v-model:value="form.complaintLocation" />
+          <a-form-item
+            :label="t('returnPart.repairStationLocation')"
+            name="repairStationLocation"
+          >
+            <a-input
+              v-model:value="form.repairStationLocation"
+              :placeholder="t('returnPart.repairStationLocation')"
+              allow-clear
+            />
           </a-form-item>
         </a-col>
       </a-row>
@@ -88,8 +90,7 @@ import { useI18n } from 'vue-i18n'
 import type { Dayjs } from 'dayjs'
 
 interface Form {
-  repairStation: string
-  complaintLocation: string
+  repairStationLocation: string
   vehicleProductionDate: Dayjs | null
   vehiclePurchaseDate: Dayjs | null
   vehicleFailureDate: Dayjs | null

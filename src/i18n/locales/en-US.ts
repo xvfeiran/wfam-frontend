@@ -110,6 +110,7 @@ export default {
     boschFailureType: 'Bosch Failure Type',
     basicInfo: 'Basic Information',
     vehicleInfo: 'Vehicle Information',
+    repairStationLocation: 'Service Station/Location',
     qcCreated: 'QC Entry',
     qcCreatedYes: 'Entered',
     qcCreatedNo: 'Not Entered',

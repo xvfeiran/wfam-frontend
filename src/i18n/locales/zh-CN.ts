@@ -110,6 +110,7 @@ export default {
     boschFailureType: '博世失效类型',
     basicInfo: '基础信息',
     vehicleInfo: '车辆信息卡',
+    repairStationLocation: '维修站号/投诉地',
     qcCreated: 'QC录入',
     qcCreatedYes: '已录',
     qcCreatedNo: '未录',
