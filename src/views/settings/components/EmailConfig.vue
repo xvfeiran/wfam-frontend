@@ -116,7 +116,7 @@
           <a-button @click="openTestModal" :disabled="hasUnsavedChanges">
             {{ t('settings.testConnection') }}
           </a-button>
-          <a-button type="primary" :disabled="saveDebounce.isDebouncing" :loading="saveDebounce.isDebouncing" @click="handleSave">
+          <a-button type="primary" :disabled="saveDebounce.isDebouncing.value" :loading="saveDebounce.isDebouncing.value" @click="handleSave">
             {{ t('settings.saveConfig') }}
           </a-button>
         </div>

@@ -111,12 +111,12 @@
         <a-button @click="handleBack">{{ t('common.cancel') }}</a-button>
         <!-- 草稿状态：显示保存和提交按钮 -->
         <template v-if="!isSubmitted">
-          <a-button :disabled="saveDebounce.isDebouncing" :loading="saveDebounce.isDebouncing" @click="handleSave">{{ t('common.save') }}</a-button>
-          <a-button type="primary" :disabled="submitDebounce.isDebouncing" :loading="submitDebounce.isDebouncing" @click="handleSubmit">{{ t('common.submit') }}</a-button>
+          <a-button :disabled="saveDebounce.isDebouncing.value" :loading="saveDebounce.isDebouncing.value" @click="handleSave">{{ t('common.save') }}</a-button>
+          <a-button type="primary" :disabled="submitDebounce.isDebouncing.value" :loading="submitDebounce.isDebouncing.value" @click="handleSubmit">{{ t('common.submit') }}</a-button>
         </template>
         <!-- 已提交状态且有数据校订权限：只显示提交按钮（用于更新） -->
         <template v-else-if="canEditSubmittedOrder">
-          <a-button type="primary" :disabled="submitDebounce.isDebouncing" :loading="submitDebounce.isDebouncing" @click="handleSaveForSubmitted">{{ t('common.submit') }}</a-button>
+          <a-button type="primary" :disabled="submitDebounce.isDebouncing.value" :loading="submitDebounce.isDebouncing.value" @click="handleSaveForSubmitted">{{ t('common.submit') }}</a-button>
         </template>
         <!-- 已提交状态且无权限：显示不可编辑提示 -->
         <template v-else>

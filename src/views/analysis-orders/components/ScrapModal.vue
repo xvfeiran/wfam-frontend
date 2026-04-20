@@ -5,7 +5,7 @@
     width="600px"
     @cancel="handleCancel"
     @ok="handleSubmit"
-    :confirm-loading="submitDebounce.isDebouncing"
+    :confirm-loading="submitDebounce.isDebouncing.value"
   >
     <!-- 报废限制提示 -->
     <a-alert
@@ -63,7 +63,7 @@
 
     <template #footer>
       <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
-      <a-button type="primary" @click="handleSubmit" :loading="submitDebounce.isDebouncing" :disabled="hasScrapRestriction || isScrapped">
+      <a-button type="primary" @click="handleSubmit" :loading="submitDebounce.isDebouncing.value" :disabled="hasScrapRestriction || isScrapped || submitDebounce.isDebouncing.value">
         {{ isScrapped ? t('common.viewOnly') : hasScrapRestriction ? t('common.confirm') : t('modal.markAsConfirmed') }}
       </a-button>
     </template>

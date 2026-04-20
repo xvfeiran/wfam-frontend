@@ -6,8 +6,8 @@
     >
       <template #extra>
         <a-space>
-          <a-button :disabled="saveDraftDebounce.isDebouncing" :loading="saveDraftDebounce.isDebouncing" @click="handleSaveDraft">{{ t('analysisForm.saveDraft') }}</a-button>
-          <a-button type="primary" :disabled="submitDebounce.isDebouncing" :loading="submitDebounce.isDebouncing" @click="handleSubmit">{{ t('analysisForm.submitApproval') }}</a-button>
+          <a-button :disabled="saveDraftDebounce.isDebouncing.value" :loading="saveDraftDebounce.isDebouncing.value" @click="handleSaveDraft">{{ t('analysisForm.saveDraft') }}</a-button>
+          <a-button type="primary" :disabled="submitDebounce.isDebouncing.value" :loading="submitDebounce.isDebouncing.value" @click="handleSubmit">{{ t('analysisForm.submitApproval') }}</a-button>
           <a-button @click="handleDownload">
             <DownloadOutlined /> {{ t('analysisForm.downloadReport') }}
           </a-button>

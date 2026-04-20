@@ -5,7 +5,7 @@
     width="600px"
     @cancel="handleCancel"
     @ok="handleSubmit"
-    :confirm-loading="submitDebounce.isDebouncing"
+    :confirm-loading="submitDebounce.isDebouncing.value"
   >
     <a-alert
       :message="t('message.workOnAlert')"
@@ -52,7 +52,7 @@
 
     <template #footer>
       <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
-      <a-button type="primary" @click="handleSubmit" :loading="submitDebounce.isDebouncing" :disabled="isScrapped || submitDebounce.isDebouncing">
+      <a-button type="primary" @click="handleSubmit" :loading="submitDebounce.isDebouncing.value" :disabled="isScrapped || submitDebounce.isDebouncing.value">
         {{ isScrapped ? t('common.viewOnly') : t('modal.markAsConfirmed') }}
       </a-button>
     </template>

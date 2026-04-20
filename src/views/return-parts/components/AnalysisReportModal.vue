@@ -108,8 +108,8 @@
         <a-button type="primary" @click="handleViewApproval">{{ t('analysisForm.viewApprovalProgress') }}</a-button>
       </template>
       <template v-else>
-        <a-button :disabled="!selectedTemplate || saveDraftDebounce.isDebouncing" :loading="saveDraftDebounce.isDebouncing" @click="handleSaveDraft">{{ t('common.save') }}</a-button>
-        <a-button type="primary" :disabled="!selectedTemplate || submitDebounce.isDebouncing" :loading="submitDebounce.isDebouncing" @click="handleSubmit">{{ t('analysisForm.submitApproval') }}</a-button>
+        <a-button :disabled="!selectedTemplate || saveDraftDebounce.isDebouncing.value" :loading="saveDraftDebounce.isDebouncing.value" @click="handleSaveDraft">{{ t('common.save') }}</a-button>
+        <a-button type="primary" :disabled="!selectedTemplate || submitDebounce.isDebouncing.value" :loading="submitDebounce.isDebouncing.value" @click="handleSubmit">{{ t('analysisForm.submitApproval') }}</a-button>
       </template>
     </template>
   </a-modal>

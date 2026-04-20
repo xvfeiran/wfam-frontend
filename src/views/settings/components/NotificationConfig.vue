@@ -34,8 +34,8 @@
         <div class="form-actions">
           <a-button
             type="primary"
-            :disabled="debounce.isDebouncing"
-            :loading="debounce.isDebouncing"
+            :disabled="debounce.isDebouncing.value"
+            :loading="debounce.isDebouncing.value"
             @click="handleSave"
           >
             {{ t('settings.saveConfig') }}
