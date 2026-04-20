@@ -126,8 +126,7 @@ const form = reactive({
   failureType: undefined as string | undefined,
   responsibleEngineer: undefined as string | undefined,
   analyst: undefined as string | undefined,
-  repairStation: '',
-  complaintLocation: '',
+  repairStationLocation: '',
   vehicleProductionDate: null as Dayjs | null,
   vehiclePurchaseDate: null as Dayjs | null,
   vehicleFailureDate: null as Dayjs | null,
@@ -177,8 +176,7 @@ function populateForm(part: any) {
   form.failureType = part.failureType || undefined
   form.responsibleEngineer = part.responsibleEngineer || undefined
   form.analyst = part.analyst || undefined
-  form.repairStation = part.repairStation || ''
-  form.complaintLocation = part.complaintLocation || ''
+  form.repairStationLocation = part.repairStationLocation || ''
   form.vehicleProductionDate = part.vehicleProductionDate ? dayjs(part.vehicleProductionDate) : null
   form.vehiclePurchaseDate = part.vehiclePurchaseDate ? dayjs(part.vehiclePurchaseDate) : null
   form.vehicleFailureDate = part.vehicleFailureDate ? dayjs(part.vehicleFailureDate) : null
@@ -202,8 +200,7 @@ const buildPartPayload = () => ({
   failureType: form.failureType || undefined,
   responsibleEngineer: form.responsibleEngineer || undefined,
   analyst: form.analyst || undefined,
-  repairStation: form.repairStation || undefined,
-  complaintLocation: form.complaintLocation || undefined,
+  repairStationLocation: form.repairStationLocation || undefined,
   vehicleProductionDate: form.vehicleProductionDate ? form.vehicleProductionDate.format('YYYY-MM-DD') : undefined,
   vehiclePurchaseDate: form.vehiclePurchaseDate ? form.vehiclePurchaseDate.format('YYYY-MM-DD') : undefined,
   vehicleFailureDate: form.vehicleFailureDate ? form.vehicleFailureDate.format('YYYY-MM-DD') : undefined,
