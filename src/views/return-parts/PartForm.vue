@@ -44,12 +44,12 @@
         <a-button @click="handleBack">{{ t('common.cancel') }}</a-button>
         <!-- 草稿状态：显示保存和提交按钮 -->
         <template v-if="!isSubmitted">
-          <a-button @click="handleSave">{{ t('common.save') }}</a-button>
-          <a-button type="primary" :disabled="isOcrProcessing" @click="handleSubmit">{{ t('common.submit') }}</a-button>
+          <a-button :disabled="saveDebounce.isDebouncing" :loading="saveDebounce.isDebouncing" @click="handleSave">{{ t('common.save') }}</a-button>
+          <a-button type="primary" :disabled="isOcrProcessing || submitDebounce.isDebouncing" :loading="submitDebounce.isDebouncing" @click="handleSubmit">{{ t('common.submit') }}</a-button>
         </template>
         <!-- 已提交状态且有权限：只显示提交按钮（不允许暂存） -->
         <template v-else-if="canEditSubmittedPart">
-          <a-button type="primary" :disabled="isOcrProcessing" @click="handleSubmit">{{ t('common.submit') }}</a-button>
+          <a-button type="primary" :disabled="isOcrProcessing || submitDebounce.isDebouncing" :loading="submitDebounce.isDebouncing" @click="handleSubmit">{{ t('common.submit') }}</a-button>
         </template>
         <!-- 已提交状态且无权限：显示不可编辑提示 -->
         <template v-else>
@@ -73,6 +73,7 @@ import { lookupApi } from '@/services/lookupApi'
 import { userApi } from '@/services/userApi'
 import { useOCR } from '@/composables/useOCR'
 import { usePermissions } from '@/composables/usePermissions'
+import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import OCRActionBar from './components/OCRActionBar.vue'
 import BasicInfoCard from './components/BasicInfoCard.vue'
 import ComplaintInfoCard from './components/ComplaintInfoCard.vue'
@@ -82,6 +83,10 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const { canEditSubmittedForm } = usePermissions()
+
+// 防抖处理
+const saveDebounce = useDebouncedClick({ delay: 1000 })
+const submitDebounce = useDebouncedClick({ delay: 1000 })
 
 const isEdit = computed(() => !!route.params.id)
 const partId = computed(() => route.params.id as string)
@@ -208,7 +213,7 @@ const buildPartPayload = () => ({
   otherDescription: form.otherDescription || undefined,
 })
 
-const handleSave = async () => {
+const handleSave = () => saveDebounce.execute(async () => {
   try {
     await basicInfoCardRef.value?.validate()
     if (isEdit.value) {
@@ -231,7 +236,7 @@ const handleSave = async () => {
       message.error(t('message.saveFailed'))
     }
   }
-}
+})
 
 const confirmSubmit = () => {
   return new Promise<boolean>((resolve) => {
@@ -246,7 +251,7 @@ const confirmSubmit = () => {
   })
 }
 
-const handleSubmit = async () => {
+const handleSubmit = () => submitDebounce.execute(async () => {
   if (isOcrProcessing.value) {
     message.warning(t('ocr.submitBlockedWhileProcessing'))
     return
@@ -276,7 +281,7 @@ const handleSubmit = async () => {
       message.error(t('message.submitFailed'))
     }
   }
-}
+})
 </script>
 
 <style lang="less" scoped>
