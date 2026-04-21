@@ -81,9 +81,11 @@ import { userApi } from '@/services/userApi'
 import { ANALYSIS_ORDER_STATUS_MAP, AnalysisOrderStatus } from '@/types'
 import type { AnalysisOrder } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
+import { useDevUserStore } from '@/stores/devUser'
 
 const { t } = useI18n()
 const { isAnalyst } = usePermissions()
+const devUserStore = useDevUserStore()
 const router = useRouter()
 const route = useRoute()
 const allOrders = ref<AnalysisOrder[]>([])
@@ -98,7 +100,8 @@ const defaultStatuses = computed(() =>
 
 const searchForm = reactive({
   orderNumber: '',
-  analyst: undefined as string | undefined,
+  // 分析师用户默认选择自己
+  analyst: isAnalyst ? devUserStore.currentUser.ntAccount : undefined as string | undefined,
   statuses: [...defaultStatuses.value],
 })
 

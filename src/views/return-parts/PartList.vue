@@ -50,6 +50,7 @@ import { userApi } from '@/services/userApi'
 import type { Part } from '@/types'
 import { useTableList } from '@/composables/useTableList'
 import { usePermissions } from '@/composables/usePermissions'
+import { useDevUserStore } from '@/stores/devUser'
 import PartListFilters from './components/PartListFilters.vue'
 import PartListActions from './components/PartListActions.vue'
 import PartTable from './components/PartTable.vue'
@@ -57,7 +58,8 @@ import PartTable from './components/PartTable.vue'
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
-const { canEditSubmittedForm } = usePermissions()
+const { canEditSubmittedForm, isAnalyst } = usePermissions()
+const devUserStore = useDevUserStore()
 
 const businessUnits = ref<string[]>([])
 const productPlatforms = ref<string[]>([])
@@ -71,7 +73,8 @@ const filters = ref({
   status: undefined as string | undefined,
   alertType: undefined as string | undefined,
   qcCreated: undefined as string | undefined,
-  analyst: undefined as string | undefined,
+  // 分析师用户默认选择自己
+  analyst: isAnalyst ? devUserStore.currentUser.ntAccount : undefined as string | undefined,
 })
 
 const {
