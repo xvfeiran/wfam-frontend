@@ -167,6 +167,10 @@ const columns = computed<TableProps['columns']>(() => [
     key: 'analyst',
     sorter: (a: AnalysisOrder, b: AnalysisOrder) =>
       (a.analyst || '').localeCompare(b.analyst || ''),
+    customRender: ({ text }: { text: string }) => {
+      if (!text || text === '导入数据无此字段') return '-'
+      return text
+    },
   },
   {
     title: t('common.status'),
