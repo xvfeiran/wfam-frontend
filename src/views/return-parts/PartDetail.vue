@@ -144,6 +144,7 @@ const route = useRoute()
 const router = useRouter()
 const { canEditSubmittedForm } = usePermissions()
 const partId = computed(() => route.params.id as string)
+const analysisOrderStatus = computed(() => typeof route.query.analysisOrderStatus === 'string' ? route.query.analysisOrderStatus : undefined)
 
 const part = ref<Part | null>(null)
 const report = ref<AnalysisReport | null>(null)
@@ -172,15 +173,12 @@ const canEditPart = computed(() => {
 })
 
 /**
- * 精分析按钮权限：完成抽样（in_detailed_analysis）后才能点击
+ * 精分析按钮权限：需要分析单已完成抽样（非 pending_sampling 状态）
+ * 如果没有分析单状态信息（如从退货单列表进入），默认允许
  */
 const canAnalysis = computed(() => {
-  if (!part.value) return false
-  return part.value.status === PartStatus.IN_DETAILED_ANALYSIS
-    || part.value.status === PartStatus.PENDING_APPROVAL
-    || part.value.status === PartStatus.ANALYSIS_COMPLETED
-    || part.value.status === PartStatus.SCRAP_IN_PROGRESS
-    || part.value.status === PartStatus.SCRAPPED
+  if (!analysisOrderStatus.value) return true // 无状态信息时默认允许
+  return analysisOrderStatus.value !== 'pending_sampling'
 })
 
 const handleSubmitQcNo = async () => {

@@ -60,7 +60,7 @@
         </a-card>
 
         <!-- 售后件列表 -->
-        <PartsListCard ref="partsListRef" :order-id="order?.orderId || ''" :analyst="order?.analyst" />
+        <PartsListCard ref="partsListRef" :order-id="order?.orderId || ''" :analyst="order?.analyst" :analysis-order-status="order?.status" />
       </a-col>
 
       <a-col :span="8">

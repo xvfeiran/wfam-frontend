@@ -544,7 +544,7 @@ export default {
     detailTitle: '分析单详情 - {orderNumber}',
     orderNumber: '退货单号',
     statusPendingSampling: '待抽样',
-    stepPendingSampling: '待抽样',
+    stepPendingSampling: '信息录入',
     statusInDetailedAnalysis: '精分析中',
     statusPendingApproval: '精分析/审批中',
     statusAnalysisCompleted: '精分析/审批完成',

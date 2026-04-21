@@ -533,7 +533,7 @@ export default {
     detailTitle: 'Analysis Order Detail - {orderNumber}',
     orderNumber: 'Return Order Number',
     statusPendingSampling: 'Pending Sampling',
-    stepPendingSampling: 'Pending Sampling',
+    stepPendingSampling: 'Information Entry',
     statusInDetailedAnalysis: 'In Detailed Analysis',
     statusPendingApproval: 'Detailed Analysis/Approval In Progress',
     statusAnalysisCompleted: 'Detailed Analysis/Approval Completed',
