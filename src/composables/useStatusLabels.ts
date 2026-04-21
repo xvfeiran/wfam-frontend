@@ -16,6 +16,7 @@ export function useStatusLabels() {
     in_initial_analysis: 'status.inInitialAnalysis',
     initial_analysis_completed: 'status.initialAnalysisCompleted',
     in_detailed_analysis: 'status.inDetailedAnalysis',
+    analysis_report_submitted: 'status.analysisReportSubmitted',
     pending_approval: 'status.pendingApproval',
     analysis_completed: 'status.analysisCompleted',
     analysis_skipped: 'status.analysisSkipped',
