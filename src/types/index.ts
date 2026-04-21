@@ -4,12 +4,13 @@ export enum OrderStatus {
   SUBMITTED = 'submitted',
 }
 
-// 售后件状态枚举（6个状态）
+// 售后件状态枚举（7个状态）
 export enum PartStatus {
   IN_INITIAL_ANALYSIS = 'in_initial_analysis',
   IN_DETAILED_ANALYSIS = 'in_detailed_analysis',
   PENDING_APPROVAL = 'pending_approval',
   ANALYSIS_COMPLETED = 'analysis_completed',
+  ANALYSIS_SKIPPED = 'analysis_skipped',
   SCRAP_IN_PROGRESS = 'scrap_in_progress',
   SCRAPPED = 'scrapped',
 }
@@ -219,6 +220,7 @@ export const PART_STATUS_MAP: Record<PartStatus, { label: string; color: string 
   [PartStatus.IN_DETAILED_ANALYSIS]: { label: '精分析中', color: 'processing' },
   [PartStatus.PENDING_APPROVAL]: { label: '精分析/审批中', color: 'warning' },
   [PartStatus.ANALYSIS_COMPLETED]: { label: '精分析/审批完成', color: 'success' },
+  [PartStatus.ANALYSIS_SKIPPED]: { label: '精分析/已跳过', color: 'default' },
   [PartStatus.SCRAP_IN_PROGRESS]: { label: 'WorkOn报废中', color: 'warning' },
   [PartStatus.SCRAPPED]: { label: '已报废', color: 'default' },
 }
