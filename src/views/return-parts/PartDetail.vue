@@ -7,7 +7,7 @@
       <template #extra>
         <a-space>
           <a-button v-if="canEditPart" @click="handleEdit">{{ t('common.edit') }}</a-button>
-          <a-button type="primary" @click="handleAnalysis">{{ t('partDetail.analysis') }}</a-button>
+          <a-button type="primary" :disabled="!canAnalysis" @click="handleAnalysis">{{ t('partDetail.analysis') }}</a-button>
         </a-space>
       </template>
     </a-page-header>
@@ -169,6 +169,18 @@ const canEditPart = computed(() => {
   if (!part.value.partNumber) return true
   // 已提交的单据需要检查权限
   return canEditSubmittedForm.value
+})
+
+/**
+ * 精分析按钮权限：完成抽样（in_detailed_analysis）后才能点击
+ */
+const canAnalysis = computed(() => {
+  if (!part.value) return false
+  return part.value.status === PartStatus.IN_DETAILED_ANALYSIS
+    || part.value.status === PartStatus.PENDING_APPROVAL
+    || part.value.status === PartStatus.ANALYSIS_COMPLETED
+    || part.value.status === PartStatus.SCRAP_IN_PROGRESS
+    || part.value.status === PartStatus.SCRAPPED
 })
 
 const handleSubmitQcNo = async () => {
