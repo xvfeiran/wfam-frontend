@@ -7,7 +7,7 @@
       <template #extra>
         <a-space>
           <a-button v-if="canEditPart" @click="handleEdit">{{ t('common.edit') }}</a-button>
-          <a-button type="primary" @click="handleAnalysis">{{ t('partDetail.analysis') }}</a-button>
+          <a-button type="primary" :disabled="!canAnalysis" @click="handleAnalysis">{{ t('partDetail.analysis') }}</a-button>
         </a-space>
       </template>
     </a-page-header>
@@ -144,6 +144,7 @@ const route = useRoute()
 const router = useRouter()
 const { canEditSubmittedForm } = usePermissions()
 const partId = computed(() => route.params.id as string)
+const analysisOrderStatus = computed(() => typeof route.query.analysisOrderStatus === 'string' ? route.query.analysisOrderStatus : undefined)
 
 const part = ref<Part | null>(null)
 const report = ref<AnalysisReport | null>(null)
@@ -169,6 +170,15 @@ const canEditPart = computed(() => {
   if (!part.value.partNumber) return true
   // 已提交的单据需要检查权限
   return canEditSubmittedForm.value
+})
+
+/**
+ * 精分析按钮权限：需要分析单已完成抽样（非 pending_sampling 状态）
+ * 如果没有分析单状态信息（如从退货单列表进入），默认允许
+ */
+const canAnalysis = computed(() => {
+  if (!analysisOrderStatus.value) return true // 无状态信息时默认允许
+  return analysisOrderStatus.value !== 'pending_sampling'
 })
 
 const handleSubmitQcNo = async () => {

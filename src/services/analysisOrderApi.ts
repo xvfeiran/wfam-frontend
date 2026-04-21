@@ -2,8 +2,8 @@ import request from './request'
 import type { AnalysisOrder } from '@/types'
 
 export const analysisOrderApi = {
-  list(): Promise<AnalysisOrder[]> {
-    return request.get('/analysis-orders') as unknown as Promise<AnalysisOrder[]>
+  list(statuses?: string[]): Promise<AnalysisOrder[]> {
+    return request.get('/analysis-orders', { params: { statuses } }) as unknown as Promise<AnalysisOrder[]>
   },
   getById(id: string): Promise<AnalysisOrder> {
     return request.get(`/analysis-orders/${id}`) as unknown as Promise<AnalysisOrder>

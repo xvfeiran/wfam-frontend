@@ -26,10 +26,11 @@
         </a-form-item>
         <a-form-item :label="t('common.status')">
           <a-select
-            v-model:value="searchForm.status"
+            v-model:value="searchForm.statuses"
+            mode="multiple"
             :placeholder="t('common.all')"
             allow-clear
-            style="width: 160px"
+            style="width: 200px"
           >
             <a-select-option v-for="status in statusOptions" :key="status" :value="status">
               {{ getStatusLabel(status) }}
@@ -89,10 +90,16 @@ const allOrders = ref<AnalysisOrder[]>([])
 const analysts = ref<{ id: string; loginName: string; displayName: string }[]>([])
 const loading = ref(false)
 
+const DEFAULT_EXCLUDED_STATUS = AnalysisOrderStatus.WORKON_SCRAPPED
+
+const defaultStatuses = computed(() =>
+  Object.values(AnalysisOrderStatus).filter(s => s !== DEFAULT_EXCLUDED_STATUS)
+)
+
 const searchForm = reactive({
   orderNumber: '',
   analyst: undefined as string | undefined,
-  status: undefined as AnalysisOrderStatus | undefined,
+  statuses: [...defaultStatuses.value],
 })
 
 const pagination = reactive({
@@ -142,9 +149,6 @@ const filteredOrders = computed(() => {
   if (searchForm.analyst) {
     result = result.filter(o => o.analyst === searchForm.analyst)
   }
-  if (searchForm.status) {
-    result = result.filter(o => o.status === searchForm.status)
-  }
   return result
 })
 
@@ -163,6 +167,10 @@ const columns = computed<TableProps['columns']>(() => [
     key: 'analyst',
     sorter: (a: AnalysisOrder, b: AnalysisOrder) =>
       (a.analyst || '').localeCompare(b.analyst || ''),
+    customRender: ({ text }: { text: string }) => {
+      if (!text || text === '导入数据无此字段') return '-'
+      return text
+    },
   },
   {
     title: t('common.status'),
@@ -204,7 +212,7 @@ const handleSearch = () => {
 const handleReset = () => {
   searchForm.orderNumber = ''
   searchForm.analyst = undefined as any
-  searchForm.status = undefined
+  searchForm.statuses = [...defaultStatuses.value]
   pagination.current = 1
 }
 
@@ -227,7 +235,7 @@ onMounted(async () => {
   loading.value = true
   try {
     const [ordersData, analystsData] = await Promise.all([
-      analysisOrderApi.list(),
+      analysisOrderApi.list(searchForm.statuses),
       userApi.listAnalysts(),
     ])
     allOrders.value = ordersData
@@ -243,12 +251,27 @@ function applyTaskFiltersFromQuery() {
   const fromTask = typeof route.query.fromTask === 'string' ? route.query.fromTask : undefined
 
   if (status && Object.values(AnalysisOrderStatus).includes(status as AnalysisOrderStatus)) {
-    searchForm.status = status as AnalysisOrderStatus
+    searchForm.statuses = [status as AnalysisOrderStatus]
   }
   if (fromTask) {
     message.info(t('dashboard.taskFilterApplied'))
   }
 }
+
+watch(
+  () => searchForm.statuses,
+  (newStatuses) => {
+    loading.value = true
+    analysisOrderApi.list(newStatuses)
+      .then(data => {
+        allOrders.value = data
+      })
+      .finally(() => {
+        loading.value = false
+      })
+  },
+  { deep: true }
+)
 
 watch(
   () => route.query,

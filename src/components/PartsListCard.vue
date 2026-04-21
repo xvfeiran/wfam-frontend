@@ -110,6 +110,7 @@ const props = defineProps<{
   orderId: string
   analyst?: string
   showSampleStatus?: boolean
+  analysisOrderStatus?: string
 }>()
 
 const { t } = useI18n()
@@ -198,7 +199,8 @@ const baseColumns = computed(() => [
         style: { color: '#1677ff' },
         onClick: (e: Event) => {
           e.stopPropagation()
-          router.push(`/return-parts/${record.id}`)
+          const query = props.analysisOrderStatus ? { analysisOrderStatus: props.analysisOrderStatus } : undefined
+          router.push({ path: `/return-parts/${record.id}`, query })
         }
       }, text)
     }
@@ -277,7 +279,10 @@ const handleTableChange = (pag: any, _filters: any, sorter: any) => {
 }
 
 const customRow = (record: Part) => ({
-  onClick: () => router.push(`/return-parts/${record.id}`),
+  onClick: () => {
+    const query = props.analysisOrderStatus ? { analysisOrderStatus: props.analysisOrderStatus } : undefined
+    router.push({ path: `/return-parts/${record.id}`, query })
+  },
   style: { cursor: 'pointer' },
 })
 
