@@ -115,7 +115,7 @@ const statusKeyMap: Record<AnalysisOrderStatus, string> = {
 
 const statusOptions = Object.values(AnalysisOrderStatus)
 
-const normalizeStatus = (status: AnalysisOrderStatus | string) => status.trim().toLowerCase()
+const normalizeStatus = (status: AnalysisOrderStatus | string | null | undefined) => (status || '').trim().toLowerCase()
 
 const getStatusLabel = (status: AnalysisOrderStatus | string) => {
   const normalizedStatus = normalizeStatus(status)
