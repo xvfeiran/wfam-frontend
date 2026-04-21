@@ -14,7 +14,7 @@
             @press-enter="handleSearch"
           />
         </a-form-item>
-        <a-form-item v-if="!isAnalyst" :label="t('partDetail.analyst')">
+        <a-form-item :label="t('partDetail.analyst')">
           <a-select
             v-model:value="searchForm.analyst"
             :placeholder="t('validation.pleaseSelect')"
@@ -214,7 +214,8 @@ const handleSearch = () => {
 
 const handleReset = () => {
   searchForm.orderNumber = ''
-  searchForm.analyst = undefined as any
+  // 分析师重置时仍然选择自己，其他角色重置为未选择
+  searchForm.analyst = isAnalyst ? devUserStore.currentUser.ntAccount : undefined as any
   searchForm.statuses = [...defaultStatuses.value]
   pagination.current = 1
 }

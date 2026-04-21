@@ -157,7 +157,8 @@ const handleReset = async () => {
     status: undefined,
     alertType: undefined,
     qcCreated: undefined,
-    analyst: undefined,
+    // 分析师重置时仍然选择自己，其他角色重置为未选择
+    analyst: isAnalyst ? devUserStore.currentUser.ntAccount : undefined,
   }
   sortState.value = {}
   await loadData()
