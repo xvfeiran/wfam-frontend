@@ -111,6 +111,7 @@ const props = defineProps<{
   analyst?: string
   showSampleStatus?: boolean
   analysisOrderStatus?: string
+  fromOrderDetail?: boolean
 }>()
 
 const { t } = useI18n()
@@ -199,7 +200,9 @@ const baseColumns = computed(() => [
         style: { color: '#1677ff' },
         onClick: (e: Event) => {
           e.stopPropagation()
-          const query = props.analysisOrderStatus ? { analysisOrderStatus: props.analysisOrderStatus } : undefined
+          const query: Record<string, string> = {}
+          if (props.analysisOrderStatus) query.analysisOrderStatus = props.analysisOrderStatus
+          if (props.fromOrderDetail) query.fromOrderDetail = 'true'
           router.push({ path: `/return-parts/${record.id}`, query })
         }
       }, text)
@@ -280,7 +283,9 @@ const handleTableChange = (pag: any, _filters: any, sorter: any) => {
 
 const customRow = (record: Part) => ({
   onClick: () => {
-    const query = props.analysisOrderStatus ? { analysisOrderStatus: props.analysisOrderStatus } : undefined
+    const query: Record<string, string> = {}
+    if (props.analysisOrderStatus) query.analysisOrderStatus = props.analysisOrderStatus
+    if (props.fromOrderDetail) query.fromOrderDetail = 'true'
     router.push({ path: `/return-parts/${record.id}`, query })
   },
   style: { cursor: 'pointer' },

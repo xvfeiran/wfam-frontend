@@ -269,8 +269,12 @@ const handleSubmit = () => submitDebounce.execute(async () => {
     await partApi.submit(savedId)
     message.success(t('message.submitSuccess'))
 
-    // 提交后返回售后件列表页
-    router.push('/return-parts')
+    // 如果是从退货单详情页进入，返回到退货单详情页
+    if (fromOrderDetail.value && form.orderId) {
+      router.push(`/return-orders/${form.orderId}`)
+    } else {
+      router.push('/return-parts')
+    }
   } catch (error: any) {
     if (error?.errorFields) {
       message.error(t('validation.formError'))

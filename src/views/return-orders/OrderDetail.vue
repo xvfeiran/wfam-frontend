@@ -44,7 +44,7 @@
         </a-card>
 
         <!-- 售后件列表 -->
-        <PartsListCard ref="partsListRef" :order-id="orderId">
+        <PartsListCard ref="partsListRef" :order-id="orderId" :from-order-detail="true">
           <template #headerExtra>
             <a-button v-if="canAddPart" type="primary" size="small" @click="handleAddPart">
               <PlusOutlined /> {{ t('common.create') }}
