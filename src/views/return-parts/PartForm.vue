@@ -14,6 +14,7 @@
       @retry-o-c-r="retryOCR"
       @stop-o-c-r="stopOCR"
       @retake="retake"
+      @preview-confirm="handlePreviewConfirm"
     />
 
     <!-- 基础信息卡片 -->
@@ -184,6 +185,32 @@ function populateForm(part: any) {
   form.vehicleMileage = part.vehicleMileage
   form.customerDescription = part.customerDescription || ''
   form.otherDescription = part.otherDescription || ''
+}
+
+// 处理 OCR 预览确认 - 将编辑后的表单数据同步到主表单
+const handlePreviewConfirm = (previewForm: Record<string, any>) => {
+  if (previewForm.vehicleProductionDate) {
+    form.vehicleProductionDate = previewForm.vehicleProductionDate
+  }
+  if (previewForm.vehiclePurchaseDate) {
+    form.vehiclePurchaseDate = previewForm.vehiclePurchaseDate
+  }
+  if (previewForm.vehicleFailureDate) {
+    form.vehicleFailureDate = previewForm.vehicleFailureDate
+  }
+  if (previewForm.vehicleVIN !== undefined) {
+    form.vehicleVIN = previewForm.vehicleVIN
+  }
+  if (previewForm.vehicleMileage !== null) {
+    form.vehicleMileage = previewForm.vehicleMileage
+  }
+  if (previewForm.repairStationLocation !== undefined) {
+    form.repairStationLocation = previewForm.repairStationLocation
+  }
+  if (previewForm.customerDescription !== undefined) {
+    form.customerDescription = previewForm.customerDescription
+  }
+  message.success(t('ocr.appliedToForm'))
 }
 
 const handleBack = () => {

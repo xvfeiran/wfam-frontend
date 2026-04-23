@@ -44,7 +44,9 @@
       <!-- 上传中 -->
       <template v-else-if="zoneState === 'uploading'">
         <div class="ocr-status-overlay">
-          <a-image v-if="previewUrl" :src="previewUrl" class="ocr-preview" :preview="false" />
+          <div class="ocr-preview-clickable" @click="showPreviewModal = true">
+            <img v-if="previewUrl" :src="previewUrl" class="ocr-preview" alt="OCR Preview" />
+          </div>
           <div class="ocr-overlay">
             <a-spin size="large" />
             <p>{{ t('ocr.uploading') }}</p>
@@ -55,7 +57,9 @@
       <!-- 识别中 -->
       <template v-else-if="zoneState === 'processing'">
         <div class="ocr-status-overlay">
-          <a-image v-if="previewUrl" :src="previewUrl" class="ocr-preview" :preview="false" />
+          <div class="ocr-preview-clickable" @click="showPreviewModal = true">
+            <img v-if="previewUrl" :src="previewUrl" class="ocr-preview" alt="OCR Preview" />
+          </div>
           <div class="ocr-overlay">
             <a-spin size="large" />
             <p>{{ t('returnPart.ocrLoading') }}</p>
@@ -79,10 +83,15 @@
             <CheckCircleFilled class="ocr-result-area__badge ocr-result-area__badge--success" />
           </div>
           <div class="ocr-result-area__fields">
-            <p class="ocr-result-area__title">
-              <CheckCircleOutlined style="color: #52c41a; margin-right: 6px;" />
-              {{ t('returnPart.ocrComplete') }}
-            </p>
+            <div class="ocr-result-area__header">
+              <p class="ocr-result-area__title">
+                <CheckCircleOutlined style="color: #52c41a; margin-right: 6px;" />
+                {{ t('returnPart.ocrComplete') }}
+              </p>
+              <a-button size="small" @click="showPreviewModal = true">
+                <EyeOutlined /> {{ t('ocr.preview') }}
+              </a-button>
+            </div>
             <div class="ocr-field-list">
               <div
                 v-for="field in OCR_FIELDS"
@@ -107,12 +116,9 @@
       <!-- 识别失败 -->
       <template v-else-if="zoneState === 'failed'">
         <div class="ocr-status-overlay">
-          <!-- 失败时图片也可点击查看大图 -->
-          <a-image
-            v-if="previewUrl"
-            :src="previewUrl"
-            class="ocr-preview"
-          />
+          <div class="ocr-preview-clickable" @click="showPreviewModal = true">
+            <img v-if="previewUrl" :src="previewUrl" class="ocr-preview" alt="OCR Preview" />
+          </div>
           <div class="ocr-overlay ocr-overlay--failed">
             <CloseCircleFilled class="ocr-overlay__icon" />
             <p>{{ t('ocr.degraded') }}</p>
@@ -141,6 +147,14 @@
         </a-button>
       </template>
     </div>
+
+    <!-- OCR 预览模态框 -->
+    <OCRPreviewModal
+      v-model:visible="showPreviewModal"
+      :image-url="previewUrl"
+      :ocr-results="ocrResults"
+      @confirm="handlePreviewConfirm"
+    />
   </a-card>
 </template>
 
@@ -153,8 +167,10 @@ import {
   CheckCircleOutlined,
   CheckCircleFilled,
   CloseCircleFilled,
+  EyeOutlined,
 } from '@ant-design/icons-vue'
 import type { OcrZoneState, OCRResultItem } from '@/composables/useOCR'
+import OCRPreviewModal from './OCRPreviewModal.vue'
 
 const OCR_FIELDS = [
   'vehicleProductionDate',
@@ -181,11 +197,13 @@ const emit = defineEmits<{
   (e: 'retryOCR'): void
   (e: 'stopOCR'): void
   (e: 'retake'): void
+  (e: 'previewConfirm', form: Record<string, any>): void
 }>()
 
 const { t } = useI18n()
 const uploadInputRef = ref<HTMLInputElement | null>(null)
 const cameraInputRef  = ref<HTMLInputElement | null>(null)
+const showPreviewModal = ref(false)
 
 const triggerUpload = () => uploadInputRef.value?.click()
 const triggerCamera  = () => cameraInputRef.value?.click()
@@ -197,6 +215,10 @@ const onFileChange = (event: Event) => {
     emit('handleOCRUpload', file)
     input.value = ''
   }
+}
+
+const handlePreviewConfirm = (form: Record<string, any>) => {
+  emit('previewConfirm', form)
 }
 </script>
 
@@ -328,6 +350,22 @@ const onFileChange = (event: Event) => {
   }
 }
 
+.ocr-preview-clickable {
+  max-height: 200px;
+  max-width: 100%;
+  cursor: pointer;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.9;
+  }
+
+  .ocr-preview {
+    width: 100%;
+    height: 100%;
+  }
+}
+
 .ocr-overlay {
   position: absolute;
   inset: 0;
@@ -388,8 +426,15 @@ const onFileChange = (event: Event) => {
     min-width: 0;
   }
 
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
   &__title {
-    margin: 0 0 10px;
+    margin: 0;
     font-size: 14px;
     font-weight: 500;
     color: #262626;
