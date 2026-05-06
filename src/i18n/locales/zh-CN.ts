@@ -77,6 +77,12 @@ export default {
     partsCount: '{count} 个售后件',
     totalPartsCount: '共计 {count} 个售后件',
     confirmCascadeDelete: '删除退货单和售后件',
+    status: {
+      draft: '草稿',
+      submitted: '已提交',
+      scrapped: '已报废',
+    },
+    scrappedSummary: '{scrapped}/{total} 分析单已报废',
   },
   orderDetail: {
     title: '退货单详情 - {orderNumber}',
