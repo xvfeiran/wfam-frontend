@@ -1,7 +1,8 @@
-// 退货单状态枚举（v3.0 简化为 2 个状态）
+// 退货单状态枚举（v3.1 添加已报废状态）
 export enum OrderStatus {
   DRAFT = 'draft',
   SUBMITTED = 'submitted',
+  SCRAPPED = 'scrapped',  // 新增：已报废
 }
 
 // 售后件状态枚举（9个状态）
@@ -206,6 +207,7 @@ export interface AnalysisOrder {
 export const ORDER_STATUS_MAP: Record<OrderStatus, { label: string; color: string }> = {
   [OrderStatus.DRAFT]: { label: '草稿', color: 'default' },
   [OrderStatus.SUBMITTED]: { label: '已提交', color: 'processing' },
+  [OrderStatus.SCRAPPED]: { label: '已报废', color: 'error' },  // 新增：红色标签
 }
 
 export const ANALYSIS_ORDER_STATUS_MAP: Record<AnalysisOrderStatus, { label: string; color: string }> = {
