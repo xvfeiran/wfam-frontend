@@ -6,11 +6,19 @@
     >
       <template #extra>
         <a-space>
-          <a-button v-if="canShowEditButton" @click="handleEdit">{{ t('common.edit') }}</a-button>
+          <a-button v-if="canShowEditButton && order?.status !== 'scrapped'" @click="handleEdit">{{ t('common.edit') }}</a-button>
           <a-button v-if="order?.status === 'draft'" type="primary" @click="handleSubmit">{{ t('common.submit') }}</a-button>
         </a-space>
       </template>
     </a-page-header>
+
+    <a-alert
+      v-if="order?.status === 'scrapped'"
+      type="error"
+      :message="t('returnOrder.scrappedSummary', { scrapped: scrappedSummary.scrapped, total: scrappedSummary.total })"
+      show-icon
+      style="margin-bottom: 16px"
+    />
 
     <a-row :gutter="16">
       <!-- 左侧：基本信息 -->
@@ -88,12 +96,20 @@ const orderId = computed(() => route.params.id as string)
 const order = ref<ReturnOrder | null>(null)
 const isMounted = ref(true)
 const partsListRef = ref<InstanceType<typeof PartsListCard>>()
+const scrappedSummary = ref({ total: 0, scrapped: 0 })
 
 // 刷新数据的函数（用于从子页面返回时调用）
 const refreshData = async () => {
   try {
     if (orderId.value && isMounted.value) {
       order.value = await returnOrderApi.getById(orderId.value)
+      if (order.value.status === 'scrapped') {
+        try {
+          scrappedSummary.value = await returnOrderApi.getScrappedSummary(orderId.value)
+        } catch (error) {
+          console.error('Failed to fetch scrapped summary:', error)
+        }
+      }
       partsListRef.value?.refresh()
     }
   } catch (error) {
@@ -103,10 +119,11 @@ const refreshData = async () => {
   }
 }
 
-// 状态步骤映射（v3.0 简化为 2 步）
+// 状态步骤映射（v3.1 添加已报废状态）
 const statusStepMap: Record<string, number> = {
   [OrderStatus.DRAFT]: 0,
   [OrderStatus.SUBMITTED]: 1,
+  [OrderStatus.SCRAPPED]: 1,
 }
 
 const currentStep = computed(() => {
@@ -129,7 +146,7 @@ const canShowEditButton = computed(() => {
 })
 
 // Add part button visibility logic:
-// - Only draft and submitted status can add parts
+// - Only draft and submitted status can add parts (scrapped orders cannot add parts)
 const canAddPart = computed(() => {
   if (!order.value) return false
   return order.value.status === 'draft' || order.value.status === 'submitted'
@@ -137,8 +154,9 @@ const canAddPart = computed(() => {
 
 // 状态到i18n键的映射
 const returnOrderStatusI18nKeyMap: Record<string, string> = {
-  draft: 'status.draft',
-  submitted: 'status.submitted',
+  draft: 'returnOrder.status.draft',
+  submitted: 'returnOrder.status.submitted',
+  scrapped: 'returnOrder.status.scrapped',
 }
 
 // 获取翻译后的状态标签（退货单）
@@ -173,6 +191,13 @@ const getStepDescription = (step: number) => {
 onMounted(async () => {
   try {
     order.value = await returnOrderApi.getById(orderId.value)
+    if (order.value.status === 'scrapped') {
+      try {
+        scrappedSummary.value = await returnOrderApi.getScrappedSummary(orderId.value)
+      } catch (error) {
+        console.error('Failed to fetch scrapped summary:', error)
+      }
+    }
   } catch (error) {
     console.error('Error during component mount:', error)
   }
