@@ -106,6 +106,9 @@ export const returnOrderApi = {
   workonConfirm(id: string): Promise<ReturnOrder> {
     return request.post(`/return-orders/${id}/scrap/workon-confirm`) as unknown as Promise<ReturnOrder>
   },
+  getScrappedSummary(id: string): Promise<{ total: number; scrapped: number }> {
+    return request.get(`/return-orders/${id}/scrapped-summary`) as unknown as Promise<{ total: number; scrapped: number }>
+  },
   submit(id: string): Promise<ReturnOrder> {
     return request.post(`/return-orders/${id}/submit`) as unknown as Promise<ReturnOrder>
   },
