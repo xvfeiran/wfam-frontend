@@ -21,6 +21,15 @@
             <a-range-picker v-model:value="localFilters.receiveDate" style="width: 100%" />
           </a-form-item>
         </a-col>
+        <a-col :span="12">
+          <a-form-item :label="t('common.status')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+            <a-select v-model:value="localFilters.status" :placeholder="t('validation.pleaseSelect')" allowClear>
+              <a-select-option value="draft">{{ t('returnOrder.status.draft') }}</a-select-option>
+              <a-select-option value="submitted">{{ t('returnOrder.status.submitted') }}</a-select-option>
+              <a-select-option value="scrapped">{{ t('returnOrder.status.scrapped') }}</a-select-option>
+            </a-select>
+          </a-form-item>
+        </a-col>
       </a-row>
       <a-row>
         <a-col :span="24" class="filter-buttons">
@@ -48,6 +57,7 @@ interface Filters {
   orderNumber: string
   customerId?: string
   receiveDate: any
+  status?: string
 }
 
 interface Props {
