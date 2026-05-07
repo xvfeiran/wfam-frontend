@@ -35,7 +35,7 @@ export default {
   menu: {
     home: 'Home',
     returnOrders: 'Return Orders',
-    returnParts: 'Warranty Parts',
+    returnParts: 'Return Part Information',
     analysisOrders: 'Analysis Orders',
     reports: 'Reports',
     approval: 'Approval',

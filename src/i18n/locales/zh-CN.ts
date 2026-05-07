@@ -35,7 +35,7 @@ export default {
   menu: {
     home: '首页',
     returnOrders: '退货单管理',
-    returnParts: '售后件管理',
+    returnParts: '退件信息管理',
     analysisOrders: '分析单管理',
     reports: '统计报表',
     approval: '审批',
