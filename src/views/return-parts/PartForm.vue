@@ -5,8 +5,9 @@
       @back="handleBack"
     />
 
-    <!-- OCR拍照识别区 - 嵌入客诉信息卡上方 -->
+    <!-- OCR拍照识别区 - 嵌入客诉信息卡上方 (0km退货单不显示) -->
     <OCRActionBar
+      v-if="!is0kmOrder"
       :zone-state="zoneState"
       :preview-url="previewUrl"
       :ocr-results="ocrResults"
@@ -31,8 +32,8 @@
       :analysts="analysts"
     />
 
-    <!-- 客诉信息卡片 -->
-    <ComplaintInfoCard :form="form" />
+    <!-- 客诉信息卡片 (0km退货单不显示) -->
+    <ComplaintInfoCard v-if="!is0kmOrder" :form="form" />
 
     <!-- 照片上传区 -->
     <PhotoUploadCard
@@ -62,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message, Modal } from 'ant-design-vue'
@@ -99,6 +100,14 @@ const canEditSubmittedPart = computed(() => {
 })
 
 const basicInfoCardRef = ref<any>(null)
+
+// 当前所选退货单信息（用于判断是否为0km）
+const selectedOrder = ref<any>(null)
+
+// 判断是否为0km退货单（BA20代表0km）
+const is0kmOrder = computed(() => {
+	return selectedOrder.value?.complaintType === 'BA20'
+})
 
 const orders = ref<any[]>([])
 const businessUnits = ref<string[]>([])
@@ -186,6 +195,30 @@ function populateForm(part: any) {
   form.customerDescription = part.customerDescription || ''
   form.otherDescription = part.otherDescription || ''
 }
+
+// 监听订单选择变化，获取订单详情以判断是否为0km
+watch(
+  () => form.orderId,
+  async (newOrderId) => {
+    if (newOrderId) {
+      const order = orders.value.find(o => o.id === newOrderId)
+      if (order) {
+        selectedOrder.value = order
+      } else {
+        // 如果列表中找不到（如编辑模式），从API获取
+        try {
+          const orderDetail = await returnOrderApi.getById(newOrderId)
+          selectedOrder.value = orderDetail
+        } catch {
+          selectedOrder.value = null
+        }
+      }
+    } else {
+      selectedOrder.value = null
+    }
+  },
+  { immediate: true }
+)
 
 // 处理 OCR 预览确认 - 将编辑后的表单数据同步到主表单
 const handlePreviewConfirm = (previewForm: Record<string, any>) => {
