@@ -102,7 +102,7 @@ const searchForm = reactive({
   orderNumber: '',
   // 分析师用户默认选择自己
   analyst: isAnalyst ? devUserStore.currentUser.ntAccount : undefined as string | undefined,
-  statuses: [...defaultStatuses.value],
+  statuses: [] as string[],
 })
 
 const pagination = reactive({
@@ -216,7 +216,7 @@ const handleReset = () => {
   searchForm.orderNumber = ''
   // 分析师重置时仍然选择自己，其他角色重置为未选择
   searchForm.analyst = isAnalyst ? devUserStore.currentUser.ntAccount : undefined as any
-  searchForm.statuses = [...defaultStatuses.value]
+  searchForm.statuses = []
   pagination.current = 1
 }
 
