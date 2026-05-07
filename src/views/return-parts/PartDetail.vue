@@ -186,7 +186,8 @@ const handleSubmitQcNo = async () => {
     message.warning(t('partDetail.qcNo'))
     return
   }
-  await partApi.updateQcNo(partId.value, qcNoInput.value.trim())
+  const updatedPart = await partApi.updateQcNo(partId.value, qcNoInput.value.trim())
+  part.value = updatedPart
   message.success(t('message.saveSuccess'))
 }
 
