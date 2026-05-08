@@ -674,7 +674,7 @@ export default {
     success: '识别成功',
     error: '识别失败',
     uploading: '上传中...',
-    processingHint: '约需 30 秒，请耐心等待',
+    processingHint: '已等待 {seconds}s，请耐心等待',
     degraded: 'OCR 识别失败，请手动填写相关字段',
     uploadFailed: '图片上传失败，请重试',
     retryRecognition: '重新识别',
@@ -695,6 +695,8 @@ export default {
     confirmApply: '确认应用',
     noImage: '暂无图片',
     appliedToForm: '已同步到表单',
+    cameraDenied: '无法访问摄像头，请检查权限设置',
+    captureHint: '请将信息卡完整放入取景框，边缘尽量贴合；避免反光、折叠、阴影影响识别',
   },
   auth: {
     tokenExpired: '登录过期，请重新登录！',

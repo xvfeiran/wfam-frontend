@@ -41,7 +41,10 @@ export function useOCR(form: Record<string, any>, partId?: string) {
   /** 当前 OCR 任务 ID（新建 Part 时提交表单需要传给后端以完成绑定） */
   const ocrTaskId = ref<string | null>(null)
 
+  /** 前端计时：从上传开始经过的秒数 */
+  const elapsedSeconds = ref(0)
   let pollTimer: ReturnType<typeof setInterval> | null = null
+  let elapsedTimer: ReturnType<typeof setInterval> | null = null
 
   onMounted(() => {
     if (partId) {
@@ -54,6 +57,7 @@ export function useOCR(form: Record<string, any>, partId?: string) {
     zoneState.value = 'uploading'
     ocrTaskId.value = null
     resetResults()
+    startElapsed()
 
     try {
       const task = await ocrApi.createTask(file, partId)
@@ -61,6 +65,7 @@ export function useOCR(form: Record<string, any>, partId?: string) {
       zoneState.value = 'processing'
       startPolling(task.taskId)
     } catch (e) {
+      stopElapsed()
       zoneState.value = 'failed'
       message.error(t('ocr.uploadFailed'))
     }
@@ -76,11 +81,13 @@ export function useOCR(form: Record<string, any>, partId?: string) {
 
         if (task.status === 'SUCCESS') {
           stopPolling()
+          stopElapsed()
           writeResultsToForm(task.result)
           zoneState.value = 'success'
           message.success(t('ocr.success'))
         } else if (task.status === 'FAILED') {
           stopPolling()
+          stopElapsed()
           setAllError()
           zoneState.value = 'failed'
           message.warning(task.errorMessage || t('ocr.degraded'))
@@ -88,6 +95,7 @@ export function useOCR(form: Record<string, any>, partId?: string) {
         // CREATED / PROCESSING：继续轮询
       } catch (e) {
         stopPolling()
+        stopElapsed()
         setAllError()
         zoneState.value = 'failed'
         message.error(t('ocr.pollError'))
@@ -102,13 +110,28 @@ export function useOCR(form: Record<string, any>, partId?: string) {
     }
   }
 
+  const startElapsed = () => {
+    stopElapsed()
+    elapsedSeconds.value = 0
+    elapsedTimer = setInterval(() => { elapsedSeconds.value++ }, 1000)
+  }
+
+  const stopElapsed = () => {
+    if (elapsedTimer) {
+      clearInterval(elapsedTimer)
+      elapsedTimer = null
+    }
+  }
+
   const stopOCR = () => {
     stopPolling()
+    stopElapsed()
     zoneState.value = 'idle'
   }
 
   const retake = () => {
     stopPolling()
+    stopElapsed()
     previewUrl.value = ''
     resetResults()
     zoneState.value = 'idle'
@@ -228,6 +251,7 @@ export function useOCR(form: Record<string, any>, partId?: string) {
     ocrLoading,
     ocrResults,
     ocrTaskId,
+    elapsedSeconds,
     handleOCRUpload,
     retryOCR,
     stopOCR,

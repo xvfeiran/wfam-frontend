@@ -656,7 +656,7 @@ export default {
     success: 'Recognition Successful',
     error: 'Recognition Failed',
     uploading: 'Uploading...',
-    processingHint: 'About 30 seconds, please wait',
+    processingHint: '{seconds}s elapsed, please wait',
     degraded: 'OCR recognition failed, please fill in the fields manually',
     uploadFailed: 'Image upload failed, please try again',
     retryRecognition: 'Retry Recognition',
@@ -677,6 +677,8 @@ export default {
     confirmApply: 'Confirm Apply',
     noImage: 'No image available',
     appliedToForm: 'Synced to form',
+    cameraDenied: 'Cannot access camera, please check permissions',
+    captureHint: 'Keep the card fully within the frame, edges close to the border. Avoid glare, folds, or shadows.',
   },
   auth: {
     tokenExpired: 'Login expired, please login again!',

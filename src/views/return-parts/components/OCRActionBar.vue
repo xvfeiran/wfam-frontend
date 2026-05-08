@@ -8,15 +8,6 @@
       style="display: none"
       @change="onFileChange"
     />
-    <!-- 隐藏文件输入：调用相机 -->
-    <input
-      ref="cameraInputRef"
-      type="file"
-      accept="image/jpeg,image/png,image/jpg"
-      capture="environment"
-      style="display: none"
-      @change="onFileChange"
-    />
 
     <!-- 拍照区域主体 -->
     <div
@@ -63,7 +54,7 @@
           <div class="ocr-overlay">
             <a-spin size="large" />
             <p>{{ t('returnPart.ocrLoading') }}</p>
-            <p class="ocr-overlay__hint">{{ t('ocr.processingHint') }}</p>
+            <p class="ocr-overlay__hint">{{ t('ocr.processingHint', { seconds: elapsedSeconds }) }}</p>
           </div>
         </div>
       </template>
@@ -155,6 +146,13 @@
       :ocr-results="ocrResults"
       @confirm="handlePreviewConfirm"
     />
+
+    <!-- 摄像头拍照弹窗 -->
+    <CameraCapture
+      v-model:open="cameraOpen"
+      :hint="t('ocr.captureHint')"
+      @captured="onCameraCaptured"
+    />
   </a-card>
 </template>
 
@@ -171,6 +169,7 @@ import {
 } from '@ant-design/icons-vue'
 import type { OcrZoneState, OCRResultItem } from '@/composables/useOCR'
 import OCRPreviewModal from './OCRPreviewModal.vue'
+import CameraCapture from '@/components/CameraCapture.vue'
 
 const OCR_FIELDS = [
   'vehicleProductionDate',
@@ -185,11 +184,13 @@ interface Props {
   zoneState: OcrZoneState
   previewUrl: string
   ocrResults: Record<string, OCRResultItem>
+  elapsedSeconds?: number
 }
 
 withDefaults(defineProps<Props>(), {
   zoneState: 'idle',
   previewUrl: '',
+  elapsedSeconds: 0,
 })
 
 const emit = defineEmits<{
@@ -202,11 +203,11 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const uploadInputRef = ref<HTMLInputElement | null>(null)
-const cameraInputRef  = ref<HTMLInputElement | null>(null)
 const showPreviewModal = ref(false)
+const cameraOpen = ref(false)
 
 const triggerUpload = () => uploadInputRef.value?.click()
-const triggerCamera  = () => cameraInputRef.value?.click()
+const triggerCamera = () => { cameraOpen.value = true }
 
 const onFileChange = (event: Event) => {
   const input = event.target as HTMLInputElement
@@ -215,6 +216,10 @@ const onFileChange = (event: Event) => {
     emit('handleOCRUpload', file)
     input.value = ''
   }
+}
+
+const onCameraCaptured = (file: File) => {
+  emit('handleOCRUpload', file)
 }
 
 const handlePreviewConfirm = (form: Record<string, any>) => {

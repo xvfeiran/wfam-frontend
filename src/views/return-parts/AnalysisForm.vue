@@ -142,11 +142,24 @@
                   <div style="margin-top: 8px">{{ t('common.upload') }}</div>
                 </div>
               </a-upload>
+              <a-button
+                v-if="form.attachments.length < 10"
+                class="camera-btn"
+                @click="cameraOpen = true"
+              >
+                <CameraOutlined /> {{ t('ocr.takePhoto') }}
+              </a-button>
             </a-form-item>
           </a-col>
         </a-row>
       </a-form>
     </a-card>
+
+    <!-- 摄像头拍照弹窗 -->
+    <CameraCapture
+      v-model:open="cameraOpen"
+      @captured="onCameraCaptured"
+    />
   </div>
 </template>
 
@@ -155,10 +168,11 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
-import { DownloadOutlined, PlusOutlined } from '@ant-design/icons-vue'
+import { DownloadOutlined, PlusOutlined, CameraOutlined } from '@ant-design/icons-vue'
 import { partApi } from '@/services/partApi'
 import { COMPLAINT_TYPES } from '@/constants/complaintTypes'
 import { useDebouncedClick } from '@/composables/useDebouncedClick'
+import CameraCapture from '@/components/CameraCapture.vue'
 import type { Part } from '@/types'
 
 const { t } = useI18n()
@@ -182,6 +196,14 @@ const form = reactive({
   improvementMeasures: '',
   attachments: [] as any[],
 })
+
+const cameraOpen = ref(false)
+
+const onCameraCaptured = (file: File) => {
+  if (form.attachments.length < 10) {
+    form.attachments = [...form.attachments, file]
+  }
+}
 
 onMounted(async () => {
   part.value = await partApi.getById(partId.value)
@@ -225,6 +247,10 @@ const handleDownload = () => {
     margin-bottom: 24px;
     color: #666;
     font-size: 14px;
+  }
+
+  .camera-btn {
+    margin-top: 8px;
   }
 }
 </style>

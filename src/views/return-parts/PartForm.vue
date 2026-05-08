@@ -11,6 +11,7 @@
       :zone-state="zoneState"
       :preview-url="previewUrl"
       :ocr-results="ocrResults"
+      :elapsed-seconds="elapsedSeconds"
       @handle-o-c-r-upload="handleOCRUpload"
       @retry-o-c-r="retryOCR"
       @stop-o-c-r="stopOCR"
@@ -147,7 +148,7 @@ const form = reactive({
   imageFiles: [] as any[],
 })
 
-const { zoneState, previewUrl, ocrResults, ocrTaskId, handleOCRUpload, retryOCR, stopOCR, retake } = useOCR(form, partId.value || undefined)
+const { zoneState, previewUrl, ocrResults, ocrTaskId, elapsedSeconds, handleOCRUpload, retryOCR, stopOCR, retake } = useOCR(form, partId.value || undefined)
 
 const isOcrProcessing = computed(() => zoneState.value === 'uploading' || zoneState.value === 'processing')
 
