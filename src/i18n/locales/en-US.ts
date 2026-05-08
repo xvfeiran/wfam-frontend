@@ -603,6 +603,7 @@ export default {
     reportApproved: 'Approved',
     reportRejected: 'Rejected',
     reportSubmitSuccess: 'Analysis report submitted for approval',
+    qcNoSubmitted: 'QC No. submitted',
   },
   analysisForm: {
     title: 'Analysis Form - {partNumber}',

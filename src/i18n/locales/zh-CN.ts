@@ -620,6 +620,7 @@ export default {
     reportApproved: '已审批',
     reportRejected: '已驳回',
     reportSubmitSuccess: '精分析报告已提交审批',
+    qcNoSubmitted: 'QC No. 已提交',
   },
   analysisForm: {
     title: '精分析表单 - {partNumber}',

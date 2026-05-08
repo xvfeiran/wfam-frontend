@@ -16,8 +16,13 @@
     <a-card v-if="isQcVisible" class="qc-card" style="margin-bottom: 16px;">
       <a-space>
         <span>{{ t('partDetail.qcNo') }}</span>
-        <a-input v-model:value="qcNoInput" :placeholder="t('partDetail.qcNo')" style="width: 200px" />
-        <a-button type="primary" @click="handleSubmitQcNo">{{ t('common.submit') }}</a-button>
+        <a-input
+          v-model:value="qcNoInput"
+          :placeholder="t('partDetail.qcNo')"
+          :disabled="!canEditQcNo"
+          style="width: 200px"
+        />
+        <a-button v-if="canEditQcNo" type="primary" @click="handleSubmitQcNo">{{ t('common.submit') }}</a-button>
       </a-space>
     </a-card>
 
@@ -142,7 +147,7 @@ import AnalysisReportModal from './components/AnalysisReportModal.vue'
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const { canEditSubmittedForm } = usePermissions()
+const { canEditSubmittedForm, isQMCLeader } = usePermissions()
 const partId = computed(() => route.params.id as string)
 const analysisOrderStatus = computed(() => typeof route.query.analysisOrderStatus === 'string' ? route.query.analysisOrderStatus : undefined)
 
@@ -152,7 +157,7 @@ const templates = ref<ReportTemplate[]>([])
 const analysisVisible = ref(false)
 const qcNoInput = ref('')
 
-const QC_VISIBLE_STATUSES = [PartStatus.ANALYSIS_COMPLETED, PartStatus.SCRAP_IN_PROGRESS, PartStatus.SCRAPPED]
+const QC_VISIBLE_STATUSES = [PartStatus.PENDING_APPROVAL, PartStatus.ANALYSIS_COMPLETED, PartStatus.SCRAP_IN_PROGRESS, PartStatus.SCRAPPED]
 const isQcVisible = computed(() => part.value ? QC_VISIBLE_STATUSES.includes(part.value.status) : false)
 
 /**
@@ -181,6 +186,17 @@ const canAnalysis = computed(() => {
   return analysisOrderStatus.value !== 'pending_sampling'
 })
 
+/**
+ * QC No. 编辑权限：QMC Leader 可以编辑，或者 QC No. 未填写时可以编辑
+ */
+const canEditQcNo = computed(() => {
+  if (!part.value) return false
+  // QMC Leader 始终可以编辑
+  if (isQMCLeader.value) return true
+  // 其他角色：只有 QC No. 未填写时可以编辑
+  return !part.value.qcNo
+})
+
 const handleSubmitQcNo = async () => {
   if (!qcNoInput.value.trim()) {
     message.warning(t('partDetail.qcNo'))
@@ -188,7 +204,7 @@ const handleSubmitQcNo = async () => {
   }
   const updatedPart = await partApi.updateQcNo(partId.value, qcNoInput.value.trim())
   part.value = updatedPart
-  message.success(t('message.saveSuccess'))
+  message.success(t('partDetail.qcNoSubmitted'))
 }
 
 // 状态步骤映射（3组）
@@ -267,6 +283,7 @@ const getStatusLabel = (status?: string) => {
 
 onMounted(async () => {
   part.value = await partApi.getById(partId.value)
+  qcNoInput.value = part.value?.qcNo || ''
   const [reports, templateData] = await Promise.all([
     partApi.getReports(partId.value),
     reportsApi.getTemplates(),
