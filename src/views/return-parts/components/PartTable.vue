@@ -62,9 +62,8 @@ const columns = computed(() => [
     key: 'partNumber',
     sorter: true,
     customRender: ({ record }: { record: Part }) => {
-      const text = record.partNumber || t('validation.unsubmitted')
       if (!record.partNumber) {
-        return h('span', { style: { color: '#999' } }, text)
+        return h('span', { style: { color: '#999' } }, '-')
       }
       return h('a', {
         style: { color: '#1677ff' },
@@ -72,7 +71,7 @@ const columns = computed(() => [
           e.stopPropagation()
           emit('view', record.id)
         }
-      }, text)
+      }, record.partNumber)
     }
   },
   {

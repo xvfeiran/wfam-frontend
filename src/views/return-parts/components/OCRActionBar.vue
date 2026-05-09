@@ -62,15 +62,8 @@
       <!-- 识别成功 -->
       <template v-else-if="zoneState === 'success'">
         <div class="ocr-result-area">
-          <div class="ocr-result-area__preview">
-            <!-- a-image 内置大图预览，鼠标悬停显示放大镜图标 -->
-            <a-image
-              v-if="previewUrl"
-              :src="previewUrl"
-              :width="120"
-              :height="120"
-              class="ocr-preview-thumb"
-            />
+          <div class="ocr-result-area__preview" @click="showPreviewModal = true">
+            <img v-if="previewUrl" :src="previewUrl" class="ocr-preview-thumb" alt="OCR Preview" />
             <CheckCircleFilled class="ocr-result-area__badge ocr-result-area__badge--success" />
           </div>
           <div class="ocr-result-area__fields">
@@ -447,15 +440,17 @@ const handlePreviewConfirm = (form: Record<string, any>) => {
 }
 
 .ocr-preview-thumb {
+  max-height: 120px;
+  max-width: 200px;
+  object-fit: contain;
   border-radius: 6px;
   border: 1px solid #f0f0f0;
-  overflow: hidden;
-  cursor: zoom-in;
+  display: block;
+  cursor: pointer;
+  transition: opacity 0.2s;
 
-  :deep(img) {
-    width: 120px;
-    height: 120px;
-    object-fit: cover;
+  &:hover {
+    opacity: 0.85;
   }
 }
 

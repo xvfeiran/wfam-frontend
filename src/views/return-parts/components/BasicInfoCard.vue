@@ -9,12 +9,23 @@
     >
       <a-row :gutter="24">
         <a-col :span="12">
-          <a-form-item :label="t('returnPart.partNumber')">
+          <a-form-item :label="t('returnPart.partNumber')" name="partNumber" :rules="partNumberRules">
             <a-input
-              v-model:value="form.partNumber"
+              v-if="isPartNumberFixed"
+              :value="form.partNumber"
               disabled
-              :placeholder="!isEdit ? t('validation.autoGenerateOnSave') : ''"
             />
+            <a-input
+              v-else
+              v-model:value="suffixModel"
+              :placeholder="t('validation.partNumberPlaceholder')"
+              :maxlength="4"
+              :status="partNumberError ? 'error' : undefined"
+              @blur="onSuffixBlur"
+            >
+              <template v-if="partNumberPrefix" #addonBefore>{{ partNumberPrefix }}</template>
+            </a-input>
+            <div v-if="partNumberError" class="part-number-error">{{ partNumberError }}</div>
           </a-form-item>
         </a-col>
         <a-col :span="12">
@@ -103,7 +114,7 @@
         <a-col :span="12">
           <a-form-item :label="t('partDetail.responsibleEngineer')">
             <a-select v-model:value="form.responsibleEngineer" :placeholder="t('validation.pleaseSelect')" allowClear>
-              <a-select-option v-for="u in users" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
+              <a-select-option v-for="u in analysts" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
             </a-select>
           </a-form-item>
         </a-col>
@@ -127,6 +138,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import { partCodeApi } from '@/services/partCodeApi'
+import { partApi } from '@/services/partApi'
 
 interface Form {
   partNumber: string
@@ -148,8 +160,9 @@ interface Props {
   businessUnits: string[]
   productPlatforms: string[]
   failureTypes: string[]
-  users: { id: string; loginName: string; displayName: string }[]
   analysts: { id: string; loginName: string; displayName: string }[]
+  partId?: string
+  submitted?: boolean
 }
 
 const props = defineProps<Props>()
@@ -161,6 +174,60 @@ const isCurrentOrderInvalid = computed(() => {
   if (!props.form.orderId) return false
   const order = props.orders.find(o => o.id === props.form.orderId)
   return !order
+})
+
+// ── 退件编号：前缀 + 用户输入序号 ──
+const isPartNumberFixed = computed(() => {
+  return !!props.submitted
+})
+
+const partNumberPrefix = computed(() => {
+  const bu = props.form.businessUnit || ''
+  const platform = props.form.productPlatform || ''
+  if (!bu && !platform) return ''
+  const safeBu = bu || 'BLANK'
+  const safePlatform = platform || 'BLANK'
+  return `${safeBu}-${safePlatform}-`
+})
+
+const partNumberError = ref('')
+
+// v-model 绑定：只允许数字，同步到 form.partNumber
+const suffixModel = computed({
+  get: () => {
+    if (!props.form.partNumber) return ''
+    if (!partNumberPrefix.value) return props.form.partNumber
+    if (props.form.partNumber.startsWith(partNumberPrefix.value)) {
+      return props.form.partNumber.slice(partNumberPrefix.value.length)
+    }
+    return props.form.partNumber
+  },
+  set: (val: string) => {
+    const digits = val.replace(/\D/g, '').slice(0, 4)
+    if (!partNumberPrefix.value) {
+      props.form.partNumber = digits
+    } else {
+      props.form.partNumber = digits ? partNumberPrefix.value + digits : ''
+    }
+  },
+})
+
+const onSuffixBlur = () => {
+  // nothing extra needed, v-model already synced
+}
+
+// BU/Platform 变化时重新拼接 partNumber
+watch([() => props.form.businessUnit, () => props.form.productPlatform], ([newBu, newPlatform], [oldBu, oldPlatform]) => {
+  if (isPartNumberFixed.value) return
+  const oldPrefix = (oldBu && oldPlatform) ? `${oldBu || 'BLANK'}-${oldPlatform || 'BLANK'}-` : ''
+  const suffix = oldPrefix && props.form.partNumber?.startsWith(oldPrefix)
+    ? props.form.partNumber.slice(oldPrefix.length)
+    : ''
+  if (partNumberPrefix.value && suffix) {
+    props.form.partNumber = partNumberPrefix.value + suffix
+  } else if (!partNumberPrefix.value) {
+    props.form.partNumber = ''
+  }
 })
 
 // 下拉是否应被禁用
@@ -336,6 +403,21 @@ const formRules = computed(() => ({
   analyst: [{ required: true, message: t('validation.selectAnalyst') }],
 }))
 
+const partNumberRules = computed(() => [{
+  required: true,
+  validator: async () => {
+    if (isPartNumberFixed.value) return Promise.resolve()
+    if (!props.form.partNumber) {
+      return Promise.reject(t('validation.partNumberRequired'))
+    }
+    if (partNumberError.value) {
+      return Promise.reject(partNumberError.value)
+    }
+    return Promise.resolve()
+  },
+  trigger: ['change', 'blur'],
+}])
+
 defineExpose({
   validate: () => formRef.value?.validate(),
   partCodeExists: () => partCodeExists.value
@@ -361,6 +443,12 @@ defineExpose({
   .field-disabled-hint {
     margin-top: 4px;
     color: #1677ff;
+    font-size: 12px;
+  }
+
+  .part-number-error {
+    margin-top: 4px;
+    color: #ff4d4f;
     font-size: 12px;
   }
 }

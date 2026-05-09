@@ -52,4 +52,10 @@ export const partApi = {
   submit(id: string): Promise<Part> {
     return request.post(`/parts/${id}/submit`) as unknown as Promise<Part>
   },
+  async checkPartNumberUnique(partNumber: string, orderId: string, excludeId?: string): Promise<boolean> {
+    const params: Record<string, string> = { partNumber, orderId }
+    if (excludeId) params.excludeId = excludeId
+    const res = await request.get('/parts/check-part-number', { params }) as any
+    return res.available
+  },
 }

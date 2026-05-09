@@ -29,8 +29,9 @@
       :business-units="businessUnits"
       :product-platforms="productPlatforms"
       :failure-types="failureTypes"
-      :users="users"
       :analysts="analysts"
+      :part-id="isEdit ? partId : undefined"
+      :submitted="isSubmitted"
     />
 
     <!-- 客诉信息卡片 (0km退货单不显示) -->
@@ -93,7 +94,10 @@ const submitDebounce = useDebouncedClick({ delay: 1000 })
 
 const isEdit = computed(() => !!route.params.id)
 const partId = computed(() => route.params.id as string)
-const isSubmitted = computed(() => !!form.partNumber)
+
+// 是否已提交到后端（仅编辑模式下根据后端返回的 partNumber 判断）
+const originallySubmitted = ref(false)
+const isSubmitted = computed(() => isEdit.value && originallySubmitted.value)
 
 const canEditSubmittedPart = computed(() => {
   if (!isSubmitted.value) return true // 未提交都可以编辑
@@ -114,7 +118,6 @@ const orders = ref<any[]>([])
 const businessUnits = ref<string[]>([])
 const productPlatforms = ref<string[]>([])
 const failureTypes = ref<string[]>([])
-const users = ref<{ id: string; loginName: string; displayName: string }[]>([])
 const analysts = ref<{ id: string; loginName: string; displayName: string }[]>([])
 
 const hasPresetOrder = computed(() => {
@@ -153,17 +156,15 @@ const { zoneState, previewUrl, ocrResults, ocrTaskId, elapsedSeconds, handleOCRU
 const isOcrProcessing = computed(() => zoneState.value === 'uploading' || zoneState.value === 'processing')
 
 onMounted(async () => {
-  const [lookups, ordersData, usersData, analystsData] = await Promise.all([
+  const [lookups, ordersData, analystsData] = await Promise.all([
     lookupApi.getAll(),
     returnOrderApi.list({ statuses: ['draft', 'submitted'], pageSize: 100 }),
-    userApi.list(),
     userApi.listAnalysts(),
   ])
   businessUnits.value = lookups.businessUnits
   productPlatforms.value = lookups.productPlatforms
   failureTypes.value = lookups.failureTypes
   orders.value = ordersData.data
-  users.value = usersData
   analysts.value = analystsData
 
   if (isEdit.value) {
@@ -177,6 +178,7 @@ onMounted(async () => {
 })
 
 function populateForm(part: any) {
+  originallySubmitted.value = !!part.partNumber
   form.partNumber = part.partNumber
   form.orderId = part.orderId
   form.partCode = part.partCode
@@ -251,8 +253,23 @@ const handleBack = () => {
   router.back()
 }
 
+const validatePartNumberUnique = async (): Promise<boolean> => {
+  if (!form.partNumber || !form.orderId || isSubmitted.value) return true
+  try {
+    const available = await partApi.checkPartNumberUnique(form.partNumber, form.orderId, isEdit.value ? partId.value : undefined)
+    if (!available) {
+      message.error(t('validation.partNumberDuplicate'))
+      return false
+    }
+  } catch {
+    // 网络错误放行，由后端兜底
+  }
+  return true
+}
+
 const buildPartPayload = () => ({
   orderId: form.orderId,
+  partNumber: form.partNumber || undefined,
   partCode: form.partCode,
   businessUnit: form.businessUnit,
   productPlatform: form.productPlatform,
@@ -274,14 +291,17 @@ const buildPartPayload = () => ({
 const handleSave = () => saveDebounce.execute(async () => {
   try {
     await basicInfoCardRef.value?.validate()
+    if (!await validatePartNumberUnique()) return
+
+    let savedId = partId.value
     if (isEdit.value) {
       await partApi.update(partId.value, buildPartPayload())
     } else {
-      await partApi.create(buildPartPayload(), ocrTaskId.value)
+      const created = await partApi.create(buildPartPayload(), ocrTaskId.value)
+      savedId = created.id
     }
     message.success(t('message.saveSuccess'))
 
-    // 如果是从退货单详情页进入，返回到退货单详情页
     if (fromOrderDetail.value && form.orderId) {
       router.push(`/return-orders/${form.orderId}`)
     } else {
@@ -290,6 +310,8 @@ const handleSave = () => saveDebounce.execute(async () => {
   } catch (error: any) {
     if (error?.errorFields) {
       message.error(t('validation.formError'))
+    } else if (error?.response?.status === 409) {
+      message.error(t('validation.partNumberDuplicate'))
     } else {
       message.error(t('message.saveFailed'))
     }
@@ -320,6 +342,7 @@ const handleSubmit = () => submitDebounce.execute(async () => {
 
   try {
     await basicInfoCardRef.value?.validate()
+    if (!await validatePartNumberUnique()) return
     let savedId = partId.value
     if (isEdit.value) {
       await partApi.update(savedId, buildPartPayload())

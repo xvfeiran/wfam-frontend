@@ -192,9 +192,8 @@ const baseColumns = computed(() => [
     key: 'partNumber',
     sorter: true,
     customRender: ({ record }: { record: Part }) => {
-      const text = record.partNumber || t('validation.unsubmitted')
       if (!record.partNumber) {
-        return h('span', { style: { color: '#999' } }, text)
+        return h('span', { style: { color: '#999' } }, '-')
       }
       return h('a', {
         style: { color: '#1677ff' },
@@ -205,7 +204,7 @@ const baseColumns = computed(() => [
           if (props.fromOrderDetail) query.fromOrderDetail = 'true'
           router.push({ path: `/return-parts/${record.id}`, query })
         }
-      }, text)
+      }, record.partNumber)
     }
   },
   {

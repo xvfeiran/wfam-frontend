@@ -1,7 +1,7 @@
 <template>
   <div class="part-detail">
     <a-page-header
-      :title="t('partDetail.title', { partNumber: part?.partNumber || t('validation.unsubmitted') })"
+      :title="t('partDetail.title', { partNumber: part?.partNumber || '-' })"
       @back="handleBack"
     >
       <template #extra>
@@ -38,11 +38,11 @@
             <a-descriptions-item :label="t('returnPart.partNumber')">
               <a v-if="canEditPart && part?.partNumber" style="color: #1677ff" @click="handleEdit">{{ part.partNumber }}</a>
               <span v-else-if="part?.partNumber" style="color: #1677ff">{{ part.partNumber }}</span>
-              <span v-else style="color: #999">{{ t('validation.unsubmitted') }}</span>
+              <span v-else style="color: #999">-</span>
             </a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.relatedOrder')">
               <a v-if="part?.orderNumber" style="color: #1677ff; cursor: pointer; text-decoration: underline" @click="goToOrder($event)">{{ part.orderNumber }}</a>
-              <span v-else style="color: #999">{{ t('validation.unsubmitted') }}</span>
+              <span v-else style="color: #999">-</span>
             </a-descriptions-item>
             <a-descriptions-item :label="t('returnPart.partCode')">{{ part?.partCode }}</a-descriptions-item>
             <a-descriptions-item :label="t('returnPart.businessUnit')">{{ part?.businessUnit }}</a-descriptions-item>

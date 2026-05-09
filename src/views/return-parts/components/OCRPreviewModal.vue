@@ -56,7 +56,7 @@
       <!-- 右侧：识别表单 -->
       <div class="ocr-preview-form">
         <div class="form-header">
-          <h4>{{ t('returnPart.ocrRecognizedFields') }}</h4>
+          <h4>{{ t('ocr.ocrRecognizedFields') }}</h4>
           <p class="form-hint">{{ t('ocr.previewFormHint') }}</p>
         </div>
 
