@@ -85,6 +85,7 @@ const { t } = useI18n()
 const props = defineProps<{
   visible: boolean
   order?: AnalysisOrder | null
+  is0km?: boolean
 }>()
 
 const emit = defineEmits(['update:visible', 'success'])
@@ -126,8 +127,8 @@ const scrapRestrictionReason = computed(() => {
     return t('message.alreadyScrappedCannotModify')
   }
 
-  // 待抽样状态
-  if (status === AnalysisOrderStatus.PENDING_SAMPLING) {
+  // 待抽样状态（0KM 件跳过抽样，允许直接报废）
+  if (status === AnalysisOrderStatus.PENDING_SAMPLING && !props.is0km) {
     return t('message.cannotScrapPendingSampling')
   }
 

@@ -37,7 +37,8 @@
             <a-descriptions-item :label="t('returnOrder.returnQuantity')">{{ order?.returnQuantity }}</a-descriptions-item>
             <a-descriptions-item :label="t('returnOrder.complaintType')">
               {{ order?.complaintType || '-' }}
-              <a-tag v-if="order?.complaintType === 'BA40'" color="blue" style="margin-left: 8px">{{ t('returnOrder.aftermarketPartTag') }}</a-tag>
+              <a-tag v-if="isAftermarket(order?.complaintType)" color="blue" style="margin-left: 8px">{{ t('returnOrder.aftermarketPartTag') }}</a-tag>
+              <a-tag v-else-if="order?.complaintType" color="orange" style="margin-left: 8px">{{ t('returnOrder.is0km') }}</a-tag>
             </a-descriptions-item>
             <a-descriptions-item :label="t('orderDetail.detailedAnalysisQuantity')">{{ order?.detailedAnalysisQuantity }}</a-descriptions-item>
             <a-descriptions-item :label="t('orderDetail.scrappedQuantity')">{{ order?.scrappedQuantity }}</a-descriptions-item>
@@ -85,6 +86,7 @@ import { returnOrderApi } from '@/services/returnOrderApi'
 import { ORDER_STATUS_MAP, RETURN_METHOD_MAP, OrderStatus } from '@/types'
 import type { ReturnOrder } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
+import { isAftermarket } from '@/constants/complaintTypes'
 import PartsListCard from '@/components/PartsListCard.vue'
 
 const { t } = useI18n()

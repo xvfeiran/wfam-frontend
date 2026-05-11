@@ -423,7 +423,7 @@ export default {
     scrapSubmitted: 'Scrap application submitted',
     reportSubmitted: 'Report submitted successfully',
     samplingComplete: 'Sampling completed',
-    failureTypeBA20CannotSample: 'BA20 (0km) failure type orders cannot be sampled and must go through the scrap process directly',
+    failureTypeBA20CannotSample: '0KM orders cannot be sampled and must go through the scrap process directly',
     importInProgress: 'Import feature in development',
     saveFailed: 'Save failed, please try again',
     submitConfirmWarning: 'After submission, modifications are not allowed. Please confirm!',

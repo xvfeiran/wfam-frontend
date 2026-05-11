@@ -77,6 +77,7 @@ import { lookupApi } from '@/services/lookupApi'
 import { userApi } from '@/services/userApi'
 import { useOCR } from '@/composables/useOCR'
 import { usePermissions } from '@/composables/usePermissions'
+import { isAftermarket } from '@/constants/complaintTypes'
 import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import OCRActionBar from './components/OCRActionBar.vue'
 import BasicInfoCard from './components/BasicInfoCard.vue'
@@ -109,9 +110,10 @@ const basicInfoCardRef = ref<any>(null)
 // 当前所选退货单信息（用于判断是否为0km）
 const selectedOrder = ref<any>(null)
 
-// 判断是否为0km退货单（BA20代表0km）
+// 判断是否为0km退货单（非售后件=0km）
 const is0kmOrder = computed(() => {
-	return selectedOrder.value?.complaintType === 'BA20'
+	if (!selectedOrder.value?.complaintType) return false
+	return !isAftermarket(selectedOrder.value.complaintType)
 })
 
 const orders = ref<any[]>([])

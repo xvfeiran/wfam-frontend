@@ -213,9 +213,12 @@ const handleSubmitQcNo = async () => {
 // 状态步骤映射（3组）
 const statusStepMap: Record<PartStatus, number> = {
   [PartStatus.IN_INITIAL_ANALYSIS]: 0,
+  [PartStatus.INITIAL_ANALYSIS_COMPLETED]: 0,
   [PartStatus.IN_DETAILED_ANALYSIS]: 1,
+  [PartStatus.ANALYSIS_REPORT_SUBMITTED]: 1,
   [PartStatus.PENDING_APPROVAL]: 1,
   [PartStatus.ANALYSIS_COMPLETED]: 1,
+  [PartStatus.ANALYSIS_SKIPPED]: 1,
   [PartStatus.SCRAP_IN_PROGRESS]: 2,
   [PartStatus.SCRAPPED]: 2,
 }
@@ -225,8 +228,10 @@ const currentStep = computed(() => {
 })
 
 const getStepDescription = (step: number) => {
+  const status = part.value?.status
   if (step === 0) {
-    return currentStep.value > 0 ? t('partDetail.completed') : t('partDetail.inProgress')
+    if (currentStep.value > 0 || status === PartStatus.INITIAL_ANALYSIS_COMPLETED) return t('partDetail.completed')
+    return t('partDetail.inProgress')
   }
   if (step === 1) {
     if (currentStep.value < 1) return ''

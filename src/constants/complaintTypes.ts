@@ -1,4 +1,14 @@
 /**
+ * Aftermarket complaint types: BA40 and BA41.
+ * All other types are treated as 0KM (no sampling/analysis, direct scrap only).
+ */
+export const AFTERMARKET_TYPES = ['BA40', 'BA41'] as const
+
+export function isAftermarket(complaintType: string | undefined | null): boolean {
+  return !!complaintType && (AFTERMARKET_TYPES as readonly string[]).includes(complaintType)
+}
+
+/**
  * Complaint types (BA codes) for warranty part returns.
  * BA codes are standardized return reason categories.
  */

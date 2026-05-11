@@ -7,19 +7,20 @@
       <template #extra>
         <a-space>
           <a-button
-            v-if="order?.status === 'pending_sampling'"
+            v-if="!is0km && order?.status === 'pending_sampling'"
             type="primary"
             @click="handleSampling(false)"
           >
             {{ t('returnOrder.sampling') }}
           </a-button>
           <a-button
-            v-if="order?.status !== 'pending_sampling'"
+            v-if="!is0km && order?.status !== 'pending_sampling'"
             @click="handleSampling(true)"
           >
             {{ t('returnOrder.viewSamplingResult') }}
           </a-button>
           <a-button
+            v-if="canScrap"
             danger
             @click="handleScrap"
           >
@@ -48,7 +49,8 @@
             <a-descriptions-item :label="t('returnOrder.trackingNumber')">{{ returnOrder?.trackingNumber || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('returnOrder.complaintType')">
               {{ returnOrder?.complaintType || '-' }}
-              <a-tag v-if="returnOrder?.complaintType === 'BA40'" color="blue" style="margin-left: 8px">{{ t('returnOrder.aftermarketPartTag') }}</a-tag>
+              <a-tag v-if="isAftermarket(returnOrder?.complaintType)" color="blue" style="margin-left: 8px">{{ t('returnOrder.aftermarketPartTag') }}</a-tag>
+              <a-tag v-else-if="returnOrder?.complaintType" color="orange" style="margin-left: 8px">{{ t('returnOrder.is0km') }}</a-tag>
             </a-descriptions-item>
             <a-descriptions-item :label="t('orderDetail.detailedAnalysisQuantity')">{{ returnOrder?.detailedAnalysisQuantity ?? '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('common.status')" :span="2">
@@ -90,6 +92,7 @@
     <ScrapModal
       :visible="scrapVisible"
       :order="order"
+      :is0km="is0km"
       @update:visible="scrapVisible = $event"
       @success="handleScrapSuccess"
     />
@@ -108,6 +111,7 @@ import type { AnalysisOrder, ReturnOrder } from '@/types'
 import SamplingModal from './components/SamplingModal.vue'
 import ScrapModal from './components/ScrapModal.vue'
 import PartsListCard from '@/components/PartsListCard.vue'
+import { isAftermarket } from '@/constants/complaintTypes'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -116,6 +120,10 @@ const orderId = computed(() => route.params.id as string)
 
 const order = ref<AnalysisOrder | null>(null)
 const returnOrder = ref<ReturnOrder | null>(null)
+const is0km = computed(() => {
+  if (!returnOrder.value?.complaintType) return false
+  return !isAftermarket(returnOrder.value.complaintType)
+})
 const partsListRef = ref<InstanceType<typeof PartsListCard>>()
 const samplingVisible = ref(false)
 const samplingReadOnly = ref(false)
@@ -149,11 +157,18 @@ const currentStep = computed(() => {
 const canScrap = computed(() => {
   if (!order.value) return false
 
-  // 已报废或待抽样状态不能报废
-  if ([
-    AnalysisOrderStatus.WORKON_SCRAPPED,
-    AnalysisOrderStatus.PENDING_SAMPLING,
-  ].includes(order.value.status as AnalysisOrderStatus)) {
+  // 已报废不能报废
+  if (order.value.status === AnalysisOrderStatus.WORKON_SCRAPPED) {
+    return false
+  }
+
+  // 0KM：跳过抽样/分析，直接报废
+  if (is0km.value) {
+    return true
+  }
+
+  // 售后件：待抽样状态不能报废
+  if (order.value.status === AnalysisOrderStatus.PENDING_SAMPLING) {
     return false
   }
 
