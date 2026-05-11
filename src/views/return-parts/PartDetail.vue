@@ -87,7 +87,7 @@
                 :key="index"
                 :width="120"
                 :height="120"
-                :src="img"
+                :src="getFileUrl(img)"
                 style="object-fit: cover; border-radius: 4px;"
               />
             </a-space>
@@ -142,10 +142,16 @@ import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import { partApi } from '@/services/partApi'
 import { reportsApi } from '@/services/reportsApi'
+import { fileApi } from '@/services/fileApi'
 import { PART_STATUS_MAP, PartStatus } from '@/types'
 import type { Part, AnalysisReport, ReportTemplate } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
 import AnalysisReportModal from './components/AnalysisReportModal.vue'
+
+const getFileUrl = (relativePath: string) => {
+  if (relativePath.startsWith('/api/') || relativePath.startsWith('http')) return relativePath
+  return fileApi.getFileUrl(relativePath)
+}
 
 const { t } = useI18n()
 const route = useRoute()
