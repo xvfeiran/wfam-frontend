@@ -132,18 +132,20 @@
           <a-col :span="24">
             <a-form-item :label="t('analysisForm.attachmentUpload')">
               <a-upload
-                v-model:file-list="form.attachments"
-                :before-upload="() => false"
+                v-model:file-list="fileList"
+                :before-upload="handleAttachmentUpload"
                 :max-count="10"
                 list-type="picture-card"
+                @remove="handleAttachmentRemove"
+                @preview="handleAttachmentPreview"
               >
-                <div>
+                <div v-if="fileList.length < 10">
                   <PlusOutlined />
                   <div style="margin-top: 8px">{{ t('common.upload') }}</div>
                 </div>
               </a-upload>
               <a-button
-                v-if="form.attachments.length < 10"
+                v-if="fileList.length < 10"
                 class="camera-btn"
                 @click="cameraOpen = true"
               >
@@ -160,6 +162,11 @@
       v-model:open="cameraOpen"
       @captured="onCameraCaptured"
     />
+
+    <!-- 图片预览弹窗 -->
+    <a-modal :open="previewVisible" :footer="null" @cancel="previewVisible = false">
+      <img :src="previewImage" style="width: 100%" />
+    </a-modal>
   </div>
 </template>
 
@@ -170,6 +177,7 @@ import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import { DownloadOutlined, PlusOutlined, CameraOutlined } from '@ant-design/icons-vue'
 import { partApi } from '@/services/partApi'
+import { analysisAttachmentApi, fileApi } from '@/services/fileApi'
 import { COMPLAINT_TYPES } from '@/constants/complaintTypes'
 import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import CameraCapture from '@/components/CameraCapture.vue'
@@ -194,14 +202,43 @@ const form = reactive({
   failureDescription: '',
   analysisConclusion: '',
   improvementMeasures: '',
-  attachments: [] as any[],
 })
+
+const fileList = ref<any[]>([])
+const previewVisible = ref(false)
+const previewImage = ref('')
 
 const cameraOpen = ref(false)
 
+const handleAttachmentUpload = async (file: File) => {
+  // For now, we store locally since report may not exist yet
+  // When the report is saved/submitted, attachments would need to be uploaded
+  // For simplicity, show a preview but defer upload to when reportId is available
+  const uid = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const item = {
+    uid,
+    name: file.name,
+    status: 'done' as const,
+    url: URL.createObjectURL(file),
+    thumbUrl: URL.createObjectURL(file),
+    originFileObj: file,
+  }
+  fileList.value = [...fileList.value, item]
+  return false
+}
+
+const handleAttachmentRemove = async (file: any) => {
+  fileList.value = fileList.value.filter(f => f.uid !== file.uid)
+}
+
+const handleAttachmentPreview = (file: any) => {
+  previewImage.value = file.url || file.thumbUrl
+  previewVisible.value = true
+}
+
 const onCameraCaptured = (file: File) => {
-  if (form.attachments.length < 10) {
-    form.attachments = [...form.attachments, file]
+  if (fileList.value.length < 10) {
+    handleAttachmentUpload(file)
   }
 }
 
