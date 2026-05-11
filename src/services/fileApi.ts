@@ -5,10 +5,13 @@ export interface ImageUploadResult {
   url: string
 }
 
+const FILE_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8102/aftermarket-parts-management-system/api/v1'
+
 export const fileApi = {
-  /** 获取文件完整 URL（用于 img src 等） */
+  /** 获取文件完整 URL（用于 img src，直接请求后端，不经过 Axios） */
   getFileUrl(relativePath: string): string {
-    return `/api/v1/files/${relativePath}`
+    if (relativePath.startsWith('http')) return relativePath
+    return `${FILE_BASE}/files/${relativePath}`
   },
 
   /** 通用上传（不关联任何实体，适用于新建场景） */

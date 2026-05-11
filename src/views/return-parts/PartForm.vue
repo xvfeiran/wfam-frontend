@@ -295,6 +295,7 @@ const buildPartPayload = () => ({
   vehicleMileage: form.vehicleMileage || undefined,
   customerDescription: form.customerDescription || undefined,
   otherDescription: form.otherDescription || undefined,
+  images: imagePaths.value.length > 0 ? imagePaths.value : undefined,
 })
 
 const handleSave = () => saveDebounce.execute(async () => {
