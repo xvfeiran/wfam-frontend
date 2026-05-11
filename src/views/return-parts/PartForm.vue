@@ -39,7 +39,8 @@
 
     <!-- 照片上传区 -->
     <PhotoUploadCard
-      v-model:image-files="form.imageFiles"
+      :part-id="partId"
+      v-model:image-paths="imagePaths"
     />
 
     <!-- 底部操作栏 -->
@@ -151,8 +152,9 @@ const form = reactive({
   vehicleMileage: undefined as number | undefined,
   customerDescription: '',
   otherDescription: '',
-  imageFiles: [] as any[],
 })
+
+const imagePaths = ref<string[]>([])
 
 const { zoneState, previewUrl, ocrResults, ocrTaskId, elapsedSeconds, handleOCRUpload, retryOCR, stopOCR, retake } = useOCR(form, partId.value || undefined)
 

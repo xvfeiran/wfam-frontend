@@ -1,7 +1,7 @@
 <template>
   <a-card :title="t('returnPart.photoUpload')" class="upload-card">
     <a-upload
-      v-model:file-list="fileList"
+      :file-list="fileList"
       list-type="picture-card"
       :before-upload="handleUpload"
       :max-count="20"
@@ -50,7 +50,7 @@ import CameraCapture from '@/components/CameraCapture.vue'
 import { partImageApi, fileApi } from '@/services/fileApi'
 
 interface Props {
-  partId: string
+  partId?: string
   imagePaths: string[]
 }
 
@@ -73,11 +73,11 @@ interface ImageItem {
   url: string
   relativePath: string
   thumbUrl?: string
+  originFileObj?: File
 }
 
 const fileList = ref<ImageItem[]>([])
 
-// Initialize from existing imagePaths
 watch(() => props.imagePaths, (paths) => {
   if (!paths || paths.length === 0) {
     fileList.value = []
@@ -87,7 +87,7 @@ watch(() => props.imagePaths, (paths) => {
     uid: `-${idx}`,
     name: p.split('/').pop() || `image_${idx}`,
     status: 'done' as const,
-    url: fileApi.getFileUrl(p),
+    url: p.startsWith('/') || p.startsWith('http') ? p : fileApi.getFileUrl(p),
     relativePath: p,
   }))
 }, { immediate: true })
@@ -96,7 +96,7 @@ const emitPaths = () => {
   emit('update:imagePaths', fileList.value.filter(f => f.status === 'done').map(f => f.relativePath))
 }
 
-const handleUpload = async (file: File) => {
+const addFile = (file: File) => {
   const uid = `${Date.now()}-${Math.random().toString(36).slice(2)}`
   const item: ImageItem = {
     uid,
@@ -105,11 +105,27 @@ const handleUpload = async (file: File) => {
     url: '',
     relativePath: '',
     thumbUrl: URL.createObjectURL(file),
+    originFileObj: file,
   }
   fileList.value = [...fileList.value, item]
 
+  if (props.partId) {
+    doUpload(uid, file)
+  } else {
+    // No partId yet (new part) — store locally with blob preview
+    const idx = fileList.value.findIndex(f => f.uid === uid)
+    if (idx >= 0) {
+      fileList.value[idx].status = 'done'
+      fileList.value[idx].url = item.thumbUrl!
+      fileList.value[idx].relativePath = item.thumbUrl!
+    }
+    emitPaths()
+  }
+}
+
+const doUpload = async (uid: string, file: File) => {
   try {
-    const result = await partImageApi.upload(props.partId, file)
+    const result = await partImageApi.upload(props.partId!, file)
     const idx = fileList.value.findIndex(f => f.uid === uid)
     if (idx >= 0) {
       fileList.value[idx].status = 'done'
@@ -124,15 +140,19 @@ const handleUpload = async (file: File) => {
     }
     message.error(t('message.uploadFailed'))
   }
+}
+
+const handleUpload = (file: File) => {
+  addFile(file)
   return false
 }
 
 const handleRemove = async (file: ImageItem) => {
-  if (file.relativePath && file.status === 'done') {
+  if (props.partId && file.relativePath && file.status === 'done' && !file.relativePath.startsWith('blob:')) {
     try {
       await partImageApi.delete(props.partId, file.relativePath)
     } catch {
-      // File already deleted from server, remove locally anyway
+      // already deleted
     }
   }
   fileList.value = fileList.value.filter(f => f.uid !== file.uid)
@@ -146,7 +166,7 @@ const handlePreview = (file: ImageItem) => {
 
 const onCameraCaptured = (file: File) => {
   if (fileList.value.length < 20) {
-    handleUpload(file)
+    addFile(file)
   }
 }
 </script>
