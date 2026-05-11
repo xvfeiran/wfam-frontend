@@ -1,0 +1,44 @@
+import request from './request'
+
+export interface ImageUploadResult {
+  relativePath: string
+  url: string
+}
+
+export const fileApi = {
+  /** 获取文件完整 URL（用于 img src 等） */
+  getFileUrl(relativePath: string): string {
+    return `/api/v1/files/${relativePath}`
+  },
+}
+
+export const partImageApi = {
+  /** 上传售后件缺陷照片 */
+  upload(partId: string, file: File): Promise<ImageUploadResult> {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request.post(`/parts/${partId}/images`, formData) as unknown as Promise<ImageUploadResult>
+  },
+
+  /** 删除售后件缺陷照片 */
+  delete(partId: string, imageRelativePath: string): Promise<void> {
+    // imageRelativePath = "parts/{partId}/{uuid}.jpg", we need just the filename part
+    const fileName = imageRelativePath.split('/').pop()!
+    return request.delete(`/parts/${partId}/images/${fileName}`) as unknown as Promise<void>
+  },
+}
+
+export const analysisAttachmentApi = {
+  /** 上传精分析附件 */
+  upload(reportId: string, file: File): Promise<ImageUploadResult> {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request.post(`/analysis-reports/${reportId}/attachments`, formData) as unknown as Promise<ImageUploadResult>
+  },
+
+  /** 删除精分析附件 */
+  delete(reportId: string, attachmentRelativePath: string): Promise<void> {
+    const fileName = attachmentRelativePath.split('/').pop()!
+    return request.delete(`/analysis-reports/${reportId}/attachments/${fileName}`) as unknown as Promise<void>
+  },
+}
