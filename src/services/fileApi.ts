@@ -10,6 +10,13 @@ export const fileApi = {
   getFileUrl(relativePath: string): string {
     return `/api/v1/files/${relativePath}`
   },
+
+  /** 通用上传（不关联任何实体，适用于新建场景） */
+  upload(file: File): Promise<ImageUploadResult> {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request.post('/files/upload', formData) as unknown as Promise<ImageUploadResult>
+  },
 }
 
 export const partImageApi = {

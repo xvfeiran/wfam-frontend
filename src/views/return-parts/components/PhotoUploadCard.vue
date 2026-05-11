@@ -105,27 +105,17 @@ const addFile = (file: File) => {
     url: '',
     relativePath: '',
     thumbUrl: URL.createObjectURL(file),
-    originFileObj: file,
   }
   fileList.value = [...fileList.value, item]
-
-  if (props.partId) {
-    doUpload(uid, file)
-  } else {
-    // No partId yet (new part) — store locally with blob preview
-    const idx = fileList.value.findIndex(f => f.uid === uid)
-    if (idx >= 0) {
-      fileList.value[idx].status = 'done'
-      fileList.value[idx].url = item.thumbUrl!
-      fileList.value[idx].relativePath = item.thumbUrl!
-    }
-    emitPaths()
-  }
+  doUpload(uid, file)
 }
 
 const doUpload = async (uid: string, file: File) => {
   try {
-    const result = await partImageApi.upload(props.partId!, file)
+    const api = props.partId
+      ? partImageApi.upload(props.partId, file)
+      : fileApi.upload(file)
+    const result = await api
     const idx = fileList.value.findIndex(f => f.uid === uid)
     if (idx >= 0) {
       fileList.value[idx].status = 'done'
@@ -148,9 +138,11 @@ const handleUpload = (file: File) => {
 }
 
 const handleRemove = async (file: ImageItem) => {
-  if (props.partId && file.relativePath && file.status === 'done' && !file.relativePath.startsWith('blob:')) {
+  if (file.relativePath && file.status === 'done') {
     try {
-      await partImageApi.delete(props.partId, file.relativePath)
+      if (props.partId && file.relativePath.startsWith('parts/')) {
+        await partImageApi.delete(props.partId, file.relativePath)
+      }
     } catch {
       // already deleted
     }
