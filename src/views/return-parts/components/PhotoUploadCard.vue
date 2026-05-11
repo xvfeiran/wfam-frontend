@@ -3,10 +3,11 @@
     <a-upload
       v-model:file-list="fileList"
       list-type="picture-card"
-      :before-upload="() => false"
+      :before-upload="handleUpload"
       :max-count="20"
       multiple
       @preview="handlePreview"
+      @remove="handleRemove"
     >
       <div v-if="fileList.length < 20">
         <PlusOutlined />
@@ -43,44 +44,109 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { message } from 'ant-design-vue'
 import { PlusOutlined, CameraOutlined } from '@ant-design/icons-vue'
 import CameraCapture from '@/components/CameraCapture.vue'
+import { partImageApi, fileApi } from '@/services/fileApi'
 
 interface Props {
-  imageFiles: any[]
+  partId: string
+  imagePaths: string[]
 }
 
 interface Emits {
-  (e: 'update:imageFiles', value: any[]): void
+  (e: 'update:imagePaths', value: string[]): void
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const { t } = useI18n()
-
 const previewVisible = ref(false)
 const previewImage = ref('')
 const cameraOpen = ref(false)
 
-const fileList = ref<any[]>(props.imageFiles || [])
+interface ImageItem {
+  uid: string
+  name: string
+  status: 'uploading' | 'done' | 'error'
+  url: string
+  relativePath: string
+  thumbUrl?: string
+}
 
-watch(() => props.imageFiles, (newVal) => {
-  fileList.value = newVal || []
-})
+const fileList = ref<ImageItem[]>([])
 
-watch(fileList, (newVal) => {
-  emit('update:imageFiles', newVal)
-})
+// Initialize from existing imagePaths
+watch(() => props.imagePaths, (paths) => {
+  if (!paths || paths.length === 0) {
+    fileList.value = []
+    return
+  }
+  fileList.value = paths.map((p, idx) => ({
+    uid: `-${idx}`,
+    name: p.split('/').pop() || `image_${idx}`,
+    status: 'done' as const,
+    url: fileApi.getFileUrl(p),
+    relativePath: p,
+  }))
+}, { immediate: true })
 
-const handlePreview = (file: any) => {
-  previewImage.value = file.url || file.thumbUrl
+const emitPaths = () => {
+  emit('update:imagePaths', fileList.value.filter(f => f.status === 'done').map(f => f.relativePath))
+}
+
+const handleUpload = async (file: File) => {
+  const uid = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const item: ImageItem = {
+    uid,
+    name: file.name,
+    status: 'uploading',
+    url: '',
+    relativePath: '',
+    thumbUrl: URL.createObjectURL(file),
+  }
+  fileList.value = [...fileList.value, item]
+
+  try {
+    const result = await partImageApi.upload(props.partId, file)
+    const idx = fileList.value.findIndex(f => f.uid === uid)
+    if (idx >= 0) {
+      fileList.value[idx].status = 'done'
+      fileList.value[idx].url = fileApi.getFileUrl(result.relativePath)
+      fileList.value[idx].relativePath = result.relativePath
+    }
+    emitPaths()
+  } catch {
+    const idx = fileList.value.findIndex(f => f.uid === uid)
+    if (idx >= 0) {
+      fileList.value[idx].status = 'error'
+    }
+    message.error(t('message.uploadFailed'))
+  }
+  return false
+}
+
+const handleRemove = async (file: ImageItem) => {
+  if (file.relativePath && file.status === 'done') {
+    try {
+      await partImageApi.delete(props.partId, file.relativePath)
+    } catch {
+      // File already deleted from server, remove locally anyway
+    }
+  }
+  fileList.value = fileList.value.filter(f => f.uid !== file.uid)
+  emitPaths()
+}
+
+const handlePreview = (file: ImageItem) => {
+  previewImage.value = file.url || file.thumbUrl || ''
   previewVisible.value = true
 }
 
 const onCameraCaptured = (file: File) => {
   if (fileList.value.length < 20) {
-    fileList.value = [...fileList.value, file]
+    handleUpload(file)
   }
 }
 </script>
