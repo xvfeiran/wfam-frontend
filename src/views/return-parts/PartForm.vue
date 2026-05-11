@@ -39,7 +39,6 @@
 
     <!-- 照片上传区 -->
     <PhotoUploadCard
-      :part-id="partId"
       v-model:image-paths="imagePaths"
     />
 

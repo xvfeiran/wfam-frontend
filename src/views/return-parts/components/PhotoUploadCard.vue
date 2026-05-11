@@ -47,10 +47,9 @@ import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import { PlusOutlined, CameraOutlined } from '@ant-design/icons-vue'
 import CameraCapture from '@/components/CameraCapture.vue'
-import { partImageApi, fileApi } from '@/services/fileApi'
+import { fileApi } from '@/services/fileApi'
 
 interface Props {
-  partId?: string
   imagePaths: string[]
 }
 
@@ -73,7 +72,6 @@ interface ImageItem {
   url: string
   relativePath: string
   thumbUrl?: string
-  originFileObj?: File
 }
 
 const fileList = ref<ImageItem[]>([])
@@ -98,24 +96,20 @@ const emitPaths = () => {
 
 const addFile = (file: File) => {
   const uid = `${Date.now()}-${Math.random().toString(36).slice(2)}`
-  const item: ImageItem = {
+  fileList.value = [...fileList.value, {
     uid,
     name: file.name,
     status: 'uploading',
     url: '',
     relativePath: '',
     thumbUrl: URL.createObjectURL(file),
-  }
-  fileList.value = [...fileList.value, item]
+  }]
   doUpload(uid, file)
 }
 
 const doUpload = async (uid: string, file: File) => {
   try {
-    const api = props.partId
-      ? partImageApi.upload(props.partId, file)
-      : fileApi.upload(file)
-    const result = await api
+    const result = await fileApi.upload(file)
     const idx = fileList.value.findIndex(f => f.uid === uid)
     if (idx >= 0) {
       fileList.value[idx].status = 'done'
@@ -137,16 +131,7 @@ const handleUpload = (file: File) => {
   return false
 }
 
-const handleRemove = async (file: ImageItem) => {
-  if (file.relativePath && file.status === 'done') {
-    try {
-      if (props.partId && file.relativePath.startsWith('parts/')) {
-        await partImageApi.delete(props.partId, file.relativePath)
-      }
-    } catch {
-      // already deleted
-    }
-  }
+const handleRemove = (file: ImageItem) => {
   fileList.value = fileList.value.filter(f => f.uid !== file.uid)
   emitPaths()
 }
