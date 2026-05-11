@@ -62,8 +62,11 @@
 
         <a-card :title="t('partDetail.complaintInfo')" class="vehicle-card">
           <a-descriptions :column="2" bordered>
-            <a-descriptions-item :label="t('returnPart.repairStationLocation')">
-              {{ part?.repairStationLocation || '-' }}
+            <a-descriptions-item :label="t('returnPart.repairStation')">
+              {{ part?.repairStation || '-' }}
+            </a-descriptions-item>
+            <a-descriptions-item :label="t('returnPart.complaintLocation')">
+              {{ part?.complaintLocation || '-' }}
             </a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.vehicleProductionDate')">{{ part?.vehicleProductionDate || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.vehiclePurchaseDate')">{{ part?.vehiclePurchaseDate || '-' }}</a-descriptions-item>

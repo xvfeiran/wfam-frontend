@@ -140,7 +140,8 @@ const form = reactive({
   failureType: undefined as string | undefined,
   responsibleEngineer: undefined as string | undefined,
   analyst: undefined as string | undefined,
-  repairStationLocation: '',
+  repairStation: '',
+  complaintLocation: '',
   vehicleProductionDate: null as Dayjs | null,
   vehiclePurchaseDate: null as Dayjs | null,
   vehicleFailureDate: null as Dayjs | null,
@@ -189,7 +190,8 @@ function populateForm(part: any) {
   form.failureType = part.failureType || undefined
   form.responsibleEngineer = part.responsibleEngineer || undefined
   form.analyst = part.analyst || undefined
-  form.repairStationLocation = part.repairStationLocation || ''
+  form.repairStation = part.repairStation || ''
+  form.complaintLocation = part.complaintLocation || ''
   form.vehicleProductionDate = part.vehicleProductionDate ? dayjs(part.vehicleProductionDate) : null
   form.vehiclePurchaseDate = part.vehiclePurchaseDate ? dayjs(part.vehiclePurchaseDate) : null
   form.vehicleFailureDate = part.vehicleFailureDate ? dayjs(part.vehicleFailureDate) : null
@@ -240,8 +242,11 @@ const handlePreviewConfirm = (previewForm: Record<string, any>) => {
   if (previewForm.vehicleMileage !== null) {
     form.vehicleMileage = previewForm.vehicleMileage
   }
-  if (previewForm.repairStationLocation !== undefined) {
-    form.repairStationLocation = previewForm.repairStationLocation
+  if (previewForm.repairStation !== undefined) {
+    form.repairStation = previewForm.repairStation
+  }
+  if (previewForm.complaintLocation !== undefined) {
+    form.complaintLocation = previewForm.complaintLocation
   }
   if (previewForm.customerDescription !== undefined) {
     form.customerDescription = previewForm.customerDescription
@@ -278,7 +283,8 @@ const buildPartPayload = () => ({
   failureType: form.failureType || undefined,
   responsibleEngineer: form.responsibleEngineer || undefined,
   analyst: form.analyst || undefined,
-  repairStationLocation: form.repairStationLocation || undefined,
+  repairStation: form.repairStation || undefined,
+  complaintLocation: form.complaintLocation || undefined,
   vehicleProductionDate: form.vehicleProductionDate ? form.vehicleProductionDate.format('YYYY-MM-DD') : undefined,
   vehiclePurchaseDate: form.vehiclePurchaseDate ? form.vehiclePurchaseDate.format('YYYY-MM-DD') : undefined,
   vehicleFailureDate: form.vehicleFailureDate ? form.vehicleFailureDate.format('YYYY-MM-DD') : undefined,

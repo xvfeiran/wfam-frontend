@@ -64,7 +64,8 @@ export interface Part {
   responsibleEngineer?: string
   analyst?: string
   qcNo?: string
-  repairStationLocation?: string
+  repairStation?: string
+  complaintLocation?: string
   vehicleProductionDate?: string
   vehiclePurchaseDate?: string
   vehicleFailureDate?: string

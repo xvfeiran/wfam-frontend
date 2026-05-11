@@ -7,7 +7,8 @@ export interface OcrResult {
   vehicleVIN?: string
   vehicleMileage?: number
   customerDescription?: string
-  repairStationLocation?: string
+  repairStation?: string
+  complaintLocation?: string
 }
 
 export interface OcrTask {

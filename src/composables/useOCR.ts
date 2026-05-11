@@ -19,7 +19,8 @@ const OCR_FIELDS = [
   'vehicleVIN',
   'vehicleMileage',
   'customerDescription',
-  'repairStationLocation',
+  'repairStation',
+  'complaintLocation',
 ] as const
 
 type OcrField = (typeof OCR_FIELDS)[number]
@@ -205,7 +206,8 @@ export function useOCR(form: Record<string, any>, partId?: string) {
       vehicleVIN: result?.vehicleVIN,
       vehicleMileage: result?.vehicleMileage,
       customerDescription: result?.customerDescription,
-      repairStationLocation: result?.repairStationLocation,
+      repairStation: result?.repairStation,
+      complaintLocation: result?.complaintLocation,
     }
 
     OCR_FIELDS.forEach(field => {

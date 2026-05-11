@@ -104,9 +104,15 @@
             />
           </a-form-item>
 
-          <a-form-item :label="t('returnPart.repairStationLocation')">
+          <a-form-item :label="t('returnPart.repairStation')">
             <a-input
-              v-model:value="localForm.repairStationLocation"
+              v-model:value="localForm.repairStation"
+              :placeholder="t('validation.pleaseInput')"
+            />
+          </a-form-item>
+          <a-form-item :label="t('returnPart.complaintLocation')">
+            <a-input
+              v-model:value="localForm.complaintLocation"
               :placeholder="t('validation.pleaseInput')"
             />
           </a-form-item>
@@ -178,7 +184,8 @@ const localForm = reactive<{
   vehicleFailureDate: ReturnType<typeof dayjs> | null
   vehicleVIN: string
   vehicleMileage: number | null
-  repairStationLocation: string
+  repairStation: string
+  complaintLocation: string
   customerDescription: string
 }>({
   vehicleProductionDate: null,
@@ -186,7 +193,8 @@ const localForm = reactive<{
   vehicleFailureDate: null,
   vehicleVIN: '',
   vehicleMileage: null,
-  repairStationLocation: '',
+  repairStation: '',
+  complaintLocation: '',
   customerDescription: '',
 })
 
@@ -209,8 +217,11 @@ watch(
     if (results.vehicleMileage?.status === 'success') {
       localForm.vehicleMileage = Number(results.vehicleMileage.value) || null
     }
-    if (results.repairStationLocation?.status === 'success') {
-      localForm.repairStationLocation = results.repairStationLocation.value
+    if (results.repairStation?.status === 'success') {
+      localForm.repairStation = results.repairStation.value
+    }
+    if (results.complaintLocation?.status === 'success') {
+      localForm.complaintLocation = results.complaintLocation.value
     }
     if (results.customerDescription?.status === 'success') {
       localForm.customerDescription = results.customerDescription.value
