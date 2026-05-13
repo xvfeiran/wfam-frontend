@@ -265,7 +265,7 @@
       <a-descriptions-item :label="t('returnPart.businessUnit')">{{ detailPart.businessUnit || '-' }}</a-descriptions-item>
       <a-descriptions-item :label="t('returnPart.productPlatform')">{{ detailPart.productPlatform || '-' }}</a-descriptions-item>
       <a-descriptions-item :label="t('partDetail.productionShift')">{{ detailPart.productionShift || '-' }}</a-descriptions-item>
-      <a-descriptions-item :label="t('partDetail.customerFailureType')">{{ detailPart.failureType || '-' }}</a-descriptions-item>
+      <a-descriptions-item :label="t('partDetail.customerFailureType')">{{ detailPart.failureType ? t('returnPart.failureTypeLabels.' + detailPart.failureType) : '-' }}</a-descriptions-item>
       <a-descriptions-item :label="t('partDetail.boschFailureType')">{{ detailPart.boschFailureType || '-' }}</a-descriptions-item>
       <a-descriptions-item :label="t('partDetail.responsibleEngineer')">{{ detailPart.responsibleEngineer || '-' }}</a-descriptions-item>
       <a-descriptions-item :label="t('partDetail.analyst')">{{ detailPart.analyst || '-' }}</a-descriptions-item>

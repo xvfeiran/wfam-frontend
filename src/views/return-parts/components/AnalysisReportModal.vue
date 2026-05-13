@@ -32,7 +32,7 @@
             :disabled="isApproved"
           >
             <a-select-option v-for="ft in failureTypeOptions" :key="ft" :value="ft">
-              {{ ft }}
+              {{ t('returnPart.failureTypeLabels.' + ft) }}
             </a-select-option>
           </a-select>
         </a-form-item>

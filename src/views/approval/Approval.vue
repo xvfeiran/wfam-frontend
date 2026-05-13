@@ -124,7 +124,7 @@
           <a-descriptions-item :label="t('approval.reportNumber')">{{ currentReport.reportNumber }}</a-descriptions-item>
           <a-descriptions-item :label="t('returnPart.partNumber')">{{ currentReport.partNumber }}</a-descriptions-item>
           <a-descriptions-item :label="t('returnPart.productPlatform')">{{ currentReport.productPlatform }}</a-descriptions-item>
-          <a-descriptions-item :label="t('returnPart.failureType')">{{ currentReport.failureType }}</a-descriptions-item>
+          <a-descriptions-item :label="t('returnPart.failureType')">{{ currentReport.failureType ? t('returnPart.failureTypeLabels.' + currentReport.failureType) : '-' }}</a-descriptions-item>
           <a-descriptions-item :label="t('approval.submitter')">{{ currentReport.submitter }}</a-descriptions-item>
           <a-descriptions-item :label="t('approval.submitTime')">{{ currentReport.submitTime }}</a-descriptions-item>
           <a-descriptions-item :label="t('approval.reportSummary')" :span="2">{{ currentReport.summary }}</a-descriptions-item>

@@ -58,4 +58,7 @@ export const partApi = {
     const res = await request.get('/parts/check-part-number', { params }) as any
     return res.available
   },
+  getNextSequence(orderId: string): Promise<{ nextSequence: number }> {
+    return request.get('/parts/next-sequence', { params: { orderId } }) as unknown as Promise<{ nextSequence: number }>
+  },
 }

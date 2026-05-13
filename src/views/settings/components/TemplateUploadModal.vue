@@ -2,6 +2,7 @@
   <a-modal
     :open="visible"
     :title="t('settings.uploadTemplateTitle')"
+    :confirm-loading="props.loading"
     @ok="$emit('upload')"
     @cancel="$emit('cancel')"
   >
@@ -16,7 +17,7 @@
       </a-form-item>
       <a-form-item :label="t('settings.failureType')" name="failureType" :rules="[{ required: true, message: t('settings.pleaseSelectFailureType') }]">
         <a-select v-model:value="form.failureType" :placeholder="t('settings.pleaseSelectFailureType')">
-          <a-select-option v-for="ft in props.failureTypes" :key="ft" :value="ft">{{ ft }}</a-select-option>
+          <a-select-option v-for="ft in props.failureTypes" :key="ft" :value="ft">{{ t('returnPart.failureTypeLabels.' + ft) }}</a-select-option>
         </a-select>
       </a-form-item>
       <a-form-item :label="t('settings.templateFile')">
@@ -52,6 +53,7 @@ interface Props {
   form: TemplateForm
   productPlatforms: string[]
   failureTypes: string[]
+  loading?: boolean
 }
 
 const props = defineProps<Props>()

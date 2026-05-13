@@ -8,7 +8,10 @@
       </template>
       <a-table :columns="columns" :data-source="templates" :pagination="false" row-key="id" size="middle" :bordered="false">
         <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'action'">
+          <template v-if="column.key === 'failureType'">
+            {{ record.failureType && record.failureType !== '-' ? t('returnPart.failureTypeLabels.' + record.failureType) : '-' }}
+          </template>
+          <template v-else-if="column.key === 'action'">
             <a-space>
               <a @click="$emit('download-template', record)">{{ t('settings.download') }}</a>
               <a-divider type="vertical" />

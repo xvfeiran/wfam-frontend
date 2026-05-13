@@ -70,6 +70,7 @@
       :form="templateForm"
       :product-platforms="productPlatformOptions"
       :failure-types="failureTypeOptions"
+      :loading="templateUploading"
       @upload="handleTemplateUpload"
       @cancel="templateModalVisible = false"
     />
@@ -134,6 +135,7 @@ const partCodeModalVisible = ref(false)
 
 const productPlatformOptions = ref<string[]>([])
 const failureTypeOptions = ref<string[]>([])
+const templateUploading = ref(false)
 
 // Part code pagination state
 const partCodes = ref<PartCode[]>([])
@@ -283,12 +285,15 @@ const handleTemplateUpload = async () => {
   }
 
   try {
+    templateUploading.value = true
     await reportsApi.uploadTemplate(formData)
     await loadTemplates()
     templateModalVisible.value = false
     message.success(t('message.templateUploadSuccess'))
   } catch {
     message.error(t('message.uploadFailed'))
+  } finally {
+    templateUploading.value = false
   }
 }
 

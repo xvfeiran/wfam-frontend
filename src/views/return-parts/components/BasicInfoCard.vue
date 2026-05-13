@@ -9,22 +9,27 @@
     >
       <a-row :gutter="24">
         <a-col :span="12">
-          <a-form-item :label="t('returnPart.partNumber')" name="partNumber" :rules="partNumberRules">
+          <a-form-item :label="t('returnPart.partNumber')" name="partNumber" :rules="partNumberRules" class="part-number-field">
             <a-input
               v-if="isPartNumberFixed"
               :value="form.partNumber"
               disabled
             />
-            <a-input
-              v-else
-              v-model:value="suffixModel"
-              :placeholder="t('validation.partNumberPlaceholder')"
-              :maxlength="4"
-              :status="partNumberError ? 'error' : undefined"
-              @blur="onSuffixBlur"
-            >
-              <template v-if="partNumberPrefix" #addonBefore>{{ partNumberPrefix }}</template>
-            </a-input>
+            <template v-else>
+              <div v-if="suggestedSeq !== null" class="suggested-seq-hint">
+                {{ t('returnPart.suggestedSequence', { seq: String(suggestedSeq).padStart(4, '0') }) }}
+                <a class="apply-seq-btn" @click="applySuggestedSeq"><CheckOutlined /></a>
+              </div>
+              <a-input
+                v-model:value="suffixModel"
+                :placeholder="t('validation.partNumberPlaceholder')"
+                :maxlength="4"
+                :status="partNumberError ? 'error' : undefined"
+                @blur="onSuffixBlur"
+              >
+                <template v-if="partNumberPrefix" #addonBefore>{{ partNumberPrefix }}</template>
+              </a-input>
+            </template>
             <div v-if="partNumberError" class="part-number-error">{{ partNumberError }}</div>
           </a-form-item>
         </a-col>
@@ -105,9 +110,7 @@
         <a-col :span="12">
           <a-form-item :label="t('returnPart.customerFailureType')" name="failureType">
             <a-select v-model:value="form.failureType" :placeholder="t('validation.selectCustomerFailureType')">
-              <a-select-option value="NVH">NVH</a-select-option>
-              <a-select-option value="功能">{{ t('returnPart.failureFunctional') }}</a-select-option>
-              <a-select-option value="外观">{{ t('returnPart.failureAppearance') }}</a-select-option>
+              <a-select-option v-for="ft in props.failureTypes" :key="ft" :value="ft">{{ t('returnPart.failureTypeLabels.' + ft) }}</a-select-option>
             </a-select>
           </a-form-item>
         </a-col>
@@ -137,6 +140,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
+import { CheckOutlined } from '@ant-design/icons-vue'
 import { partCodeApi } from '@/services/partCodeApi'
 import { partApi } from '@/services/partApi'
 
@@ -191,6 +195,31 @@ const partNumberPrefix = computed(() => {
 })
 
 const partNumberError = ref('')
+
+// ── 建议序号提示 ──
+const suggestedSeq = ref<number | null>(null)
+
+watch(
+  () => props.form.orderId,
+  async (orderId) => {
+    if (props.isEdit || isPartNumberFixed.value || !orderId) {
+      suggestedSeq.value = null
+      return
+    }
+    try {
+      const res = await partApi.getNextSequence(orderId)
+      suggestedSeq.value = res.nextSequence
+    } catch {
+      suggestedSeq.value = null
+    }
+  },
+  { immediate: true },
+)
+
+const applySuggestedSeq = () => {
+  if (suggestedSeq.value === null) return
+  suffixModel.value = String(suggestedSeq.value).padStart(4, '0')
+}
 
 // v-model 绑定：只允许数字，同步到 form.partNumber
 const suffixModel = computed({
@@ -449,6 +478,27 @@ defineExpose({
     margin-top: 4px;
     color: #1677ff;
     font-size: 12px;
+  }
+
+  .suggested-seq-hint {
+    position: absolute;
+    top: -20px;
+    left: 0;
+    color: #999;
+    font-size: 12px;
+    white-space: nowrap;
+
+    .apply-seq-btn {
+      color: #1677ff;
+      margin-left: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      &:hover { color: #4096ff; }
+    }
+  }
+
+  .part-number-field {
+    position: relative;
   }
 
   .part-number-error {
