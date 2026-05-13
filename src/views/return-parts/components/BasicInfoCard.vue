@@ -220,13 +220,18 @@ const onSuffixBlur = () => {
 watch([() => props.form.businessUnit, () => props.form.productPlatform], ([newBu, newPlatform], [oldBu, oldPlatform]) => {
   if (isPartNumberFixed.value) return
   const oldPrefix = (oldBu && oldPlatform) ? `${oldBu || 'BLANK'}-${oldPlatform || 'BLANK'}-` : ''
-  const suffix = oldPrefix && props.form.partNumber?.startsWith(oldPrefix)
-    ? props.form.partNumber.slice(oldPrefix.length)
-    : ''
+  let suffix: string
+  if (oldPrefix) {
+    suffix = props.form.partNumber?.startsWith(oldPrefix)
+      ? props.form.partNumber.slice(oldPrefix.length)
+      : ''
+  } else {
+    suffix = props.form.partNumber || ''
+  }
   if (partNumberPrefix.value && suffix) {
     props.form.partNumber = partNumberPrefix.value + suffix
   } else if (!partNumberPrefix.value) {
-    props.form.partNumber = ''
+    props.form.partNumber = suffix
   }
 })
 

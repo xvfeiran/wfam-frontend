@@ -112,6 +112,7 @@ import SamplingModal from './components/SamplingModal.vue'
 import ScrapModal from './components/ScrapModal.vue'
 import PartsListCard from '@/components/PartsListCard.vue'
 import { isAftermarket } from '@/constants/complaintTypes'
+import { useStatusLabels } from '@/composables/useStatusLabels'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -185,20 +186,8 @@ const canScrap = computed(() => {
   return sampledParts.every(p => p.status === PartStatus.ANALYSIS_COMPLETED)
 })
 
-const statusKeyMap: Record<string, string> = {
-  pending_sampling: 'analysisOrder.statusPendingSampling',
-  in_detailed_analysis: 'analysisOrder.statusInDetailedAnalysis',
-  pending_approval: 'analysisOrder.statusPendingApproval',
-  analysis_completed: 'analysisOrder.statusAnalysisCompleted',
-  workon_scrap_in_progress: 'analysisOrder.statusWorkonScrapInProgress',
-  workon_scrapped: 'analysisOrder.statusWorkonScrapped',
-}
-
-const getStatusLabel = (status?: string) => {
-  if (!status) return '-'
-  const key = statusKeyMap[status]
-  return key ? t(key) : status
-}
+const { getAnalysisLabel } = useStatusLabels()
+const getStatusLabel = (status?: string) => status ? getAnalysisLabel(status) : '-'
 
 const returnMethodI18nKeyMap: Record<string, string> = {
   express: 'returnOrder.methodExpress',

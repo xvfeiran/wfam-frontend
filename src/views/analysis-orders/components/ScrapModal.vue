@@ -79,6 +79,7 @@ import { analysisOrderApi } from '@/services/analysisOrderApi'
 import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import type { AnalysisOrder } from '@/types'
 import { ANALYSIS_ORDER_STATUS_MAP, AnalysisOrderStatus, PartStatus } from '@/types'
+import { useStatusLabels } from '@/composables/useStatusLabels'
 
 const { t } = useI18n()
 
@@ -164,20 +165,11 @@ const getStatusColor = () => {
     : 'default'
 }
 
-const statusI18nKeyMap: Record<string, string> = {
-  pending_sampling: 'analysisOrder.statusPendingSampling',
-  in_detailed_analysis: 'analysisOrder.statusInDetailedAnalysis',
-  pending_approval: 'analysisOrder.statusPendingApproval',
-  analysis_completed: 'analysisOrder.statusAnalysisCompleted',
-  workon_scrap_in_progress: 'analysisOrder.statusWorkonScrapInProgress',
-  workon_scrapped: 'analysisOrder.statusWorkonScrapped',
-}
+const { getAnalysisLabel } = useStatusLabels()
 
 const getStatusLabel = () => {
   const status = getCurrentStatus()
-  if (!status) return '-'
-  const key = statusI18nKeyMap[status]
-  return key ? t(key) : status
+  return status ? getAnalysisLabel(status) : '-'
 }
 
 watch(

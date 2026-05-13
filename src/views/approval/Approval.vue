@@ -152,6 +152,7 @@ import {
   ANALYSIS_FIELD_LABELS,
   type AnalysisApplication,
 } from '@/types'
+import { useStatusLabels } from '@/composables/useStatusLabels'
 import { approvalApi } from '@/services/approvalApi'
 import { useApprovalColumns } from '@/composables/useApprovalColumns'
 import { useDebouncedClick } from '@/composables/useDebouncedClick'
@@ -221,13 +222,7 @@ watch(
 
 const { myAnalysisColumns, approvalAnalysisColumns } = useApprovalColumns()
 
-// 状态到i18n键的映射
-const statusI18nKeyMap: Record<ApprovalStatus, string> = {
-  [ApprovalStatus.PENDING]: 'status.pending',
-  [ApprovalStatus.APPROVED]: 'status.approved',
-  [ApprovalStatus.REJECTED]: 'status.rejected',
-  [ApprovalStatus.WITHDRAWN]: 'status.withdrawn',
-}
+const { getApprovalLabel } = useStatusLabels()
 
 // 状态颜色映射
 const getStatusColor = (status: ApprovalStatus) => {
@@ -235,10 +230,7 @@ const getStatusColor = (status: ApprovalStatus) => {
 }
 
 // 状态标签映射
-const getStatusLabel = (status: ApprovalStatus) => {
-  const key = statusI18nKeyMap[status]
-  return key ? t(key) : APPROVAL_STATUS_MAP[status]?.label || status
-}
+const getStatusLabel = (status: ApprovalStatus) => getApprovalLabel(status)
 
 // 字段标签映射
 const getFieldLabel = (key: string) => {

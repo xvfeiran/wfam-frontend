@@ -68,6 +68,7 @@ import { returnOrderApi } from '@/services/returnOrderApi'
 import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import type { ReturnOrder } from '@/types'
 import { ORDER_STATUS_MAP } from '@/types'
+import { useStatusLabels } from '@/composables/useStatusLabels'
 
 const { t } = useI18n()
 
@@ -119,23 +120,12 @@ const getStatusColor = () => {
   return status in ORDER_STATUS_MAP ? ORDER_STATUS_MAP[status as keyof typeof ORDER_STATUS_MAP].color : 'default'
 }
 
+const { getStatusLabel: getStatusLabelFromComposable } = useStatusLabels()
+
 // 获取状态标签
 const getStatusLabel = () => {
   const status = getCurrentStatus()
-  if (!status) return '-'
-  const key = statusI18nKeyMap[status] || status
-  return t(key)
-}
-
-// 状态到i18n键的映射
-const statusI18nKeyMap: Record<string, string> = {
-  draft: 'status.draft',
-  in_initial_analysis: 'status.inInitialAnalysis',
-  in_detailed_analysis: 'status.inDetailedAnalysis',
-  pending_approval: 'status.pendingApproval',
-  analysis_completed: 'status.analysisCompleted',
-  scrap_in_progress: 'status.scrapInProgress',
-  scrapped: 'status.scrapped',
+  return status ? getStatusLabelFromComposable(status) : '-'
 }
 
 // 重置表单

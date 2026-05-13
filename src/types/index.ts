@@ -148,11 +148,11 @@ export enum ApprovalStatus {
 }
 
 // 审批状态映射
-export const APPROVAL_STATUS_MAP: Record<ApprovalStatus, { label: string; color: string }> = {
-  [ApprovalStatus.PENDING]: { label: '待审批', color: 'processing' },
-  [ApprovalStatus.APPROVED]: { label: '已通过', color: 'success' },
-  [ApprovalStatus.REJECTED]: { label: '已驳回', color: 'error' },
-  [ApprovalStatus.WITHDRAWN]: { label: '已撤回', color: 'default' },
+export const APPROVAL_STATUS_MAP: Record<ApprovalStatus, { color: string }> = {
+  [ApprovalStatus.PENDING]: { color: 'processing' },
+  [ApprovalStatus.APPROVED]: { color: 'success' },
+  [ApprovalStatus.REJECTED]: { color: 'error' },
+  [ApprovalStatus.WITHDRAWN]: { color: 'default' },
 }
 
 // 精分析申请接口
@@ -206,31 +206,31 @@ export interface AnalysisOrder {
 }
 
 // 状态显示映射
-export const ORDER_STATUS_MAP: Record<OrderStatus, { label: string; color: string }> = {
-  [OrderStatus.DRAFT]: { label: '草稿', color: 'default' },
-  [OrderStatus.SUBMITTED]: { label: '已提交', color: 'processing' },
-  [OrderStatus.SCRAPPED]: { label: '已报废', color: 'error' },  // 新增：红色标签
+export const ORDER_STATUS_MAP: Record<OrderStatus, { color: string }> = {
+  [OrderStatus.DRAFT]: { color: 'default' },
+  [OrderStatus.SUBMITTED]: { color: 'processing' },
+  [OrderStatus.SCRAPPED]: { color: 'error' },
 }
 
-export const ANALYSIS_ORDER_STATUS_MAP: Record<AnalysisOrderStatus, { label: string; color: string }> = {
-  [AnalysisOrderStatus.PENDING_SAMPLING]: { label: '待抽样', color: 'warning' },
-  [AnalysisOrderStatus.IN_DETAILED_ANALYSIS]: { label: '精分析中', color: 'processing' },
-  [AnalysisOrderStatus.PENDING_APPROVAL]: { label: '精分析/审批中', color: 'warning' },
-  [AnalysisOrderStatus.ANALYSIS_COMPLETED]: { label: '精分析/审批完成', color: 'success' },
-  [AnalysisOrderStatus.WORKON_SCRAP_IN_PROGRESS]: { label: 'WorkOn报废中', color: 'error' },
-  [AnalysisOrderStatus.WORKON_SCRAPPED]: { label: '已报废', color: 'purple' },
+export const ANALYSIS_ORDER_STATUS_MAP: Record<AnalysisOrderStatus, { color: string }> = {
+  [AnalysisOrderStatus.PENDING_SAMPLING]: { color: 'warning' },
+  [AnalysisOrderStatus.IN_DETAILED_ANALYSIS]: { color: 'processing' },
+  [AnalysisOrderStatus.PENDING_APPROVAL]: { color: 'warning' },
+  [AnalysisOrderStatus.ANALYSIS_COMPLETED]: { color: 'success' },
+  [AnalysisOrderStatus.WORKON_SCRAP_IN_PROGRESS]: { color: 'error' },
+  [AnalysisOrderStatus.WORKON_SCRAPPED]: { color: 'purple' },
 }
 
-export const PART_STATUS_MAP: Record<PartStatus, { label: string; color: string }> = {
-  [PartStatus.IN_INITIAL_ANALYSIS]: { label: '信息录入中', color: 'processing' },
-  [PartStatus.INITIAL_ANALYSIS_COMPLETED]: { label: '信息录入/已完成', color: 'success' },
-  [PartStatus.IN_DETAILED_ANALYSIS]: { label: '精分析/进行中', color: 'processing' },
-  [PartStatus.ANALYSIS_REPORT_SUBMITTED]: { label: '精分析/已提交', color: 'warning' },
-  [PartStatus.PENDING_APPROVAL]: { label: '精分析/审批中', color: 'warning' },
-  [PartStatus.ANALYSIS_COMPLETED]: { label: '精分析/已审批', color: 'success' },
-  [PartStatus.ANALYSIS_SKIPPED]: { label: '精分析/已跳过', color: 'default' },
-  [PartStatus.SCRAP_IN_PROGRESS]: { label: 'WorkOn报废中', color: 'warning' },
-  [PartStatus.SCRAPPED]: { label: '已报废', color: 'default' },
+export const PART_STATUS_MAP: Record<PartStatus, { color: string }> = {
+  [PartStatus.IN_INITIAL_ANALYSIS]: { color: 'processing' },
+  [PartStatus.INITIAL_ANALYSIS_COMPLETED]: { color: 'success' },
+  [PartStatus.IN_DETAILED_ANALYSIS]: { color: 'processing' },
+  [PartStatus.ANALYSIS_REPORT_SUBMITTED]: { color: 'warning' },
+  [PartStatus.PENDING_APPROVAL]: { color: 'warning' },
+  [PartStatus.ANALYSIS_COMPLETED]: { color: 'success' },
+  [PartStatus.ANALYSIS_SKIPPED]: { color: 'default' },
+  [PartStatus.SCRAP_IN_PROGRESS]: { color: 'warning' },
+  [PartStatus.SCRAPPED]: { color: 'default' },
 }
 
 export const RETURN_METHOD_MAP: Record<ReturnMethod, string> = {

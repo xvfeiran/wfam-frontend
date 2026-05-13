@@ -146,6 +146,7 @@ import { fileApi } from '@/services/fileApi'
 import { PART_STATUS_MAP, PartStatus } from '@/types'
 import type { Part, AnalysisReport, ReportTemplate } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
+import { useStatusLabels } from '@/composables/useStatusLabels'
 import AnalysisReportModal from './components/AnalysisReportModal.vue'
 
 const getFileUrl = (relativePath: string) => {
@@ -280,20 +281,8 @@ const getReportStatusLabel = (status: string) => {
   return labelMap[status] || status
 }
 
-const partStatusI18nKeyMap: Record<string, string> = {
-  in_initial_analysis: 'inInitialAnalysis',
-  in_detailed_analysis: 'inDetailedAnalysis',
-  pending_approval: 'pendingApproval',
-  analysis_completed: 'analysisCompleted',
-  scrap_in_progress: 'scrapInProgress',
-  scrapped: 'scrapped',
-}
-
-const getStatusLabel = (status?: string) => {
-  if (!status) return '-'
-  const i18nKey = partStatusI18nKeyMap[status]
-  return i18nKey ? t(`status.${i18nKey}`) : status
-}
+const { getPartLabel } = useStatusLabels()
+const getStatusLabel = (status?: string) => status ? getPartLabel(status) : '-'
 
 onMounted(async () => {
   part.value = await partApi.getById(partId.value)

@@ -82,6 +82,7 @@ import { ANALYSIS_ORDER_STATUS_MAP, AnalysisOrderStatus } from '@/types'
 import type { AnalysisOrder } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
 import { useDevUserStore } from '@/stores/devUser'
+import { useStatusLabels } from '@/composables/useStatusLabels'
 
 const { t } = useI18n()
 const { isAnalyst } = usePermissions()
@@ -114,26 +115,11 @@ const pagination = reactive({
   pageSizeOptions: ['10', '20', '50'],
 })
 
-const statusKeyMap: Record<AnalysisOrderStatus, string> = {
-  pending_sampling: 'analysisOrder.statusPendingSampling',
-  in_detailed_analysis: 'analysisOrder.statusInDetailedAnalysis',
-  pending_approval: 'analysisOrder.statusPendingApproval',
-  analysis_completed: 'analysisOrder.statusAnalysisCompleted',
-  workon_scrap_in_progress: 'analysisOrder.statusWorkonScrapInProgress',
-  workon_scrapped: 'analysisOrder.statusWorkonScrapped',
-}
+const { getAnalysisLabel, normalizeStatus } = useStatusLabels()
 
 const statusOptions = Object.values(AnalysisOrderStatus)
 
-const normalizeStatus = (status: AnalysisOrderStatus | string | null | undefined) => (status || '').trim().toLowerCase()
-
-const getStatusLabel = (status: AnalysisOrderStatus | string) => {
-  const normalizedStatus = normalizeStatus(status)
-  const key = normalizedStatus in statusKeyMap
-    ? statusKeyMap[normalizedStatus as AnalysisOrderStatus]
-    : undefined
-  return key ? t(key) : status
-}
+const getStatusLabel = (status: AnalysisOrderStatus | string) => getAnalysisLabel(status)
 
 const getStatusColor = (status: AnalysisOrderStatus | string) => {
   const normalizedStatus = normalizeStatus(status)

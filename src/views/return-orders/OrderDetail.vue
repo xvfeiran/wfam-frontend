@@ -86,6 +86,7 @@ import { returnOrderApi } from '@/services/returnOrderApi'
 import { ORDER_STATUS_MAP, RETURN_METHOD_MAP, OrderStatus } from '@/types'
 import type { ReturnOrder } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
+import { useStatusLabels } from '@/composables/useStatusLabels'
 import { isAftermarket } from '@/constants/complaintTypes'
 import PartsListCard from '@/components/PartsListCard.vue'
 
@@ -154,17 +155,10 @@ const canAddPart = computed(() => {
   return order.value.status === 'draft' || order.value.status === 'submitted'
 })
 
-// 状态到i18n键的映射
-const returnOrderStatusI18nKeyMap: Record<string, string> = {
-  draft: 'returnOrder.status.draft',
-  submitted: 'returnOrder.status.submitted',
-  scrapped: 'returnOrder.status.scrapped',
-}
-
-// 获取翻译后的状态标签（退货单）
+const { getOrderLabel } = useStatusLabels()
 const getStatusLabel = (status?: string) => {
-  const key = returnOrderStatusI18nKeyMap[status || order.value?.status || 'draft']
-  return key ? t(key) : status || order.value?.status || ''
+  const s = status || order.value?.status || 'draft'
+  return s ? getOrderLabel(s) : ''
 }
 
 // 退回方式到i18n键的映射
