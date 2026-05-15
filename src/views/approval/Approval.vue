@@ -42,8 +42,8 @@
         </a-card>
       </a-tab-pane>
 
-      <!-- 待我审批 - 别人提交的申请待我审批 -->
-      <a-tab-pane key="pendingApproval" :tab="t('approval.pendingApproval')">
+      <!-- 待我审批 - 别人提交的申请待我审批（仅 QMC Leader 可见） -->
+      <a-tab-pane v-if="isQMCLeader" key="pendingApproval" :tab="t('approval.pendingApproval')">
         <a-card>
           <a-table
             :columns="approvalAnalysisColumns"
@@ -153,12 +153,14 @@ import {
   type AnalysisApplication,
 } from '@/types'
 import { useStatusLabels } from '@/composables/useStatusLabels'
+import { usePermissions } from '@/composables/usePermissions'
 import { approvalApi } from '@/services/approvalApi'
 import { useApprovalColumns } from '@/composables/useApprovalColumns'
 import { useDebouncedClick } from '@/composables/useDebouncedClick'
 
 const { t } = useI18n()
 const route = useRoute()
+const { isQMCLeader } = usePermissions()
 
 // Tab状态
 const mainTab = ref('myApplications')
@@ -187,14 +189,13 @@ const myAnalysisApplications = ref<AnalysisApplication[]>([])
 const pendingAnalysisApprovals = ref<AnalysisApplication[]>([])
 
 onMounted(async () => {
-  const [myAnalysis, pendingAnalysis] = await Promise.all([
-    approvalApi.getMyApplications(),
-    approvalApi.getPendingApprovals(),
-  ])
-  myAnalysisApplications.value = myAnalysis
-  pendingAnalysisApprovals.value = pendingAnalysis
+  myAnalysisApplications.value = await approvalApi.getMyApplications()
 
-  if (route.query.tab === 'pendingApproval') {
+  if (isQMCLeader.value) {
+    pendingAnalysisApprovals.value = await approvalApi.getPendingApprovals()
+  }
+
+  if (isQMCLeader.value && route.query.tab === 'pendingApproval') {
     mainTab.value = 'pendingApproval'
   }
 
@@ -214,7 +215,9 @@ onMounted(async () => {
 watch(
   () => route.query.tab,
   (tab) => {
-    if (tab === 'myApplications' || tab === 'pendingApproval') {
+    if (tab === 'myApplications') {
+      mainTab.value = tab
+    } else if (tab === 'pendingApproval' && isQMCLeader.value) {
       mainTab.value = tab
     }
   },
