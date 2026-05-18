@@ -36,6 +36,20 @@
             </a-select-option>
           </a-select>
         </a-form-item>
+        <a-form-item :label="t('reportForm.responsibility')" style="margin-bottom: 0; margin-left: 8px;">
+          <a-select
+            v-model:value="form.responsibility"
+            style="width: 150px"
+            :placeholder="t('reportForm.selectResponsibility')"
+            :disabled="isApproved"
+            allow-clear
+          >
+            <a-select-option value="B">B - Bosch</a-select-option>
+            <a-select-option value="C">C - Customer</a-select-option>
+            <a-select-option value="S">S - Supplier</a-select-option>
+            <a-select-option value="O">O - Open</a-select-option>
+          </a-select>
+        </a-form-item>
       </div>
       <!-- 当有多个匹配模板时显示选择器 -->
       <div v-if="matchedTemplates.length > 1" class="template-selector">
@@ -54,7 +68,7 @@
       <template v-if="selectedTemplate">
         <a-divider>{{ t('reportForm.reportContent') }}</a-divider>
 
-        <template v-for="field in selectedTemplate.fields" :key="field.name">
+        <template v-for="field in selectedTemplate.fields.filter(f => f.name !== 'responsibility')" :key="field.name">
           <a-form-item :label="field.label" :name="['content', field.name]" :rules="field.required ? [{ required: true, message: t('reportForm.enterField', { field: field.label }) }] : []">
             <template v-if="field.type === 'text'">
               <a-input v-model:value="form.content[field.name]" :placeholder="t('reportForm.inputField', { field: field.label })" :disabled="isApproved" />
@@ -160,6 +174,7 @@ const form = reactive({
   content: {} as Record<string, any>,
   summary: '',
   attachments: [] as any[],
+  responsibility: undefined as string | undefined,
 })
 
 // 根据选中的模板ID获取当前模板
@@ -263,6 +278,7 @@ watch(() => props.visible, async (val) => {
             form.templateId = existingReport.templateId
             existingReportContent = existingReport.content || {}
             existingReportSummary = existingReport.summary || ''
+            form.responsibility = existingReport.responsibility || undefined
           } else {
             // 没有现有报告，使用新表单
             reportId.value = undefined
@@ -287,6 +303,7 @@ watch(() => props.visible, async (val) => {
       } else {
         form.content = {}
         form.summary = ''
+        form.responsibility = undefined
       }
     }
   }
@@ -330,6 +347,7 @@ const handleSaveDraft = async () => {
         templateId: selectedTemplate.value.id,
         content: formattedContent,
         summary: form.summary,
+        responsibility: form.responsibility,
         status: 'draft',
       })
       reportId.value = report.id
@@ -380,6 +398,7 @@ const handleSubmit = async () => {
         templateId: selectedTemplate.value.id,
         content: formattedContent,
         summary: form.summary,
+        responsibility: form.responsibility,
         status: 'submitted',
       })
       reportId.value = report.id

@@ -13,15 +13,6 @@
         />
       </a-tab-pane>
 
-      <!-- 邮件触发配置 -->
-      <a-tab-pane key="notifications" :tab="t('settings.notifications')">
-        <NotificationConfig
-          :config="notificationConfig"
-          :user-options="userOptions"
-          @save-config="handleSaveNotificationConfig"
-        />
-      </a-tab-pane>
-
       <!-- 邮件服务器配置 -->
       <a-tab-pane key="email" :tab="t('settings.email')">
         <EmailConfig ref="emailConfigRef" />
@@ -104,7 +95,6 @@ import { reportsApi } from '@/services/reportsApi'
 import type { Customer } from '@/services/customerApi'
 import type { PartCode } from '@/services/partCodeApi'
 import TemplateManagement from './components/TemplateManagement.vue'
-import NotificationConfig from './components/NotificationConfig.vue'
 import EmailConfig from './components/EmailConfig.vue'
 import CustomerManagement from './components/CustomerManagement.vue'
 import PartCodeManagement from './components/PartCodeManagement.vue'
@@ -114,7 +104,7 @@ import PartCodeModal from './components/PartCodeModal.vue'
 
 const { t } = useI18n()
 
-type SettingsTab = 'templates' | 'notifications' | 'email' | 'dictionary'
+type SettingsTab = 'templates' | 'email' | 'dictionary'
 type DictionaryTab = 'customers' | 'partCodes'
 
 interface TemplateItem {
@@ -202,13 +192,6 @@ const loadTemplates = async () => {
   }
 }
 
-const userOptions = ref([
-  { value: 'user1', label: '张三' },
-  { value: 'user2', label: '李四' },
-  { value: 'user3', label: '王五' },
-  { value: 'user4', label: '赵六' },
-])
-
 // Customer pagination state
 const customers = ref<Customer[]>([])
 const loadingCustomers = ref(false)
@@ -227,13 +210,6 @@ const templateForm = reactive({
   productPlatform: undefined as string | undefined,
   failureType: undefined as string | undefined,
   fileList: [] as any[],
-})
-
-const notificationConfig = reactive({
-  warningCron: '0 9 * * *',
-  warningThreshold: 3,
-  overdueCron: '0 9 * * *',
-  overdueRecipients: ['user1', 'user2'],
 })
 
 const customerForm = reactive({
@@ -342,10 +318,6 @@ const handleDeleteTemplate = async (id: string) => {
   } catch (error) {
     message.error(getApiErrorMessage(error) || t('message.deleteFailed'))
   }
-}
-
-const handleSaveNotificationConfig = () => {
-  message.success(t('message.configSaveSuccess'))
 }
 
 const handleAddCustomer = () => {

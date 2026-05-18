@@ -31,10 +31,15 @@
       <a-col :span="6">
         <a-card class="stat-card hover-card" :loading="statsLoading">
           <a-statistic
-            :title="t('dashboard.pendingTasks')"
             :value="stats.pendingTasks"
             :value-style="{ color: '#faad14' }"
           >
+            <template #title>
+              {{ t('dashboard.pendingTasks') }}
+              <a-tooltip :title="t('dashboard.pendingTasksTip')">
+                <QuestionCircleOutlined style="color: rgba(0,0,0,0.45); margin-left: 4px; cursor: pointer;" />
+              </a-tooltip>
+            </template>
             <template #prefix>
               <ClockCircleOutlined />
             </template>
@@ -44,11 +49,16 @@
       <a-col :span="6">
         <a-card class="stat-card hover-card" :loading="statsLoading" @click="goToReports">
           <a-statistic
-            :title="t('dashboard.completionRate')"
             :value="stats.completionRate"
             suffix="%"
             :value-style="{ color: '#722ed1' }"
           >
+            <template #title>
+              {{ t('dashboard.completionRate') }}
+              <a-tooltip :title="t('dashboard.completionRateTip')">
+                <QuestionCircleOutlined style="color: rgba(0,0,0,0.45); margin-left: 4px; cursor: pointer;" />
+              </a-tooltip>
+            </template>
             <template #prefix>
               <CheckCircleOutlined />
             </template>

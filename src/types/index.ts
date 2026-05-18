@@ -89,6 +89,7 @@ export interface AnalysisReport {
   templateId: string
   content: Record<string, any>
   status: 'draft' | 'submitted' | 'approved' | 'rejected'
+  responsibility?: string
   summary?: string
   attachments?: string[]
   submittedBy?: string
