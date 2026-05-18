@@ -59,11 +59,6 @@
         :pagination="pagination"
         @change="handleTableChange"
       >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'action'">
-            <a-button type="link" @click.stop="goToDetail(record.id)">{{ t('common.view') }}</a-button>
-          </template>
-        </template>
       </a-table>
     </a-card>
   </div>
@@ -186,11 +181,6 @@ const columns = computed<TableProps['columns']>(() => [
     sorter: (a: AnalysisOrder, b: AnalysisOrder) =>
       (a.updatedAt || '').localeCompare(b.updatedAt || ''),
     customRender: ({ text }: { text: string }) => text ? text.replace('T', ' ').substring(0, 19) : '-',
-  },
-  {
-    title: t('common.operation'),
-    key: 'action',
-    width: 80,
   },
 ])
 

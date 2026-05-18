@@ -112,6 +112,7 @@ export default {
     productPlatform: '产品平台',
     productionShift: '生产班次',
     customerFailureType: '客户失效类型',
+    failureType: '失效类型',
     failureFunctional: '功能',
     failureAppearance: '外观',
     failureTypeLabels: {

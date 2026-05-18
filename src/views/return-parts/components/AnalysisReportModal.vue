@@ -6,27 +6,32 @@
     @cancel="handleCancel"
     @ok="handleSubmit"
   >
-    <!-- 顶部信息提示 -->
-    <div class="part-info-tip">
-      <div class="match-conditions">
-        <span class="conditions-label">{{ t('reportForm.matchConditions') }}:</span>
-        <a-form-item :label="t('returnPart.productPlatform')" style="margin-bottom: 0; margin-left: 8px;">
+    <!-- 顶部匹配条件 -->
+    <div class="match-conditions-card">
+      <div class="match-conditions-header">
+        <span class="conditions-icon">⚙</span>
+        <span class="conditions-title">{{ t('reportForm.matchConditions') }}</span>
+      </div>
+      <div class="match-conditions-body">
+        <a-form-item :label="t('returnPart.productPlatform')" class="condition-item">
           <a-select
             v-model:value="matchConditions.productPlatform"
-            style="width: 150px"
+            style="width: 160px"
             @change="handleMatchConditionsChange"
             allow-clear
             :disabled="isApproved"
+            show-search
+            :filter-option="filterOption"
           >
             <a-select-option v-for="pc in productPlatformOptions" :key="pc" :value="pc">
               {{ pc }}
             </a-select-option>
           </a-select>
         </a-form-item>
-        <a-form-item :label="t('returnPart.failureType')" style="margin-bottom: 0; margin-left: 8px;">
+        <a-form-item :label="t('returnPart.failureType')" class="condition-item">
           <a-select
             v-model:value="matchConditions.failureType"
-            style="width: 150px"
+            style="width: 160px"
             @change="handleMatchConditionsChange"
             allow-clear
             :disabled="isApproved"
@@ -36,37 +41,40 @@
             </a-select-option>
           </a-select>
         </a-form-item>
-        <a-form-item :label="t('reportForm.responsibility')" style="margin-bottom: 0; margin-left: 8px;">
-          <a-select
-            v-model:value="form.responsibility"
-            style="width: 150px"
-            :placeholder="t('reportForm.selectResponsibility')"
-            :disabled="isApproved"
-            allow-clear
-          >
-            <a-select-option value="B">B - Bosch</a-select-option>
-            <a-select-option value="C">C - Customer</a-select-option>
-            <a-select-option value="S">S - Supplier</a-select-option>
-            <a-select-option value="O">O - Open</a-select-option>
-          </a-select>
-        </a-form-item>
-      </div>
-      <!-- 当有多个匹配模板时显示选择器 -->
-      <div v-if="matchedTemplates.length > 1" class="template-selector">
-        <a-form-item :label="t('reportForm.selectTemplate')" style="margin-bottom: 0;">
-          <a-select v-model:value="form.templateId" style="width: 250px">
+        <a-form-item v-if="matchedTemplates.length > 0" :label="t('reportForm.selectTemplate')" class="condition-item">
+          <a-select v-model:value="form.templateId" style="width: 220px">
             <a-select-option v-for="tmpl in matchedTemplates" :key="tmpl.id" :value="tmpl.id">
               {{ tmpl.name }}
             </a-select-option>
           </a-select>
         </a-form-item>
       </div>
-      <span v-else-if="selectedTemplate" class="template-name">（{{ t('reportForm.templateMatched') }} {{ selectedTemplate.name }}）</span>
     </div>
 
     <a-form :model="form" layout="vertical" ref="formRef">
       <template v-if="selectedTemplate">
         <a-divider>{{ t('reportForm.reportContent') }}</a-divider>
+
+        <div class="responsibility-row" :class="{ 'responsibility-required': !form.responsibility }">
+          <span class="responsibility-label">
+            {{ t('reportForm.responsibility') }}
+            <span class="required-star">*</span>
+          </span>
+          <a-radio-group v-model:value="form.responsibility" :disabled="isApproved" size="large">
+            <a-radio-button value="B">
+              <span class="resp-code">B</span> Bosch
+            </a-radio-button>
+            <a-radio-button value="C">
+              <span class="resp-code">C</span> Customer
+            </a-radio-button>
+            <a-radio-button value="S">
+              <span class="resp-code">S</span> Supplier
+            </a-radio-button>
+            <a-radio-button value="O">
+              <span class="resp-code">O</span> Open
+            </a-radio-button>
+          </a-radio-group>
+        </div>
 
         <template v-for="field in selectedTemplate.fields.filter(f => f.name !== 'responsibility')" :key="field.name">
           <a-form-item :label="field.label" :name="['content', field.name]" :rules="field.required ? [{ required: true, message: t('reportForm.enterField', { field: field.label }) }] : []">
@@ -205,19 +213,28 @@ const matchTemplates = async () => {
     const allTemplates = await reportsApi.matchAllTemplates(productPlatform, failureType)
     matchedTemplates.value = allTemplates
 
-    // 如果没有已选择的模板（新报告），使用第一个匹配的模板
-    if (!form.templateId && allTemplates.length > 0) {
+    // 当前 templateId 不在匹配结果中时，自动选第一个
+    const currentIdInResults = allTemplates.some(t => t.id === form.templateId)
+    if (!currentIdInResults && allTemplates.length > 0) {
       form.templateId = allTemplates[0].id
+    } else if (allTemplates.length === 0) {
+      form.templateId = undefined
     }
   } catch (error) {
     console.error('[Template Match] Failed to match templates:', error)
     matchedTemplates.value = []
+    form.templateId = undefined
   }
 }
 
 // 处理匹配条件变化
 const handleMatchConditionsChange = () => {
   matchTemplates()
+}
+
+const filterOption = (input: string, option: any) => {
+  const label = option.children?.[0]?.children?.[0] ?? option.value ?? ''
+  return label.toLowerCase().includes(input.toLowerCase())
 }
 
 // 将内容中的日期字符串转换为 dayjs 对象
@@ -330,6 +347,10 @@ const handleSaveDraft = async () => {
   if (!props.part?.id || !selectedTemplate.value) return
   saveDraftDebounce.execute(async () => {
     try {
+      if (!form.responsibility) {
+        message.warning(t('reportForm.selectResponsibility'))
+        return
+      }
       await formRef.value?.validate()
 
       // 格式化日期字段
@@ -381,6 +402,10 @@ const handleSubmit = async () => {
   if (!props.part?.id || !selectedTemplate.value) return
   submitDebounce.execute(async () => {
     try {
+      if (!form.responsibility) {
+        message.warning(t('reportForm.selectResponsibility'))
+        return
+      }
       await formRef.value?.validate()
 
       // 格式化日期字段
@@ -411,47 +436,99 @@ const handleSubmit = async () => {
 </script>
 
 <style lang="less" scoped>
-.part-info-tip {
+.match-conditions-card {
   margin-bottom: 16px;
-  padding: 12px 16px;
-  background: #f5f5f5;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #666;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 16px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  overflow: hidden;
 
-  .match-conditions {
+  .match-conditions-header {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #fafafa;
+    border-bottom: 1px solid #f0f0f0;
 
-    .conditions-label {
-      font-weight: 500;
+    .conditions-icon {
+      font-size: 14px;
     }
 
-    :deep(.ant-form-item) {
+    .conditions-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #595959;
+    }
+  }
+
+  .match-conditions-body {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    padding: 16px;
+
+    .condition-item {
       margin-bottom: 0;
     }
 
     :deep(.ant-form-item-label) {
-      padding-bottom: 0;
+      padding-bottom: 4px;
     }
   }
 
-  .template-selector {
-    display: flex;
-    align-items: center;
+}
 
-    :deep(.ant-form-item) {
-      margin-bottom: 0;
+.responsibility-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #f0f5ff 0%, #e6f4ff 100%);
+  border: 1px solid #bae0ff;
+  border-radius: 8px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+
+  &.responsibility-required {
+    border-color: #ffccc7;
+    background: linear-gradient(135deg, #fff1f0 0%, #fff2f0 100%);
+  }
+
+  .responsibility-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+    white-space: nowrap;
+
+    .required-star {
+      color: #ff4d4f;
+      margin-left: 2px;
     }
   }
 
-  .template-name {
-    color: #1677ff;
+  .resp-code {
+    font-weight: 700;
+    font-size: 15px;
+  }
+
+  :deep(.ant-radio-group) {
+    .ant-radio-button-wrapper {
+      height: 38px;
+      line-height: 36px;
+      font-size: 14px;
+      padding: 0 18px;
+      transition: all 0.2s;
+    }
+    .ant-radio-button-wrapper-checked {
+      background: #1677ff;
+      border-color: #1677ff;
+      color: #fff;
+      font-weight: 600;
+    }
+    .ant-radio-button-wrapper-checked:hover {
+      background: #4096ff;
+      border-color: #4096ff;
+    }
   }
 }
 </style>

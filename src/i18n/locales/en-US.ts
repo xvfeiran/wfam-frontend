@@ -106,6 +106,7 @@ export default {
     productPlatform: 'Product Platform',
     productionShift: 'Production Shift',
     customerFailureType: 'Customer Failure Type',
+    failureType: 'Failure Type',
     failureFunctional: 'Functional',
     failureAppearance: 'Appearance',
     failureTypeLabels: {
