@@ -324,11 +324,26 @@ const goToOrder = (e?: Event) => {
 }
 
 const handleViewReport = () => {
-  message.info(t('partDetail.viewReportDetails'))
+  analysisVisible.value = true
 }
 
-const handleExportReport = () => {
-  message.success(t('partDetail.reportExportSuccess'))
+const handleExportReport = async () => {
+  if (!report.value?.id) {
+    message.warning(t('analysisForm.pleaseSaveFirst'))
+    return
+  }
+  try {
+    const blob = await reportsApi.exportReport(report.value.id)
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `report_${part.value?.partNumber}_${Date.now()}.xlsx`
+    a.click()
+    window.URL.revokeObjectURL(url)
+    message.success(t('message.downloadSuccess'))
+  } catch {
+    message.error(t('message.exportFailed'))
+  }
 }
 </script>
 
