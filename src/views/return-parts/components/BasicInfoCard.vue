@@ -117,7 +117,7 @@
         <a-col :span="12">
           <a-form-item :label="t('partDetail.responsibleEngineer')">
             <a-select v-model:value="form.responsibleEngineer" :placeholder="t('validation.pleaseSelect')" allowClear>
-              <a-select-option v-for="u in analysts" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
+              <a-select-option v-for="u in cqes" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
             </a-select>
           </a-form-item>
         </a-col>
@@ -165,6 +165,7 @@ interface Props {
   productPlatforms: string[]
   failureTypes: string[]
   analysts: { id: string; loginName: string; displayName: string }[]
+  cqes: { id: string; loginName: string; displayName: string }[]
   partId?: string
   submitted?: boolean
 }
@@ -246,7 +247,7 @@ const onSuffixBlur = () => {
 }
 
 // BU/Platform 变化时重新拼接 partNumber
-watch([() => props.form.businessUnit, () => props.form.productPlatform], ([newBu, newPlatform], [oldBu, oldPlatform]) => {
+watch([() => props.form.businessUnit, () => props.form.productPlatform], (_new, [oldBu, oldPlatform]) => {
   if (isPartNumberFixed.value) return
   const oldPrefix = (oldBu && oldPlatform) ? `${oldBu || 'BLANK'}-${oldPlatform || 'BLANK'}-` : ''
   let suffix: string

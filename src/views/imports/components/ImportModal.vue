@@ -228,7 +228,7 @@ async function handleUpload() {
     } catch (e: any) {
       message.error(e?.response?.data?.message || e?.message || t('common.failed'))
     }
-  })()
+  })
 }
 
 function schedulePoll(id: string) {

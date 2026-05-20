@@ -364,8 +364,8 @@ const handleSaveDraft = async () => {
       }
 
       const report = await reportsApi.saveReport({
-        partId: props.part.id,
-        templateId: selectedTemplate.value.id,
+        partId: props.part!.id,
+        templateId: selectedTemplate.value!.id,
         content: formattedContent,
         summary: form.summary,
         responsibility: form.responsibility,
@@ -419,8 +419,8 @@ const handleSubmit = async () => {
       }
 
       const report = await reportsApi.saveReport({
-        partId: props.part.id,
-        templateId: selectedTemplate.value.id,
+        partId: props.part!.id,
+        templateId: selectedTemplate.value!.id,
         content: formattedContent,
         summary: form.summary,
         responsibility: form.responsibility,

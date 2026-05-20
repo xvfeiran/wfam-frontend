@@ -30,6 +30,7 @@
       :product-platforms="productPlatforms"
       :failure-types="failureTypes"
       :analysts="analysts"
+      :cqes="cqes"
       :part-id="isEdit ? partId : undefined"
       :submitted="isSubmitted"
     />
@@ -121,6 +122,7 @@ const businessUnits = ref<string[]>([])
 const productPlatforms = ref<string[]>([])
 const failureTypes = ref<string[]>([])
 const analysts = ref<{ id: string; loginName: string; displayName: string }[]>([])
+const cqes = ref<{ id: string; loginName: string; displayName: string }[]>([])
 
 const hasPresetOrder = computed(() => {
   return !!route.query.orderNumber && !isEdit.value
@@ -160,16 +162,18 @@ const { zoneState, previewUrl, ocrResults, ocrTaskId, elapsedSeconds, handleOCRU
 const isOcrProcessing = computed(() => zoneState.value === 'uploading' || zoneState.value === 'processing')
 
 onMounted(async () => {
-  const [lookups, ordersData, analystsData] = await Promise.all([
+  const [lookups, ordersData, analystsData, cqesData] = await Promise.all([
     lookupApi.getAll(),
     returnOrderApi.list({ statuses: ['draft', 'submitted'], pageSize: 100 }),
     userApi.listAnalysts(),
+    userApi.listCQEs(),
   ])
   businessUnits.value = lookups.businessUnits
   productPlatforms.value = lookups.productPlatforms
   failureTypes.value = lookups.failureTypes
   orders.value = ordersData.data
   analysts.value = analystsData
+  cqes.value = cqesData
 
   if (isEdit.value) {
     const part = await partApi.getById(partId.value)
@@ -303,12 +307,10 @@ const handleSave = () => saveDebounce.execute(async () => {
     await basicInfoCardRef.value?.validate()
     if (!await validatePartNumberUnique()) return
 
-    let savedId = partId.value
     if (isEdit.value) {
       await partApi.update(partId.value, buildPartPayload())
     } else {
-      const created = await partApi.create(buildPartPayload(), ocrTaskId.value)
-      savedId = created.id
+      await partApi.create(buildPartPayload(), ocrTaskId.value)
     }
     message.success(t('message.saveSuccess'))
 

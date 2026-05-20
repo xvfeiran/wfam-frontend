@@ -88,12 +88,6 @@ const allOrders = ref<AnalysisOrder[]>([])
 const analysts = ref<{ id: string; loginName: string; displayName: string }[]>([])
 const loading = ref(false)
 
-const DEFAULT_EXCLUDED_STATUS = AnalysisOrderStatus.WORKON_SCRAPPED
-
-const defaultStatuses = computed(() =>
-  Object.values(AnalysisOrderStatus).filter(s => s !== DEFAULT_EXCLUDED_STATUS)
-)
-
 const searchForm = reactive({
   orderNumber: '',
   // 分析师用户默认选择自己

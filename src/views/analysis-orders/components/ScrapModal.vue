@@ -71,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
+import { reactive, computed, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import { LinkOutlined } from '@ant-design/icons-vue'
@@ -195,9 +195,9 @@ const handleSubmit = async () => {
   submitDebounce.execute(async () => {
     try {
       if (form.scrapStatus === 'completed_workon' && isScrapInProgress.value) {
-        await analysisOrderApi.workonConfirm(props.order.id)
+        await analysisOrderApi.workonConfirm(props.order!.id)
       } else {
-        await analysisOrderApi.scrap(props.order.id)
+        await analysisOrderApi.scrap(props.order!.id)
       }
       emit('success')
       emit('update:visible', false)
