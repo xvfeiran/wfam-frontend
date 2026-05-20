@@ -1,0 +1,69 @@
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import dayjs from 'dayjs'
+
+export interface AnalysisFilters {
+  // 分析时长图年份筛选（支持多选）
+  analysisDurationYearRange: number[]
+  // 售后件柱状图筛选条件
+  returnOrderDateRange: [string, string] | null
+  returnOrderCustomer: string[] | null
+  returnOrderBu: string[] | null
+  returnOrderPlatform: string[] | null
+  returnOrderFaultMode: string[] | null
+  returnOrderPartNo: string[] | null
+  returnOrderBcso: string[] | null
+}
+
+export const useAnalysisStore = defineStore('analysis', () => {
+  // 筛选状态
+  const filters = ref<AnalysisFilters>({
+    analysisDurationYearRange: [dayjs().year()],
+    returnOrderDateRange: null,
+    returnOrderCustomer: null,
+    returnOrderBu: null,
+    returnOrderPlatform: null,
+    returnOrderFaultMode: null,
+    returnOrderPartNo: null,
+    returnOrderBcso: null,
+  })
+
+  // 计算属性：当前年份范围（基于分析时长图选择的首个年份，用于售后件柱状图）
+  const currentYearRange = computed<[string, string]>(() => {
+    const year = filters.value.analysisDurationYearRange[0] ?? dayjs().year()
+    return [`${year}-01-01`, `${year}-12-31`]
+  })
+
+  // 计算属性：去年年份范围（用于 YoY）
+  const previousYearRange = computed<[string, string]>(() => {
+    const year = filters.value.analysisDurationYearRange[0] ?? dayjs().year()
+    return [`${year - 1}-01-01`, `${year - 1}-12-31`]
+  })
+
+  // 设置筛选值
+  function setFilter<K extends keyof AnalysisFilters>(key: K, value: AnalysisFilters[K]) {
+    filters.value[key] = value
+  }
+
+  // 重置筛选条件
+  function resetFilters() {
+    filters.value = {
+      analysisDurationYearRange: [dayjs().year()],
+      returnOrderDateRange: null,
+      returnOrderCustomer: null,
+      returnOrderBu: null,
+      returnOrderPlatform: null,
+      returnOrderFaultMode: null,
+      returnOrderPartNo: null,
+      returnOrderBcso: null,
+    }
+  }
+
+  return {
+    filters,
+    currentYearRange,
+    previousYearRange,
+    setFilter,
+    resetFilters
+  }
+})

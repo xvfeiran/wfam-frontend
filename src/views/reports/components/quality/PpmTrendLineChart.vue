@@ -1,0 +1,21 @@
+<script setup lang="ts">
+import { Col, Row } from 'ant-design-vue'
+import PpmTrendSingleChart from './PpmTrendSingleChart.vue'
+import { BU_LIST } from '@/constants/reports'
+</script>
+
+<template>
+  <div class="ppm-trend-container">
+    <Row :gutter="[0, 16]">
+      <Col v-for="bu in BU_LIST" :key="bu" :span="24">
+        <PpmTrendSingleChart :bu="bu" />
+      </Col>
+    </Row>
+  </div>
+</template>
+
+<style scoped lang="less">
+.ppm-trend-container {
+  width: 100%;
+}
+</style>

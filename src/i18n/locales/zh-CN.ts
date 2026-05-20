@@ -38,6 +38,8 @@ export default {
     returnParts: '退件信息管理',
     analysisOrders: '分析单管理',
     reports: '统计报表',
+    reportAnalysis: '分析报表',
+    reportQuality: '质量报表',
     approval: '审批',
     imports: '导入',
     settings: '配置',

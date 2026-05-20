@@ -6,6 +6,7 @@ interface ImportMetaEnv {
   readonly VITE_AEP_LOGIN_URL: string
   readonly VITE_IQIS_URL?: string
   readonly VITE_SAP_URL?: string
+  readonly VITE_REPORT_API_URL?: string
 }
 
 interface ImportMeta {

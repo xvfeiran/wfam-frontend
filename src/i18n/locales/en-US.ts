@@ -38,6 +38,8 @@ export default {
     returnParts: 'Return Part Information',
     analysisOrders: 'Analysis Orders',
     reports: 'Reports',
+    reportAnalysis: 'Analysis Report',
+    reportQuality: 'Quality Report',
     approval: 'Approval',
     imports: 'Import',
     settings: 'Settings',

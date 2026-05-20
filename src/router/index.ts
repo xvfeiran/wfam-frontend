@@ -86,9 +86,21 @@ const routes: RouteRecordRaw[] = [
       // 统计报表
       {
         path: 'reports',
-        name: 'Reports',
-        component: () => import('@/views/reports/Reports.vue'),
-        meta: { title: '统计报表' },
+        redirect: '/reports/analysis',
+        children: [
+          {
+            path: 'analysis',
+            name: 'ReportAnalysis',
+            component: () => import('@/views/reports/AnalysisDashboard.vue'),
+            meta: { title: '分析报表' },
+          },
+          {
+            path: 'quality',
+            name: 'ReportQuality',
+            component: () => import('@/views/reports/QualityDashboard.vue'),
+            meta: { title: '质量报表' },
+          },
+        ],
       },
       // 审批
       {

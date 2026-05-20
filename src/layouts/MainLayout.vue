@@ -20,6 +20,7 @@
       </div>
       <a-menu
         v-model:selectedKeys="selectedKeys"
+        v-model:openKeys="openKeys"
         theme="light"
         mode="inline"
         @click="handleMenuClick"
@@ -40,10 +41,12 @@
           <template #icon><AuditOutlined /></template>
           <span>{{ t('menu.analysisOrders') }}</span>
         </a-menu-item>
-        <a-menu-item key="/reports">
+        <a-sub-menu key="reports">
           <template #icon><BarChartOutlined /></template>
-          <span>{{ t('menu.reports') }}</span>
-        </a-menu-item>
+          <template #title>{{ t('menu.reports') }}</template>
+          <a-menu-item key="/reports/analysis">{{ t('menu.reportAnalysis') }}</a-menu-item>
+          <a-menu-item key="/reports/quality">{{ t('menu.reportQuality') }}</a-menu-item>
+        </a-sub-menu>
         <a-menu-item key="/approval">
           <template #icon><AuditOutlined /></template>
           <span>{{ t('menu.approval') }}</span>
@@ -122,6 +125,7 @@ const route = useRoute()
 const router = useRouter()
 const collapsed = ref(false)
 const selectedKeys = ref<string[]>(['/dashboard'])
+const openKeys = ref<string[]>([])
 
 const currentPageTitle = computed(() => {
   const titleMap: Record<string, string> = {
@@ -137,7 +141,8 @@ const currentPageTitle = computed(() => {
     '/return-parts/:id/analysis': 'analysisForm.title',
     '/analysis-orders': 'menu.analysisOrders',
     '/analysis-orders/:id': 'analysisOrder.detailTitle',
-    '/reports': 'menu.reports',
+    '/reports/analysis': 'menu.reportAnalysis',
+    '/reports/quality': 'menu.reportQuality',
     '/approval': 'menu.approval',
     '/imports': 'menu.imports',
     '/settings': 'menu.settings',
@@ -184,7 +189,10 @@ watch(
     } else if (path.startsWith('/analysis-orders')) {
       selectedKeys.value = ['/analysis-orders']
     } else if (path.startsWith('/reports')) {
-      selectedKeys.value = ['/reports']
+      selectedKeys.value = [path.startsWith('/reports/analysis') ? '/reports/analysis' : '/reports/quality']
+      if (!openKeys.value.includes('reports')) {
+        openKeys.value = ['reports']
+      }
     } else if (path.startsWith('/approval')) {
       selectedKeys.value = ['/approval']
     } else if (path.startsWith('/imports')) {
