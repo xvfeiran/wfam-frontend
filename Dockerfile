@@ -1,5 +1,5 @@
 # 构建阶段
-FROM docker.production.tmp-service.bosch.com/node:20-alpine AS builder
+FROM docker-virtual.rb-artifactory.bosch.com/node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ ARG BUILD_MODE=test
 RUN npm run build -- --mode ${BUILD_MODE}
 
 # 运行阶段
-FROM docker.production.tmp-service.bosch.com/nginx:alpine
+FROM docker-virtual.rb-artifactory.bosch.com/nginx:alpine
 
 # 复制构建产物到 Nginx 目录
 COPY --from=builder /app/dist /usr/share/nginx/html
