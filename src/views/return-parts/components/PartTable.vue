@@ -21,6 +21,7 @@ import { Tag } from 'ant-design-vue'
 import { PART_STATUS_MAP, PartStatus } from '@/types'
 import type { Part } from '@/types'
 import { useStatusLabels } from '@/composables/useStatusLabels'
+import { useUserNameMap } from '@/composables/useUserNameMap'
 
 interface Props {
   parts: Part[]
@@ -41,6 +42,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { getStatusLabel, normalizeStatus } = useStatusLabels()
+const { displayName: userDisplayName } = useUserNameMap()
 const legacyPartStatusColorMap: Record<string, string> = {
   pending: 'default',
   analyzing: 'processing',
@@ -95,7 +97,8 @@ const columns = computed(() => [
   { title: t('returnPart.partCode'), dataIndex: 'partCode', key: 'partCode', sorter: true },
   { title: t('returnPart.businessUnit'), dataIndex: 'businessUnit', key: 'businessUnit', sorter: true },
   { title: t('returnPart.productPlatform'), dataIndex: 'productPlatform', key: 'productPlatform', sorter: true },
-  { title: t('partDetail.analyst'), dataIndex: 'analyst', key: 'analyst', sorter: true },
+  { title: t('partDetail.analyst'), dataIndex: 'analyst', key: 'analyst', sorter: true,
+    customRender: ({ text }: { text: string }) => userDisplayName(text) },
   {
     title: t('common.status'),
     dataIndex: 'status',

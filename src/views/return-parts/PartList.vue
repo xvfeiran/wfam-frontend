@@ -50,6 +50,7 @@ import { userApi } from '@/services/userApi'
 import type { Part } from '@/types'
 import { useTableList } from '@/composables/useTableList'
 import { usePermissions } from '@/composables/usePermissions'
+import { useUserNameMap } from '@/composables/useUserNameMap'
 
 import PartListFilters from './components/PartListFilters.vue'
 import PartListActions from './components/PartListActions.vue'
@@ -59,6 +60,7 @@ const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const { canEditSubmittedForm, isAnalyst, currentUserUsername } = usePermissions()
+const { load: loadUserNameMap } = useUserNameMap()
 
 const businessUnits = ref<string[]>([])
 const productPlatforms = ref<string[]>([])
@@ -136,6 +138,7 @@ onMounted(async () => {
     lookupApi.getAll(),
     userApi.listAnalysts(),
     loadData(),
+    loadUserNameMap(),
   ])
   businessUnits.value = lookups.businessUnits
   productPlatforms.value = lookups.productPlatforms

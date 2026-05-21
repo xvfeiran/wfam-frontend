@@ -50,8 +50,8 @@
             <a-descriptions-item :label="t('partDetail.productionShift')">{{ part?.productionShift || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.customerFailureType')">{{ part?.failureType ? t('returnPart.failureTypeLabels.' + part.failureType) : '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.boschFailureType')">{{ part?.boschFailureType || '-' }}</a-descriptions-item>
-            <a-descriptions-item :label="t('partDetail.responsibleEngineer')">{{ part?.responsibleEngineer || '-' }}</a-descriptions-item>
-            <a-descriptions-item :label="t('partDetail.analyst')" :span="2">{{ part?.analyst || '-' }}</a-descriptions-item>
+            <a-descriptions-item :label="t('partDetail.responsibleEngineer')">{{ userDisplayName(part?.responsibleEngineer) }}</a-descriptions-item>
+            <a-descriptions-item :label="t('partDetail.analyst')" :span="2">{{ userDisplayName(part?.analyst) }}</a-descriptions-item>
             <a-descriptions-item :label="t('common.status')" :span="2">
               <a-tag :color="PART_STATUS_MAP[part?.status || 'in_initial_analysis']?.color || 'default'">
                 {{ getStatusLabel(part?.status) }}
@@ -147,6 +147,7 @@ import { PART_STATUS_MAP, PartStatus } from '@/types'
 import type { Part, AnalysisReport, ReportTemplate } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
 import { useStatusLabels } from '@/composables/useStatusLabels'
+import { useUserNameMap } from '@/composables/useUserNameMap'
 import AnalysisReportModal from './components/AnalysisReportModal.vue'
 
 const getFileUrl = (relativePath: string) => {
@@ -158,6 +159,7 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const { canEditSubmittedForm, isQMCLeader } = usePermissions()
+const { displayName: userDisplayName, load: loadUserNameMap } = useUserNameMap()
 const partId = computed(() => route.params.id as string)
 const analysisOrderStatus = computed(() => typeof route.query.analysisOrderStatus === 'string' ? route.query.analysisOrderStatus : undefined)
 
@@ -290,6 +292,7 @@ onMounted(async () => {
   const [reports, templateData] = await Promise.all([
     partApi.getReports(partId.value),
     reportsApi.getTemplates(),
+    loadUserNameMap(),
   ])
   report.value = reports.length > 0 ? reports[0] : null
   templates.value = templateData

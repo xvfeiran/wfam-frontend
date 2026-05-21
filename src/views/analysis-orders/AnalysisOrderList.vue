@@ -77,9 +77,11 @@ import { ANALYSIS_ORDER_STATUS_MAP, AnalysisOrderStatus } from '@/types'
 import type { AnalysisOrder } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
 import { useStatusLabels } from '@/composables/useStatusLabels'
+import { useUserNameMap } from '@/composables/useUserNameMap'
 
 const { t } = useI18n()
 const { isAnalyst, currentUserUsername } = usePermissions()
+const { displayName: userDisplayName, load: loadUserNameMap } = useUserNameMap()
 const router = useRouter()
 const route = useRoute()
 const allOrders = ref<AnalysisOrder[]>([])
@@ -145,7 +147,7 @@ const columns = computed<TableProps['columns']>(() => [
       (a.analyst || '').localeCompare(b.analyst || ''),
     customRender: ({ text }: { text: string }) => {
       if (!text || text === '导入数据无此字段') return '-'
-      return text
+      return userDisplayName(text)
     },
   },
   {
@@ -209,6 +211,7 @@ onMounted(async () => {
     const [ordersData, analystsData] = await Promise.all([
       analysisOrderApi.list(searchForm.statuses),
       userApi.listAnalysts(),
+      loadUserNameMap(),
     ])
     allOrders.value = ordersData
     analysts.value = analystsData

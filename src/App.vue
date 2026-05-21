@@ -36,18 +36,6 @@ onMounted(() => {
   if (window.__POWERED_BY_WUJIE__) {
     const props = window.$wujie?.props
     if (props) {
-      // [DEBUG] 查看 wujie props 和 accessToken JWT payload 的实际内容
-      console.log('[WFAM] props.userProfile:', JSON.stringify(props.userProfile, null, 2))
-      if (props.userProfile?.accessToken) {
-        const base64Url = props.userProfile.accessToken.split('.')[1]
-        if (base64Url) {
-          try {
-            const payload = JSON.parse(window.atob(base64Url.replace(/-/g, '+').replace(/_/g, '/')))
-            console.log('[WFAM] accessToken JWT payload:', JSON.stringify(payload, null, 2))
-          } catch { console.log('[WFAM] accessToken is not a valid JWT') }
-        }
-      }
-      // 解析父应用传入的 token，提取用户角色和用户名
       if (props.userProfile?.accessToken) {
         userInfoStore.setUserProfileFromToken(props.userProfile.accessToken)
       }
