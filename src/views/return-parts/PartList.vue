@@ -50,7 +50,7 @@ import { userApi } from '@/services/userApi'
 import type { Part } from '@/types'
 import { useTableList } from '@/composables/useTableList'
 import { usePermissions } from '@/composables/usePermissions'
-import { useDevUserStore } from '@/stores/devUser'
+
 import PartListFilters from './components/PartListFilters.vue'
 import PartListActions from './components/PartListActions.vue'
 import PartTable from './components/PartTable.vue'
@@ -58,8 +58,7 @@ import PartTable from './components/PartTable.vue'
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
-const { canEditSubmittedForm, isAnalyst } = usePermissions()
-const devUserStore = useDevUserStore()
+const { canEditSubmittedForm, isAnalyst, currentUserUsername } = usePermissions()
 
 const businessUnits = ref<string[]>([])
 const productPlatforms = ref<string[]>([])
@@ -74,7 +73,7 @@ const filters = ref({
   alertType: undefined as string | undefined,
   qcCreated: undefined as string | undefined,
   // 分析师用户默认选择自己
-  analyst: isAnalyst ? devUserStore.currentUser.ntAccount : undefined as string | undefined,
+  analyst: isAnalyst.value ? currentUserUsername.value : undefined as string | undefined,
 })
 
 const {
@@ -158,7 +157,7 @@ const handleReset = async () => {
     alertType: undefined,
     qcCreated: undefined,
     // 分析师重置时仍然选择自己，其他角色重置为未选择
-    analyst: isAnalyst ? devUserStore.currentUser.ntAccount : undefined,
+    analyst: isAnalyst.value ? currentUserUsername.value : undefined,
   }
   sortState.value = {}
   await loadData()

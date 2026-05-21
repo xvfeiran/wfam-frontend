@@ -76,12 +76,10 @@ import { userApi } from '@/services/userApi'
 import { ANALYSIS_ORDER_STATUS_MAP, AnalysisOrderStatus } from '@/types'
 import type { AnalysisOrder } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
-import { useDevUserStore } from '@/stores/devUser'
 import { useStatusLabels } from '@/composables/useStatusLabels'
 
 const { t } = useI18n()
-const { isAnalyst } = usePermissions()
-const devUserStore = useDevUserStore()
+const { isAnalyst, currentUserUsername } = usePermissions()
 const router = useRouter()
 const route = useRoute()
 const allOrders = ref<AnalysisOrder[]>([])
@@ -91,7 +89,7 @@ const loading = ref(false)
 const searchForm = reactive({
   orderNumber: '',
   // 分析师用户默认选择自己
-  analyst: isAnalyst ? devUserStore.currentUser.ntAccount : undefined as string | undefined,
+  analyst: isAnalyst.value ? currentUserUsername.value : undefined as string | undefined,
   statuses: [] as string[],
 })
 
@@ -185,7 +183,7 @@ const handleSearch = () => {
 const handleReset = () => {
   searchForm.orderNumber = ''
   // 分析师重置时仍然选择自己，其他角色重置为未选择
-  searchForm.analyst = isAnalyst ? devUserStore.currentUser.ntAccount : undefined as any
+  searchForm.analyst = isAnalyst.value ? currentUserUsername.value : undefined as any
   searchForm.statuses = []
   pagination.current = 1
 }

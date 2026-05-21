@@ -1,96 +1,59 @@
 import { computed } from 'vue'
 import { useDevMode } from './useDevMode'
-import { useDevUserStore } from '@/stores/devUser'
+import { useDevUserStore, ROLE_LABELS } from '@/stores/devUser'
+import { useUserInfoStore } from '@/stores/userInfo'
 import type { UserRole } from '@/stores/devUser'
 
-/**
- * Role that can edit submitted forms (non-draft status)
- */
 const EDIT_SUBMITTED_ROLE: UserRole = 'W_RBCC_AEP_WFAM_QMC_Leader'
 
-/**
- * Composable for checking user permissions
- */
 export function usePermissions() {
   const { isDevMode } = useDevMode()
   const devUserStore = useDevUserStore()
+  const userInfoStore = useUserInfoStore()
 
-  /**
-   * Check if current user has permission to edit submitted forms (non-draft status)
-   * Only QMC Leader can edit submitted forms
-   */
+  const currentRole = computed<UserRole | ''>(() => {
+    if (isDevMode.value) {
+      return devUserStore.currentUser.role
+    }
+    return (userInfoStore.roleNames as UserRole) || ''
+  })
+
+  const currentUserUsername = computed(() => {
+    if (isDevMode.value) {
+      return devUserStore.currentUser.ntAccount
+    }
+    return userInfoStore.username
+  })
+
   const canEditSubmittedForm = computed(() => {
-    if (isDevMode.value) {
-      // Dev mode: check dev user role
-      return devUserStore.currentUser.role === EDIT_SUBMITTED_ROLE
-    } else {
-      // Production mode: check from userInfo store
-      // TODO: Implement proper role extraction from auth header
-      return false
-    }
+    return currentRole.value === EDIT_SUBMITTED_ROLE
   })
 
-  /**
-   * Check if current user is QMC Leader
-   */
   const isQMCLeader = computed(() => {
-    if (isDevMode.value) {
-      return devUserStore.currentUser.role === 'W_RBCC_AEP_WFAM_QMC_Leader'
-    }
-    return false // TODO: Implement for production mode
+    return currentRole.value === 'W_RBCC_AEP_WFAM_QMC_Leader'
   })
 
-  /**
-   * Check if current user is QMC Manager
-   */
   const isQMCManager = computed(() => {
-    if (isDevMode.value) {
-      return devUserStore.currentUser.role === 'W_RBCC_AEP_WFAM_QMC_Manager'
-    }
-    return false // TODO: Implement for production mode
+    return currentRole.value === 'W_RBCC_AEP_WFAM_QMC_Manager'
   })
 
-  /**
-   * Check if current user is System Admin
-   */
   const isSystemAdmin = computed(() => {
-    if (isDevMode.value) {
-      return devUserStore.currentUser.role === 'W_RBCC_AEP_WFAM_SystemAdmin'
-    }
-    return false // TODO: Implement for production mode
+    return currentRole.value === 'W_RBCC_AEP_WFAM_SystemAdmin'
   })
 
-  /**
-   * Check if current user is Analyst
-   */
   const isAnalyst = computed(() => {
-    if (isDevMode.value) {
-      return devUserStore.currentUser.role === 'W_RBCC_AEP_WFAM_Analyst'
-    }
-    return false // TODO: Implement for production mode
+    return currentRole.value === 'W_RBCC_AEP_WFAM_Analyst'
   })
 
-  /**
-   * Check if current user can view all analysis orders (Leader/Manager/Admin)
-   */
   const canViewAllAnalysisOrders = computed(() => {
-    if (isDevMode.value) {
-      const role = devUserStore.currentUser.role
-      return role === 'W_RBCC_AEP_WFAM_QMC_Leader' ||
-        role === 'W_RBCC_AEP_WFAM_QMC_Manager' ||
-        role === 'W_RBCC_AEP_WFAM_SystemAdmin'
-    }
-    return false // TODO: Implement for production mode
+    const role = currentRole.value
+    return role === 'W_RBCC_AEP_WFAM_QMC_Leader' ||
+      role === 'W_RBCC_AEP_WFAM_QMC_Manager' ||
+      role === 'W_RBCC_AEP_WFAM_SystemAdmin'
   })
 
-  /**
-   * Get current user's role label
-   */
   const currentRoleLabel = computed(() => {
-    if (isDevMode.value) {
-      return devUserStore.currentRoleLabel
-    }
-    return '' // TODO: Implement for production mode
+    return ROLE_LABELS[currentRole.value as UserRole] || ''
   })
 
   return {
@@ -101,5 +64,6 @@ export function usePermissions() {
     isAnalyst,
     canViewAllAnalysisOrders,
     currentRoleLabel,
+    currentUserUsername,
   }
 }
