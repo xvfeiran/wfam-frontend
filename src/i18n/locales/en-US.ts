@@ -79,6 +79,7 @@ export default {
     partsCount: '{count} part(s)',
     totalPartsCount: 'Total: {count} part(s)',
     confirmCascadeDelete: 'Delete Orders and Parts',
+    exportLimitTitle: 'Export Limit Exceeded',
   },
   orderDetail: {
     title: 'Return Order Detail - {orderNumber}',

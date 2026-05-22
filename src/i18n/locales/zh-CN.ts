@@ -79,6 +79,7 @@ export default {
     partsCount: '{count} 个退件信息',
     totalPartsCount: '共计 {count} 个退件信息',
     confirmCascadeDelete: '删除退货单和退件信息',
+    exportLimitTitle: '导出数量超限',
     status: {
       draft: '草稿',
       submitted: '已提交',
