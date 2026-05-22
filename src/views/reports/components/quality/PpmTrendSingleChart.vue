@@ -9,10 +9,9 @@ import {
   GridComponent,
 } from 'echarts/components'
 import VChart from 'vue-echarts'
-import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { Radio } from 'ant-design-vue'
-import { useQualityStore } from '@/stores/reportQuality'
 import { qualityApi } from '@/services/reportQuality'
 import { optionsApi } from '@/services/reportOptions'
 import { transformPpmTrendSingle } from '@/utils/transforms/quality/ppmTrendSingle'
@@ -26,8 +25,6 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-
-const store = useQualityStore()
 
 // 为每个 BU 创建独立的筛选状态
 const localFilters = ref({
@@ -86,13 +83,15 @@ const chartOption = ref<EChartsOption>({})
 async function fetchData() {
   loading.value = true
   try {
-    const params = {
+    const params: PpmTrendParams = {
       bu: props.bu,
+      dateRange: defaultDateRange,
       platform: localFilters.value.platform.length ? localFilters.value.platform : null,
       customer: localFilters.value.customer.length ? localFilters.value.customer : null,
       bcso: localFilters.value.bcso.length ? localFilters.value.bcso : null,
       faultMode: localFilters.value.faultMode.length ? localFilters.value.faultMode : null,
       partNo: localFilters.value.partNo.length ? localFilters.value.partNo : null,
+      mis: null,
     }
     const res = await qualityApi.getPpmTrend(params)
     const { series, xAxisData } = transformPpmTrendSingle(res, metricType.value)

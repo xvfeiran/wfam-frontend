@@ -16,7 +16,8 @@ const isAnimating = ref(false)
 async function fetchData() {
   loading.value = true
   try {
-    const res = await analysisApi.getSamplingRatio({ year: filters.value.year })
+    const year = filters.value.analysisDurationYearRange[0] ?? new Date().getFullYear()
+    const res = await analysisApi.getSamplingRatio({ year })
     cardData.value = transformSamplingRatio(res)
 
     // 初始化显示值为0

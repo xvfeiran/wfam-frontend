@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { qualityApi } from '@/services/reportQuality'
 import { transformReturnQuantity } from '@/utils/transforms/quality/returnQuantity'
 
@@ -15,8 +15,6 @@ interface ReturnQuantityCardData {
   trendValue: number
   updateDate: string
 }
-
-const cardData = computed(() => rawData.value)
 
 function animateCount(target: number) {
   const startTime = performance.now()

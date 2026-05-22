@@ -8,8 +8,9 @@ import PpmTrendLineChart from './components/quality/PpmTrendLineChart.vue'
 import AdvancedFilterBar from '@/components/AdvancedFilterBar.vue'
 import { storeToRefs } from 'pinia'
 import { useQualityStore } from '@/stores/reportQuality'
-import { OptionItem, optionsApi } from '@/services/reportOptions'
+import { optionsApi } from '@/services/reportOptions'
 import { BCSO_LIST, MIS_PERIODS } from '@/constants/reports'
+import type { KilometerRange, MisPeriod } from '@/constants/reports'
 
 const store = useQualityStore()
 const { filters } = storeToRefs(store)
@@ -193,7 +194,7 @@ const ppmTrendFilterItems = computed(() => [
                   store.setFilter('returnBarBu', val.bu ?? null)
                   store.setFilter('returnBarBcso', val.bcso ?? null)
                   store.setFilter('returnBarPlatform', val.platform ?? null)
-                  store.setFilter('returnBarKilometer', val.mileage ?? null)
+                  store.setFilter('returnBarKilometer', (val.mileage ?? null) as KilometerRange[] | null)
                   store.setFilter('returnBarFaultMode', val.faultMode ?? null)
                   store.setFilter('returnBarPartNo', val.partNo ?? null)
                 }
@@ -233,11 +234,11 @@ const ppmTrendFilterItems = computed(() => [
                   ppmMis: filters.ppmMis ?? [],
                 }"
                 @update:model-value="
-                  (val) => {
+                  (val: Record<string, string[]>) => {
                     store.setFilter('ppmPlatform', val.ppmPlatform)
                     store.setFilter('ppmCustomer', val.ppmCustomer)
                     store.setFilter('ppmBcso', val.ppmBcso)
-                    store.setFilter('ppmMis', val.ppmMis)
+                    store.setFilter('ppmMis', val.ppmMis as MisPeriod[])
                   }
                 "
               />

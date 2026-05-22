@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { Row, Col, Select } from 'ant-design-vue'
+import type { SelectValue } from 'ant-design-vue/es/select'
 import dayjs from 'dayjs'
 import AnalysisDurationChart from './components/analysis/AnalysisDurationChart.vue'
 import SamplingRatioCard from './components/analysis/SamplingRatioCard.vue'
@@ -66,8 +67,9 @@ function handleSearch(values: any) {
 }
 
 // 分析时长图年份筛选变化
-function handleAnalysisDurationYearChange(values: number[]) {
-  store.setFilter('analysisDurationYearRange', values)
+function handleAnalysisDurationYearChange(value: SelectValue) {
+  const arr = (Array.isArray(value) ? value : value != null ? [value] : []) as number[]
+  store.setFilter('analysisDurationYearRange', arr)
 }
 
 function handleReset() {
