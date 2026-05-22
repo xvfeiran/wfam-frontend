@@ -67,5 +67,5 @@ function getYTDData<T>(dataList: T[], vKey: keyof T, isAverage = true) {
     return pValue + val
   }, 0)
 
-  return isAverage ? Number((sum / dataList.length).toFixed(0)) : sum
+  return isAverage ? Math.round(sum / dataList.length) : sum
 }
