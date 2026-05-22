@@ -1,10 +1,5 @@
 import request from './request'
 
-interface ApiResponse<T> {
-  code: number
-  data: T
-}
-
 export const qualityApi = {
   /** 获取售后件总数 */
   async getReturnQuantity() {
