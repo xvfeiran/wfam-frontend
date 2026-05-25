@@ -38,6 +38,11 @@
 
       <a-row :gutter="16">
         <a-col :span="12">
+          <a-form-item :label="t('returnPart.partProductionDate')">
+            <a-date-picker v-model:value="form.partProductionDate" style="width: 100%" />
+          </a-form-item>
+        </a-col>
+        <a-col :span="12">
           <a-form-item :label="t('partDetail.productionShift')">
             <a-input v-model:value="form.productionShift" :placeholder="t('returnPart.productionShift')" />
           </a-form-item>
@@ -50,6 +55,7 @@
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import dayjs from 'dayjs'
 import { lookupApi } from '@/services/lookupApi'
 import type { Part } from '@/types'
 import { PartStatus } from '@/types'
@@ -79,6 +85,7 @@ const form = reactive({
   partCode: '',
   businessUnit: undefined as string | undefined,
   productPlatform: undefined as string | undefined,
+  partProductionDate: null as any | null,
   productionShift: '',
 })
 
@@ -95,11 +102,13 @@ watch(
       form.partCode = part.partCode
       form.businessUnit = part.businessUnit
       form.productPlatform = part.productPlatform
+      form.partProductionDate = part.partProductionDate ? dayjs(part.partProductionDate) : null
       form.productionShift = part.productionShift || ''
     } else {
       form.partCode = ''
       form.businessUnit = undefined
       form.productPlatform = undefined
+      form.partProductionDate = null
       form.productionShift = ''
     }
   },
@@ -120,6 +129,7 @@ const handleSubmit = async () => {
       partCode: form.partCode,
       businessUnit: form.businessUnit!,
       productPlatform: form.productPlatform!,
+      partProductionDate: form.partProductionDate ? form.partProductionDate.format('YYYY-MM-DD') : undefined,
       productionShift: form.productionShift,
       status: props.part?.status ?? PartStatus.IN_INITIAL_ANALYSIS,
       images: [],

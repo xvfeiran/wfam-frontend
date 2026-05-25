@@ -139,6 +139,7 @@ const form = reactive({
   partCode: '',
   businessUnit: undefined as string | undefined,
   productPlatform: undefined as string | undefined,
+  partProductionDate: null as any | null,
   productionShift: '',
   complaintType: undefined as string | undefined,
   failureType: undefined as string | undefined,
@@ -192,6 +193,7 @@ function populateForm(part: any) {
   form.partCode = part.partCode
   form.businessUnit = part.businessUnit
   form.productPlatform = part.productPlatform
+  form.partProductionDate = part.partProductionDate ? dayjs(part.partProductionDate) : null
   form.productionShift = part.productionShift || ''
   form.complaintType = part.complaintType || undefined
   form.failureType = part.failureType || undefined
@@ -285,6 +287,7 @@ const buildPartPayload = () => ({
   partCode: form.partCode,
   businessUnit: form.businessUnit,
   productPlatform: form.productPlatform,
+  partProductionDate: form.partProductionDate ? form.partProductionDate.format('YYYY-MM-DD') : undefined,
   productionShift: form.productionShift || undefined,
   complaintType: form.complaintType || undefined,
   failureType: form.failureType || undefined,

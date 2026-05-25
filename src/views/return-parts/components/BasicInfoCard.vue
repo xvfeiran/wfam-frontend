@@ -100,6 +100,14 @@
           </a-form-item>
         </a-col>
         <a-col :span="12">
+          <a-form-item :label="t('returnPart.partProductionDate')">
+            <a-date-picker v-model:value="form.partProductionDate" style="width: 100%" />
+          </a-form-item>
+        </a-col>
+      </a-row>
+
+      <a-row :gutter="24">
+        <a-col :span="12">
           <a-form-item :label="t('returnPart.productionShift')">
             <a-input v-model:value="form.productionShift" />
           </a-form-item>
@@ -150,6 +158,7 @@ interface Form {
   partCode: string
   businessUnit?: string
   productPlatform?: string
+  partProductionDate: any | null
   productionShift: string
   failureType?: string
   responsibleEngineer?: string
