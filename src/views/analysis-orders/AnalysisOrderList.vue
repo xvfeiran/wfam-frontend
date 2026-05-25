@@ -178,16 +178,22 @@ const columns = computed<TableProps['columns']>(() => [
   },
 ])
 
-const handleSearch = () => {
+const handleSearch = async () => {
   pagination.current = 1
+  loading.value = true
+  try {
+    allOrders.value = await analysisOrderApi.list(searchForm.statuses)
+  } finally {
+    loading.value = false
+  }
 }
 
-const handleReset = () => {
+const handleReset = async () => {
   searchForm.orderNumber = ''
   // 分析师重置时仍然选择自己，其他角色重置为未选择
   searchForm.analyst = isAnalyst.value ? currentUserUsername.value : undefined as any
   searchForm.statuses = []
-  pagination.current = 1
+  await handleSearch()
 }
 
 const handleTableChange: TableProps['onChange'] = (pag) => {
@@ -206,18 +212,15 @@ const goToDetail = (id: string) => {
 
 onMounted(async () => {
   applyTaskFiltersFromQuery()
-  loading.value = true
   try {
-    const [ordersData, analystsData] = await Promise.all([
-      analysisOrderApi.list(searchForm.statuses),
+    const [analystsData] = await Promise.all([
       userApi.listAnalysts(),
       loadUserNameMap(),
+      handleSearch(),   // 统一走 handleSearch 拉取数据（含初始 statuses）
     ])
-    allOrders.value = ordersData
     analysts.value = analystsData
-    handleSearch()
-  } finally {
-    loading.value = false
+  } catch {
+    // handleSearch 内部已处理 loading 状态
   }
 })
 
@@ -233,21 +236,7 @@ function applyTaskFiltersFromQuery() {
   }
 }
 
-watch(
-  () => searchForm.statuses,
-  (newStatuses) => {
-    loading.value = true
-    analysisOrderApi.list(newStatuses)
-      .then(data => {
-        allOrders.value = data
-      })
-      .finally(() => {
-        loading.value = false
-      })
-  },
-  { deep: true }
-)
-
+// statuses 变化不再自动发请求——统一由"查询"按钮或 URL 变化触发
 watch(
   () => route.query,
   () => {
