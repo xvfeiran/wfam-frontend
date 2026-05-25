@@ -23,7 +23,7 @@
             >
               <a-input
                 v-model:value="config.shareName"
-                placeholder="superlineleader$"
+                placeholder="wfam$"
               />
             </a-form-item>
           </a-col>
