@@ -18,6 +18,11 @@
         <EmailConfig ref="emailConfigRef" />
       </a-tab-pane>
 
+      <!-- SMB存储配置 -->
+      <a-tab-pane key="smb" :tab="t('settings.smb')">
+        <SmbConfig />
+      </a-tab-pane>
+
       <!-- 数据字典 -->
       <a-tab-pane key="dictionary" :tab="t('settings.dataDictionary')">
         <a-tabs v-model:activeKey="dictionaryTab">
@@ -96,6 +101,7 @@ import type { Customer } from '@/services/customerApi'
 import type { PartCode } from '@/services/partCodeApi'
 import TemplateManagement from './components/TemplateManagement.vue'
 import EmailConfig from './components/EmailConfig.vue'
+import SmbConfig from './components/SmbConfig.vue'
 import CustomerManagement from './components/CustomerManagement.vue'
 import PartCodeManagement from './components/PartCodeManagement.vue'
 import TemplateUploadModal from './components/TemplateUploadModal.vue'
@@ -104,7 +110,7 @@ import PartCodeModal from './components/PartCodeModal.vue'
 
 const { t } = useI18n()
 
-type SettingsTab = 'templates' | 'email' | 'dictionary'
+type SettingsTab = 'templates' | 'email' | 'smb' | 'dictionary'
 type DictionaryTab = 'customers' | 'partCodes'
 
 interface TemplateItem {
