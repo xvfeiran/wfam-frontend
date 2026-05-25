@@ -603,6 +603,7 @@ export default {
     workonConfirm: '确认WorkOn完成',
     createdAt: '创建时间',
     updatedAt: '更新时间',
+    zeroKmNotice: '此退货单为 0km，无需精分析，可直接报废。',
   },
   partDetail: {
     title: '退件信息详情 - {partNumber}',

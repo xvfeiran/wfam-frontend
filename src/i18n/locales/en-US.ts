@@ -586,6 +586,7 @@ export default {
     workonConfirm: 'Confirm WorkOn Complete',
     createdAt: 'Created At',
     updatedAt: 'Updated At',
+    zeroKmNotice: 'This return order is 0km. No detailed analysis is required — it can be scrapped directly.',
   },
   partDetail: {
     title: 'Part Detail - {partNumber}',
