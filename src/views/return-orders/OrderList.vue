@@ -95,6 +95,9 @@ const {
   return await returnOrderApi.list(apiParams)
 })
 
+// 默认按更新时间降序排列
+sortState.value = { field: 'updatedAt', order: 'descend' }
+
 const exportLoading = ref(false)
 
 // Check if the selected order can be edited

@@ -94,6 +94,10 @@ const {
     page: (tableParams.page ?? 1) - 1,  // useTableList 用1-based，后端用0-based
     size: tableParams.pageSize ?? 20,
   }
+  if (tableParams.sortBy) {
+    params.sortBy = tableParams.sortBy
+    params.sortOrder = tableParams.sortOrder
+  }
   if (filters.value.orderNumber) params.orderNumber = filters.value.orderNumber
   if (filters.value.partCode) params.partCode = filters.value.partCode
   if (filters.value.businessUnit) params.businessUnit = filters.value.businessUnit
@@ -106,6 +110,9 @@ const {
   const result = await partApi.list(params)
   return { data: result.data, total: result.total }
 })
+
+// 默认按更新时间降序排列
+sortState.value = { field: 'updatedAt', order: 'descend' }
 
 // 检查选中的售后件是否可以编辑
 const canEditSelectedPart = computed(() => {
