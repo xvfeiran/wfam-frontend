@@ -102,6 +102,19 @@
             </a-form-item>
           </a-col>
         </a-row>
+
+        <a-row :gutter="24">
+          <a-col :span="24">
+            <a-form-item :label="t('returnOrder.otherInfo')" name="otherInfo" :label-col="{ span: 3 }" :wrapper-col="{ span: 19 }">
+              <a-textarea
+                v-model:value="form.otherInfo"
+                :maxlength="500"
+                :rows="3"
+                show-count
+              />
+            </a-form-item>
+          </a-col>
+        </a-row>
       </a-form>
     </a-card>
 
@@ -199,6 +212,7 @@ const form = reactive({
   trackingNumber: '',
   returnQuantity: 1,
   complaintType: undefined as string | undefined, // 投诉类型（BA代码），必填
+  otherInfo: '',
 })
 
 // Watch returnMethod changes - clear trackingNumber when switching from express to pickup
@@ -265,6 +279,7 @@ onMounted(async () => {
       form.trackingNumber = (order.returnMethod === 'express' && order.trackingNumber) ? order.trackingNumber : ''
       form.returnQuantity = order.returnQuantity
       form.complaintType = order.complaintType
+      form.otherInfo = order.otherInfo || ''
     }
   }
 })
@@ -287,6 +302,7 @@ const buildPayload = () => {
     returnMethod: form.returnMethod,
     returnQuantity: form.returnQuantity,
     complaintType: form.complaintType, // 投诉类型（BA代码），必填
+    otherInfo: form.otherInfo || undefined,
   }
   // Only include trackingNumber for express delivery
   if (form.returnMethod === 'express' && form.trackingNumber) {

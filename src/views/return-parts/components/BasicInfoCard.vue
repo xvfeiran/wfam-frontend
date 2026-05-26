@@ -112,9 +112,6 @@
             <a-input v-model:value="form.productionShift" />
           </a-form-item>
         </a-col>
-      </a-row>
-
-      <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('returnPart.customerFailureType')" name="failureType">
             <a-select v-model:value="form.failureType" :placeholder="t('validation.selectCustomerFailureType')">
@@ -122,6 +119,9 @@
             </a-select>
           </a-form-item>
         </a-col>
+      </a-row>
+
+      <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('partDetail.responsibleEngineer')">
             <a-select v-model:value="form.responsibleEngineer" :placeholder="t('validation.pleaseSelect')" allowClear>
@@ -129,14 +129,24 @@
             </a-select>
           </a-form-item>
         </a-col>
-      </a-row>
-
-      <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('partDetail.analyst')" name="analyst">
             <a-select v-model:value="form.analyst" :placeholder="t('validation.pleaseSelect')" allowClear>
               <a-select-option v-for="u in analysts" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
             </a-select>
+          </a-form-item>
+        </a-col>
+      </a-row>
+
+      <a-row :gutter="24">
+        <a-col :span="24">
+          <a-form-item :label="t('returnPart.otherInfo')" :label-col="{ span: 3 }" :wrapper-col="{ span: 19 }">
+            <a-textarea
+              v-model:value="form.otherInfo"
+              :maxlength="500"
+              :rows="3"
+              show-count
+            />
           </a-form-item>
         </a-col>
       </a-row>
@@ -163,6 +173,7 @@ interface Form {
   failureType?: string
   responsibleEngineer?: string
   analyst?: string
+  otherInfo?: string
 }
 
 interface Props {

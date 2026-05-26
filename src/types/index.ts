@@ -37,6 +37,7 @@ export interface ReturnOrder {
   trackingNumber?: string
   returnQuantity: number
   complaintType?: string  // 投诉类型（BA代码，BA40代表售后件）
+  otherInfo?: string
   initialAnalysisQuantity: number
   detailedAnalysisQuantity: number
   scrappedQuantity: number
@@ -74,6 +75,7 @@ export interface Part {
   vehicleMileage?: number
   customerDescription?: string
   otherDescription?: string
+  otherInfo?: string
   status: PartStatus
   isSample?: number  // 0=未抽样, 1=已抽样
   images: string[]
