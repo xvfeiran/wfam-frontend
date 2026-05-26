@@ -18,6 +18,7 @@ export default {
     status: '状态',
     all: '全部',
     total: '共 {total} 条',
+    upload: '上传',
     success: '成功',
     failed: '失败',
     loading: '加载中...',
@@ -173,6 +174,8 @@ export default {
     matchConditions: '匹配条件',
     responsibility: '责任判定',
     selectResponsibility: '请选择责任判定',
+    photoRequired: '此照片字段为必填',
+    photoFieldRequired: '请上传「{field}」照片（必填）',
   },
   reports: {
     title: '统计报表',

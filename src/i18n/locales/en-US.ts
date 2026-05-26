@@ -18,6 +18,7 @@ export default {
     status: 'Status',
     all: 'All',
     total: 'Total {total} items',
+    upload: 'Upload',
     success: 'Success',
     failed: 'Failed',
     loading: 'Loading...',
@@ -167,6 +168,8 @@ export default {
     matchConditions: 'Match Conditions',
     responsibility: 'Responsibility',
     selectResponsibility: 'Select responsibility',
+    photoRequired: 'This photo field is required',
+    photoFieldRequired: 'Please upload "{field}" photo (required)',
   },
   reports: {
     title: 'Statistical Reports',

@@ -46,6 +46,9 @@ export function useDebouncedClick(options: DebounceOptions = {}) {
 
   const isDebouncing = ref(false)
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
+  // 组件卸载标志：防止 finally 块在 onUnmounted 之后再调度 setTimeout，
+  // 导致定时器回调在已卸载的组件实例上写 ref（触发 emitsOptions 空指针）
+  let isUnmounted = false
 
   const execute = async (fn: () => void | Promise<void>) => {
     if (isDebouncing.value) return
@@ -54,9 +57,15 @@ export function useDebouncedClick(options: DebounceOptions = {}) {
     try {
       await fn()
     } finally {
-      debounceTimer = setTimeout(() => {
-        isDebouncing.value = false
-      }, delay)
+      // fn() 内部可能触发 emit('success') → 父组件关闭弹窗 → onUnmounted 先于此处执行
+      // 此时再调度 setTimeout 会在 1000ms 后写已卸载组件的 ref，故先检查标志
+      if (!isUnmounted) {
+        debounceTimer = setTimeout(() => {
+          if (!isUnmounted) {
+            isDebouncing.value = false
+          }
+        }, delay)
+      }
     }
   }
 
@@ -65,10 +74,13 @@ export function useDebouncedClick(options: DebounceOptions = {}) {
       clearTimeout(debounceTimer)
       debounceTimer = null
     }
-    isDebouncing.value = false
+    if (!isUnmounted) {
+      isDebouncing.value = false
+    }
   }
 
   onUnmounted(() => {
+    isUnmounted = true
     cancel()
   })
 

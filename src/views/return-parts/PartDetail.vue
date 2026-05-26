@@ -318,9 +318,16 @@ const handleAnalysis = () => {
   analysisVisible.value = true
 }
 
-const handleAnalysisSuccess = () => {
+const handleAnalysisSuccess = async () => {
   analysisVisible.value = false
   message.success(t('partDetail.reportSubmitSuccess'))
+  // 重新加载 part 和 report，刷新状态步骤条和报告卡片
+  const [updatedPart, updatedReports] = await Promise.all([
+    partApi.getById(partId.value),
+    partApi.getReports(partId.value),
+  ])
+  part.value = updatedPart
+  report.value = updatedReports.length > 0 ? updatedReports[0] : null
 }
 
 const handleViewApproval = (partNumber: string) => {

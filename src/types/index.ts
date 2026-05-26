@@ -124,7 +124,7 @@ export interface ReportTemplate {
   updatedAt?: string
   fields: Array<{
     name: string
-    type: 'text' | 'number' | 'date' | 'select' | 'textarea'
+    type: 'text' | 'number' | 'date' | 'select' | 'textarea' | 'photo' | 'photolist'
     label: string
     required: boolean
     options?: string[]
