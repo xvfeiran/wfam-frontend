@@ -15,6 +15,7 @@ export function useStatusLabels() {
   const orderMap: Record<string, string> = {
     draft: 'status.draft',
     submitted: 'status.submitted',
+    registered: 'status.registered',
     scrapped: 'status.scrapped',
   }
 
