@@ -112,6 +112,9 @@ export const returnOrderApi = {
   submit(id: string): Promise<ReturnOrder> {
     return request.post(`/return-orders/${id}/submit`) as unknown as Promise<ReturnOrder>
   },
+  endEntry(id: string): Promise<ReturnOrder> {
+    return request.post(`/return-orders/${id}/end-entry`) as unknown as Promise<ReturnOrder>
+  },
   exportExcel(params?: Pick<OrderListParams, 'orderNumber' | 'customer' | 'receiveDateStart' | 'receiveDateEnd'>): Promise<Blob> {
     return request.get('/return-orders/export', {
       params,

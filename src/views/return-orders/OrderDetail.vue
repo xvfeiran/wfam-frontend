@@ -7,7 +7,7 @@
       <template #extra>
         <a-space>
           <a-button v-if="canShowEditButton && order?.status !== 'scrapped'" @click="handleEdit">{{ t('common.edit') }}</a-button>
-          <a-button v-if="order?.status === 'draft'" type="primary" @click="handleEndEntry">{{ t('common.endEntry') }}</a-button>
+          <a-button v-if="order?.status === 'submitted'" type="primary" @click="handleEndEntry">{{ t('common.endEntry') }}</a-button>
         </a-space>
       </template>
     </a-page-header>
@@ -69,6 +69,7 @@
           <a-steps direction="vertical" :current="currentStep" size="small">
             <a-step :title="t('orderDetail.stepDraft')" :description="getStepDescription(0)" />
             <a-step :title="t('orderDetail.stepSubmitted')" :description="getStepDescription(1)" />
+            <a-step :title="t('orderDetail.stepRegistered')" :description="getStepDescription(2)" />
           </a-steps>
         </a-card>
       </a-col>
@@ -123,17 +124,18 @@ const refreshData = async () => {
   }
 }
 
-// 状态步骤映射（v3.1 添加已报废状态）
+// 状态步骤映射
 const statusStepMap: Record<string, number> = {
   [OrderStatus.DRAFT]: 0,
   [OrderStatus.SUBMITTED]: 1,
-  [OrderStatus.SCRAPPED]: 1,
+  [OrderStatus.REGISTERED]: 2,
+  [OrderStatus.SCRAPPED]: 2,
 }
 
 const currentStep = computed(() => {
   if (!order.value) return 0
-  if (order.value.status === OrderStatus.SUBMITTED) {
-    return 2 // 比最大步骤索引1大1，显示为"已完成"
+  if (order.value.status === OrderStatus.REGISTERED) {
+    return 3
   }
   return statusStepMap[order.value.status] ?? 0
 })
@@ -150,10 +152,10 @@ const canShowEditButton = computed(() => {
 })
 
 // Add part button visibility logic:
-// - Only draft status can add parts
+// - Draft and submitted status can add parts; registered/scrapped cannot
 const canAddPart = computed(() => {
   if (!order.value) return false
-  return order.value.status === 'draft'
+  return order.value.status === 'draft' || order.value.status === 'submitted'
 })
 
 const { getOrderLabel } = useStatusLabels()
@@ -243,7 +245,7 @@ const handleEndEntry = async () => {
   if (!confirmed) return
 
   try {
-    order.value = await returnOrderApi.submit(orderId.value)
+    order.value = await returnOrderApi.endEntry(orderId.value)
     message.success(t('message.endEntrySuccess'))
   } catch {
     message.error(t('message.submitFailed'))
