@@ -7,7 +7,7 @@
       <template #extra>
         <a-space>
           <a-button v-if="canShowEditButton && order?.status !== 'scrapped'" @click="handleEdit">{{ t('common.edit') }}</a-button>
-          <a-button v-if="order?.status === 'submitted'" type="primary" @click="handleEndEntry">{{ t('common.endEntry') }}</a-button>
+          <a-button v-if="order?.status === 'draft' || order?.status === 'submitted'" type="primary" :disabled="!canEndEntry" @click="handleEndEntry">{{ t('common.endEntry') }}</a-button>
         </a-space>
       </template>
     </a-page-header>
@@ -156,6 +156,12 @@ const canShowEditButton = computed(() => {
 const canAddPart = computed(() => {
   if (!order.value) return false
   return order.value.status === 'draft' || order.value.status === 'submitted'
+})
+
+// End entry button: enabled only in submitted status with at least one part
+const canEndEntry = computed(() => {
+  if (!order.value) return false
+  return order.value.status === 'submitted' && (order.value.initialAnalysisQuantity ?? 0) > 0
 })
 
 const { getOrderLabel } = useStatusLabels()
