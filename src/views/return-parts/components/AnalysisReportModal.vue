@@ -114,6 +114,19 @@
                 <span v-if="field.required" class="required-star">* </span>{{ field.label }}
               </div>
               <div class="photo-upload-wrap">
+                <!-- Upload + Camera action buttons -->
+                <div v-if="!isApproved && canUploadMore(field)" class="photo-action-buttons">
+                  <div class="photo-action-btn" @click="triggerPhotoUpload(field.name, field.type)">
+                    <UploadOutlined />
+                    <span>{{ t('ocr.uploadPhoto') }}</span>
+                  </div>
+                  <div class="photo-action-divider" />
+                  <div class="photo-action-btn" @click="openCameraFor(field.name)">
+                    <CameraOutlined />
+                    <span>{{ t('ocr.takePhoto') }}</span>
+                  </div>
+                </div>
+                <!-- File list display (trigger hidden via CSS) -->
                 <a-upload
                   :file-list="photoFileLists[field.name] || []"
                   list-type="picture-card"
@@ -124,12 +137,7 @@
                   :on-remove="(f: any) => handlePhotoRemove(field.name, f)"
                   @update:file-list="(list: any[]) => { photoFileLists[field.name] = list }"
                 >
-                  <!-- photo: max-count=1 时 AntDV 自动隐藏按钮，无需 v-if -->
-                  <!-- photolist: 始终显示按钮 -->
-                  <div class="photo-trigger">
-                    <PlusOutlined />
-                    <div>{{ t('common.upload') }}</div>
-                  </div>
+                  <span style="display:none"></span>
                 </a-upload>
                 <span v-if="field.required" class="photo-required-tip">
                   <span class="required-star">*</span> {{ t('reportForm.photoRequired') }}
@@ -185,6 +193,21 @@
       <a-empty v-else :description="t('reportForm.noTemplateMatched')" />
     </a-form>
 
+    <!-- Hidden file input for photo upload -->
+    <input
+      ref="photoInputRef"
+      type="file"
+      accept="image/*"
+      multiple
+      style="display: none"
+      @change="onPhotoInputChange"
+    />
+    <!-- Camera capture modal -->
+    <CameraCapture
+      v-model:open="cameraOpen"
+      @captured="onCameraCaptured"
+    />
+
     </template><!-- end v-else (完整表单) -->
 
     <template #footer>
@@ -224,7 +247,7 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
-import { PlusOutlined, DownloadOutlined } from '@ant-design/icons-vue'
+import { DownloadOutlined, CameraOutlined, UploadOutlined } from '@ant-design/icons-vue'
 import { reportsApi } from '@/services/reportsApi'
 import { lookupApi } from '@/services/lookupApi'
 import { analysisAttachmentApi, fileApi } from '@/services/fileApi'
@@ -232,6 +255,7 @@ import { PartStatus } from '@/types'
 import type { Part, ReportTemplate } from '@/types'
 import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import dayjs from 'dayjs'
+import CameraCapture from '@/components/CameraCapture.vue'
 
 const { t } = useI18n()
 
@@ -253,6 +277,12 @@ const reportSubmittedAt = ref<string>()
 const saveDraftDebounce = useDebouncedClick({ delay: 1000 })
 const submitDebounce = useDebouncedClick({ delay: 1000 })
 const downloadDebounce = useDebouncedClick({ delay: 1000 })
+
+// Camera & manual upload state
+const cameraOpen = ref(false)
+const cameraFieldName = ref('')
+const currentUploadField = reactive({ name: '', type: '' })
+const photoInputRef = ref<HTMLInputElement | null>(null)
 
 // 匹配条件状态
 const matchConditions = reactive({
@@ -328,6 +358,84 @@ const ensureReportSaved = async (): Promise<string | null> => {
     message.error(t('message.saveFailed'))
     return null
   }
+}
+
+const canUploadMore = (field: any) => {
+  if (field.type === 'photo') {
+    const list = photoFileLists[field.name] || []
+    return list.filter((f: any) => f.status === 'done').length < 1
+  }
+  return true
+}
+
+/** Unified photo file upload (used by both file input and camera capture) */
+const uploadPhotoFile = async (fieldName: string, file: File) => {
+  const rid = await ensureReportSaved()
+  if (!rid) return
+
+  try {
+    const result = await analysisAttachmentApi.upload(rid, file)
+    const uid = `up-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const currentList = photoFileLists[fieldName] || []
+    photoFileLists[fieldName] = [...currentList, {
+      uid,
+      name: file.name,
+      status: 'done',
+      url: fileApi.getFileUrl(result.relativePath),
+      response: result,
+    }]
+
+    const field = selectedTemplate.value?.fields.find(f => f.name === fieldName)
+    if (field?.type === 'photolist') {
+      const existing = Array.isArray(form.content[fieldName]) ? form.content[fieldName] : []
+      form.content[fieldName] = [...existing, result.relativePath]
+    } else {
+      form.content[fieldName] = result.relativePath
+    }
+
+    reportsApi.saveReport({
+      partId: props.part!.id,
+      templateId: selectedTemplate.value!.id,
+      content: form.content,
+      summary: form.summary,
+      responsibility: form.responsibility,
+      status: 'draft',
+    }).catch(() => {})
+  } catch {
+    message.error(t('message.uploadFailed'))
+  }
+}
+
+const triggerPhotoUpload = (fieldName: string, fieldType: string) => {
+  currentUploadField.name = fieldName
+  currentUploadField.type = fieldType
+  photoInputRef.value?.click()
+}
+
+const onPhotoInputChange = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const files = input.files
+  if (!files || files.length === 0) return
+
+  const fieldName = currentUploadField.name
+  const maxCount = currentUploadField.type === 'photo' ? 1 : Infinity
+
+  for (let i = 0; i < files.length; i++) {
+    const list = photoFileLists[fieldName] || []
+    if (list.length >= maxCount) break
+    await uploadPhotoFile(fieldName, files[i])
+  }
+
+  input.value = ''
+}
+
+const openCameraFor = (fieldName: string) => {
+  cameraFieldName.value = fieldName
+  cameraOpen.value = true
+}
+
+const onCameraCaptured = async (file: File) => {
+  await uploadPhotoFile(cameraFieldName.value, file)
 }
 
 /** 照片/照片列表字段的上传处理（customRequest）
@@ -843,25 +951,61 @@ const handleSubmit = async () => {
   }
 
   :deep(.ant-upload.ant-upload-select) {
-    width: 86px;
-    height: 86px;
+    display: none !important;
   }
 }
 
-.photo-trigger {
+.photo-action-buttons {
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  gap: 4px;
-  font-size: 12px;
-  color: #595959;
-  height: 100%;
+  margin-bottom: 12px;
 
-  .anticon {
-    font-size: 20px;
-    color: #8c8c8c;
+  .photo-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 36px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #595959;
+    transition: background 0.2s, color 0.2s;
+    user-select: none;
+    background: #fafafa;
+
+    &:first-child {
+      border-radius: 8px 0 0 8px;
+    }
+    &:last-child {
+      border-radius: 0 8px 8px 0;
+    }
+    &:hover {
+      background: #e6f4ff;
+      color: #1677ff;
+    }
+    &:active {
+      background: #bae0ff;
+    }
+
+    .anticon {
+      font-size: 24px;
+      color: #8c8c8c;
+    }
+    &:hover .anticon {
+      color: #1677ff;
+    }
   }
+
+  .photo-action-divider {
+    width: 1px;
+    background: #e8e8e8;
+    flex-shrink: 0;
+  }
+
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .photo-required-tip {
