@@ -7,7 +7,7 @@
       <template #extra>
         <a-space>
           <a-button v-if="canShowEditButton && order?.status !== 'scrapped'" @click="handleEdit">{{ t('common.edit') }}</a-button>
-          <a-button v-if="order?.status === 'draft'" type="primary" @click="handleSubmit">{{ t('common.submit') }}</a-button>
+          <a-button v-if="order?.status === 'draft'" type="primary" @click="handleEndEntry">{{ t('common.endEntry') }}</a-button>
         </a-space>
       </template>
     </a-page-header>
@@ -150,10 +150,10 @@ const canShowEditButton = computed(() => {
 })
 
 // Add part button visibility logic:
-// - Only draft and submitted status can add parts (scrapped orders cannot add parts)
+// - Only draft status can add parts
 const canAddPart = computed(() => {
   if (!order.value) return false
-  return order.value.status === 'draft' || order.value.status === 'submitted'
+  return order.value.status === 'draft'
 })
 
 const { getOrderLabel } = useStatusLabels()
@@ -225,11 +225,11 @@ const handleEdit = () => {
   router.push(`/return-orders/${orderId.value}/edit`)
 }
 
-const confirmSubmit = () => {
+const confirmEndEntry = () => {
   return new Promise<boolean>((resolve) => {
     Modal.confirm({
       title: t('common.tip'),
-      content: t('message.submitConfirmWarning'),
+      content: t('message.endEntryConfirmWarning'),
       okText: t('common.confirm'),
       cancelText: t('common.cancel'),
       onOk: () => resolve(true),
@@ -238,15 +238,15 @@ const confirmSubmit = () => {
   })
 }
 
-const handleSubmit = async () => {
-  const confirmed = await confirmSubmit()
+const handleEndEntry = async () => {
+  const confirmed = await confirmEndEntry()
   if (!confirmed) return
 
   try {
     order.value = await returnOrderApi.submit(orderId.value)
-    message.success(t('message.submitSuccess'))
+    message.success(t('message.endEntrySuccess'))
   } catch {
-    message.error(t('message.submitSuccess'))
+    message.error(t('message.submitFailed'))
   }
 }
 
