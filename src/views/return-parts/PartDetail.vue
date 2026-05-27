@@ -118,7 +118,7 @@
           </a-descriptions>
           <div class="report-actions">
             <a-button type="link" @click="handleViewReport">{{ t('partDetail.viewDetails') }}</a-button>
-            <a-button type="link" @click="handleExportReport">{{ t('partDetail.exportReport') }}</a-button>
+            <a-button type="link" :disabled="exportDebounce.isDebouncing.value" :loading="exportDebounce.isDebouncing.value" @click="handleExportReport">{{ t('partDetail.exportReport') }}</a-button>
           </div>
         </a-card>
       </a-col>
@@ -149,6 +149,7 @@ import type { Part, AnalysisReport, ReportTemplate } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
 import { useStatusLabels } from '@/composables/useStatusLabels'
 import { useUserNameMap } from '@/composables/useUserNameMap'
+import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import AnalysisReportModal from './components/AnalysisReportModal.vue'
 
 const getFileUrl = (relativePath: string) => {
@@ -168,6 +169,7 @@ const part = ref<Part | null>(null)
 const report = ref<AnalysisReport | null>(null)
 const templates = ref<ReportTemplate[]>([])
 const analysisVisible = ref(false)
+const exportDebounce = useDebouncedClick({ delay: 1000 })
 const qcNoInput = ref('')
 
 const QC_VISIBLE_STATUSES = [PartStatus.PENDING_APPROVAL, PartStatus.ANALYSIS_COMPLETED, PartStatus.SCRAP_IN_PROGRESS, PartStatus.SCRAPPED]
@@ -345,23 +347,25 @@ const handleViewReport = () => {
   analysisVisible.value = true
 }
 
-const handleExportReport = async () => {
-  if (!report.value?.id) {
-    message.warning(t('analysisForm.pleaseSaveFirst'))
-    return
-  }
-  try {
-    const blob = await reportsApi.exportReport(report.value.id)
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `report_${part.value?.partNumber}_${Date.now()}.xlsx`
-    a.click()
-    window.URL.revokeObjectURL(url)
-    message.success(t('message.downloadSuccess'))
-  } catch {
-    message.error(t('message.exportFailed'))
-  }
+const handleExportReport = () => {
+  exportDebounce.execute(async () => {
+    if (!report.value?.id) {
+      message.warning(t('analysisForm.pleaseSaveFirst'))
+      return
+    }
+    try {
+      const blob = await reportsApi.exportReport(report.value.id)
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `report_${part.value?.partNumber}_${Date.now()}.xlsx`
+      a.click()
+      window.URL.revokeObjectURL(url)
+      message.success(t('message.downloadSuccess'))
+    } catch {
+      message.error(t('message.exportFailed'))
+    }
+  })
 }
 </script>
 

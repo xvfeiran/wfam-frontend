@@ -191,7 +191,7 @@
       <!-- 待审批：简洁卡片的操作按钮 -->
       <template v-if="isPendingApproval">
         <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
-        <a-button :disabled="!reportId" @click="handleDownload">
+        <a-button :disabled="!reportId || downloadDebounce.isDebouncing.value" :loading="downloadDebounce.isDebouncing.value" @click="handleDownload">
           <DownloadOutlined /> {{ t('analysisForm.downloadReport') }}
         </a-button>
         <a-button type="primary" @click="handleViewApproval">
@@ -202,7 +202,7 @@
       <!-- 已审批通过：只读 -->
       <template v-else-if="isApproved">
         <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
-        <a-button :disabled="!selectedTemplate" @click="handleDownload">
+        <a-button :disabled="!selectedTemplate || downloadDebounce.isDebouncing.value" :loading="downloadDebounce.isDebouncing.value" @click="handleDownload">
           <DownloadOutlined /> {{ t('analysisForm.downloadReport') }}
         </a-button>
       </template>
@@ -210,7 +210,7 @@
       <!-- 编辑态 -->
       <template v-else>
         <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
-        <a-button @click="handleDownload" :disabled="!selectedTemplate">
+        <a-button :disabled="!selectedTemplate || downloadDebounce.isDebouncing.value" :loading="downloadDebounce.isDebouncing.value" @click="handleDownload">
           <DownloadOutlined /> {{ t('analysisForm.downloadReport') }}
         </a-button>
         <a-button :disabled="!selectedTemplate || saveDraftDebounce.isDebouncing.value" :loading="saveDraftDebounce.isDebouncing.value" @click="handleSaveDraft">{{ t('common.save') }}</a-button>
@@ -252,6 +252,7 @@ const reportSubmittedAt = ref<string>()
 // 防抖处理（替代现有的 loading ref）
 const saveDraftDebounce = useDebouncedClick({ delay: 1000 })
 const submitDebounce = useDebouncedClick({ delay: 1000 })
+const downloadDebounce = useDebouncedClick({ delay: 1000 })
 
 // 匹配条件状态
 const matchConditions = reactive({
@@ -651,23 +652,27 @@ const handleSaveDraft = async () => {
   })
 }
 
-const handleDownload = async () => {
-  if (!reportId.value) {
-    message.warning(t('analysisForm.pleaseSaveFirst'))
-    return
-  }
-  try {
-    const blob = await reportsApi.exportReport(reportId.value)
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `report_${props.part?.partNumber}_${Date.now()}.xlsx`
-    a.click()
-    window.URL.revokeObjectURL(url)
-    message.success(t('message.downloadSuccess'))
-  } catch {
-    message.error(t('message.exportFailed'))
-  }
+const handleDownload = () => {
+  downloadDebounce.execute(async () => {
+    if (!reportId.value) {
+      message.warning(t('analysisForm.pleaseSaveFirst'))
+      return
+    }
+    try {
+      const blob = await reportsApi.exportReport(reportId.value)
+      console.log(`[Download] reportId=${reportId.value}, blobSize=${blob.size}, blobType=${blob.type}`)
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `report_${props.part?.partNumber}_${Date.now()}.xlsx`
+      a.click()
+      window.URL.revokeObjectURL(url)
+      message.success(t('message.downloadSuccess'))
+    } catch (e) {
+      console.error('[Download] Failed:', e)
+      message.error(t('message.exportFailed'))
+    }
+  })
 }
 
 const handleSubmit = async () => {

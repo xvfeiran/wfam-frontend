@@ -77,7 +77,9 @@ export const reportsApi = {
   },
   exportReport(reportId: string): Promise<Blob> {
     return request.get(`/analysis-reports/${reportId}/export`, {
-      responseType: 'blob'
+      responseType: 'blob',
+      timeout: 120000,
+      params: { _t: Date.now() }
     }) as unknown as Promise<Blob>
   },
 }
