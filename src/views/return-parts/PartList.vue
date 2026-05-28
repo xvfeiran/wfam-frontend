@@ -17,7 +17,9 @@
       :selected-count="selectedRowKeys.length"
       :can-edit="canEditSelectedPart"
       :can-delete="canDeleteSelectedPart"
+      :export-loading="exportLoading"
       @create="handleCreate"
+      @export="handleExport"
       @edit="handleEdit"
       @delete="handleBatchDeleteWrapper"
     />
@@ -43,7 +45,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
 import { partApi } from '@/services/partApi'
 import { lookupApi } from '@/services/lookupApi'
 import { userApi } from '@/services/userApi'
@@ -171,6 +173,51 @@ const handleReset = async () => {
   }
   sortState.value = {}
   await loadData()
+}
+
+const exportLoading = ref(false)
+
+const handleExport = async () => {
+  if (exportLoading.value) return
+  exportLoading.value = true
+  try {
+    const params: Record<string, string> = {}
+    if (filters.value.orderNumber) params.orderNumber = filters.value.orderNumber
+    if (filters.value.partCode) params.partCode = filters.value.partCode
+    if (filters.value.businessUnit) params.businessUnit = filters.value.businessUnit
+    if (filters.value.productPlatform) params.productPlatform = filters.value.productPlatform
+    if (filters.value.status) params.status = filters.value.status
+    if (filters.value.qcCreated) params.qcCreated = filters.value.qcCreated
+    if (filters.value.analyst) params.analyst = filters.value.analyst
+
+    const blob = await partApi.exportExcel(params)
+
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    link.download = `售后件明细_${today}.xlsx`
+    link.click()
+    URL.revokeObjectURL(link.href)
+    message.success(t('message.exportSuccess'))
+  } catch (e: any) {
+    let errMsg = t('message.exportFailed')
+    try {
+      const raw = e?.response?.data
+      if (raw instanceof Blob) {
+        const text = await raw.text()
+        const body = JSON.parse(text)
+        if (body?.message) errMsg = body.message
+      } else if (raw?.message) {
+        errMsg = raw.message
+      }
+    } catch { /* use default message */ }
+    Modal.warning({
+      title: t('returnOrder.exportLimitTitle') || '导出数量超限',
+      content: errMsg,
+    })
+  } finally {
+    exportLoading.value = false
+  }
 }
 
 const handleCreate = () => {

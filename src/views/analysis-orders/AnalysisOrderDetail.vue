@@ -189,8 +189,12 @@ const canScrap = computed(() => {
     return true
   }
 
-  // 所有抽样件都必须是精分析完成状态
-  return sampledParts.every(p => p.status === PartStatus.ANALYSIS_COMPLETED)
+  // 所有抽样件都必须是精分析完成或已进入报废流程
+  return sampledParts.every(p =>
+    p.status === PartStatus.ANALYSIS_COMPLETED ||
+    p.status === PartStatus.SCRAP_IN_PROGRESS ||
+    p.status === PartStatus.SCRAPPED
+  )
 })
 
 const { getAnalysisLabel } = useStatusLabels()
