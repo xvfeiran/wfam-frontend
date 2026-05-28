@@ -4,3 +4,5 @@ dist
 .worktrees/
 CLAUDE.md
 docs
+doc/quality-module-analysis.md
+doc/AdvancedFilterBar组件文档.md

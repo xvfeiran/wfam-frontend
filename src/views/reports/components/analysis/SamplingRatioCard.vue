@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAnalysisStore } from '@/stores/reportAnalysis'
 import { analysisApi } from '@/services/reportAnalysis'
@@ -16,7 +16,7 @@ const isAnimating = ref(false)
 async function fetchData() {
   loading.value = true
   try {
-    const res = await analysisApi.getSamplingRatio({ year: filters.value.year })
+    const res = await analysisApi.getSamplingRatio(filters.value.samplingRatioYear)
     cardData.value = transformSamplingRatio(res)
 
     // 初始化显示值为0
@@ -28,7 +28,7 @@ async function fetchData() {
     isAnimating.value = true
     setTimeout(() => {
       cardData.value.forEach((item, index) => {
-        animateValue(item.bu, item.ratio, index * 120)
+        animateValue(item.bu, item.ratio * 100, index * 120)
       })
     }, 200)
   } finally {
@@ -62,6 +62,10 @@ function animateValue(bu: string, target: number, delay: number) {
 }
 
 onMounted(fetchData)
+
+watch(() => filters.value.samplingRatioYear, () => {
+  fetchData()
+})
 
 function getColor(ratio: number): string {
   if (ratio >= 80) return '#1d4ed8'
@@ -99,7 +103,7 @@ function getColor(ratio: number): string {
             <span class="value-prefix">-</span>
             <span
               class="value-number"
-              :style="{ '--target': item.ratio, '--color': getColor(item.ratio) }"
+              :style="{ '--target': item.ratio * 100, '--color': getColor(item.ratio * 100) }"
             >
               {{ displayValues[item.bu] }}
             </span>

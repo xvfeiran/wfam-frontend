@@ -5,6 +5,8 @@ import dayjs from 'dayjs'
 export interface AnalysisFilters {
   // 分析时长图年份筛选（支持多选）
   analysisDurationYearRange: number[]
+  // 平均抽样比例年份筛选
+  samplingRatioYear: number
   // 售后件柱状图筛选条件
   returnOrderDateRange: [string, string] | null
   returnOrderCustomer: string[] | null
@@ -19,7 +21,8 @@ export const useAnalysisStore = defineStore('analysis', () => {
   // 筛选状态
   const filters = ref<AnalysisFilters>({
     analysisDurationYearRange: [dayjs().year()],
-    returnOrderDateRange: null,
+    samplingRatioYear: dayjs().year(),
+    returnOrderDateRange: [dayjs().startOf('year').format('YYYY-MM'), dayjs().format('YYYY-MM')],
     returnOrderCustomer: null,
     returnOrderBu: null,
     returnOrderPlatform: null,
@@ -49,6 +52,7 @@ export const useAnalysisStore = defineStore('analysis', () => {
   function resetFilters() {
     filters.value = {
       analysisDurationYearRange: [dayjs().year()],
+      samplingRatioYear: dayjs().year(),
       returnOrderDateRange: null,
       returnOrderCustomer: null,
       returnOrderBu: null,

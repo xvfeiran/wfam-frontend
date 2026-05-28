@@ -28,7 +28,7 @@ const chartOption = ref<EChartsOption>({
   tooltip: { trigger: 'axis' },
   grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
   xAxis: { type: 'category', data: [] },
-  yAxis: { type: 'value', name: '小时' },
+  yAxis: { type: 'value', name: '天' },
   series: [],
 })
 
@@ -38,7 +38,7 @@ async function fetchData() {
     const yearRange = filters.value.analysisDurationYearRange
     // 并行请求多个年份的数据
     const results = await Promise.all(
-      yearRange.map((year) => analysisApi.getAnalysisDuration({ year })),
+      yearRange.map((year) => analysisApi.getAnalysisDuration( year )),
     )
 
     // 每个年份的数据转换为 series
@@ -54,8 +54,8 @@ async function fetchData() {
       }
     })
 
-    // X轴为 BU 列表
-    const xAxisData = ['WS', 'CA', 'TS', 'IB']
+    // X轴 BU 列表：从所有年份数据中动态提取
+    const xAxisData = [...new Set(results.flat().map((d) => d.bu))]
 
     // 构建 series，每个年份一条柱子组
     const series = seriesData.map(({ year, series: s }) => ({
@@ -71,7 +71,7 @@ async function fetchData() {
       tooltip: { trigger: 'axis' },
       grid: { left: '3%', right: '4%', bottom: '12%', containLabel: true },
       xAxis: { type: 'category', data: xAxisData },
-      yAxis: { type: 'value', name: '小时' },
+      yAxis: { type: 'value', name: '天' },
       legend: {
         data: yearRange.map((y:unknown) => `${y}年`),
         bottom: 0,

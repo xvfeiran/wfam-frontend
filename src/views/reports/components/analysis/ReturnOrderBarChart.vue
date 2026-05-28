@@ -55,7 +55,8 @@ async function fetchData() {
   errorMsg.value = ''
   try {
     const params = requestParams.value
-
+    console.log('return-order params========>', params)
+    console.log('return-order previous params========>', { ...params, dateRange: previousYearRange.value })
     // 始终请求去年数据，同比开关只控制图表是否显示
     const [currentRes, previousRes] = await Promise.all([
       analysisApi.getReturnOrderData(params),

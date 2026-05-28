@@ -1,7 +1,7 @@
 // 分析时长数据
 interface AnalysisDurationData {
   bu: BU
-  totalHours: number
+  avgDay: number
 }
 
 // 抽样比例数据

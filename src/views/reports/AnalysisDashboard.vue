@@ -14,6 +14,14 @@ import { optionsApi } from '@/services/reportOptions'
 const store = useAnalysisStore()
 const { filters } = storeToRefs(store)
 
+// 平均抽样比例年份选项（当前年 + 前2年）
+const currentYear = dayjs().year()
+const samplingRatioYearOptions = [
+  { label: String(currentYear - 2), value: currentYear - 2 },
+  { label: String(currentYear - 1), value: currentYear - 1 },
+  { label: String(currentYear), value: currentYear },
+]
+
 // 页面加载动画状态
 const isLoaded = ref(false)
 
@@ -73,6 +81,10 @@ function handleAnalysisDurationYearChange(values: number[]) {
 function handleReset() {
   store.resetFilters()
 }
+
+function handleSamplingYearChange(value: number) {
+  store.setFilter('samplingRatioYear', value)
+}
 </script>
 
 <template>
@@ -126,7 +138,7 @@ function handleReset() {
                 </h3>
                 <span class="card-badge">年度累计</span>
               </div>
-              <div class="duration-filter-bar">
+              <div class="card-filter-bar">
                 <span class="filter-label">时间范围：</span>
                 <Select
                   v-model:value="pendingAnalysisDurationYears"
@@ -157,6 +169,15 @@ function handleReset() {
                   平均抽样比例
                 </h3>
                 <span class="card-badge">BU 分组</span>
+              </div>
+              <div class="card-filter-bar">
+                <span class="filter-label">年份：</span>
+                <Select
+                  :value="filters.samplingRatioYear"
+                  :options="samplingRatioYearOptions"
+                  style="min-width: 200px"
+                  @change="handleSamplingYearChange"
+                />
               </div>
               <SamplingRatioCard />
             </div>
@@ -497,8 +518,8 @@ function handleReset() {
     }
   }
 
-  // 分析时长图筛选栏
-  .duration-filter-bar {
+  // 卡片内筛选栏
+  .card-filter-bar {
     display: flex;
     align-items: center;
     gap: 12px;

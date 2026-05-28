@@ -31,6 +31,7 @@ const store = useQualityStore()
 
 // 为每个 BU 创建独立的筛选状态
 const localFilters = ref({
+  dateRange: defaultDateRange as [string, string] | null,
   platform: [] as string[],
   customer: [] as string[],
   bcso: [] as string[],
