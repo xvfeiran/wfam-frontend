@@ -276,25 +276,57 @@
   <a-modal
     v-model:open="detailVisible"
     :title="t('partDetail.titleNew')"
-    width="640px"
+    width="720px"
     :footer="null"
   >
-    <a-descriptions :column="2" bordered size="small" v-if="detailPart">
-      <a-descriptions-item :label="t('returnPart.partNumber')">{{ detailPart.partNumber || '-' }}</a-descriptions-item>
-      <a-descriptions-item :label="t('returnPart.partCode')">{{ detailPart.partCode || '-' }}</a-descriptions-item>
-      <a-descriptions-item :label="t('returnPart.businessUnit')">{{ detailPart.businessUnit || '-' }}</a-descriptions-item>
-      <a-descriptions-item :label="t('returnPart.productPlatform')">{{ detailPart.productPlatform || '-' }}</a-descriptions-item>
-      <a-descriptions-item :label="t('partDetail.productionShift')">{{ detailPart.productionShift || '-' }}</a-descriptions-item>
-      <a-descriptions-item :label="t('partDetail.customerFailureType')">{{ detailPart.failureType ? t('returnPart.failureTypeLabels.' + detailPart.failureType) : '-' }}</a-descriptions-item>
-      <a-descriptions-item :label="t('partDetail.boschFailureType')">{{ detailPart.boschFailureType || '-' }}</a-descriptions-item>
-      <a-descriptions-item :label="t('partDetail.responsibleEngineer')">{{ userDisplayName(detailPart.responsibleEngineer) }}</a-descriptions-item>
-      <a-descriptions-item :label="t('partDetail.analyst')">{{ userDisplayName(detailPart.analyst) }}</a-descriptions-item>
-      <a-descriptions-item :label="t('common.status')" :span="2">
-        <a-tag :color="PART_STATUS_MAP[detailPart.status]?.color || 'default'">
-          {{ getPartStatusLabel(detailPart.status) }}
-        </a-tag>
-      </a-descriptions-item>
-    </a-descriptions>
+    <template v-if="detailPart">
+      <!-- 基本信息 -->
+      <a-descriptions :column="2" bordered size="small" :title="t('partDetail.basicInfo')" style="margin-bottom: 16px">
+        <a-descriptions-item :label="t('returnPart.partNumber')">{{ detailPart.partNumber || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('returnPart.partCode')">{{ detailPart.partCode || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('returnPart.businessUnit')">{{ detailPart.businessUnit || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('returnPart.productPlatform')">{{ detailPart.productPlatform || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.partProductionDate')">{{ detailPart.partProductionDate || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.productionShift')">{{ detailPart.productionShift || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.customerFailureType')">{{ detailPart.failureType ? t('returnPart.failureTypeLabels.' + detailPart.failureType) : '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.boschFailureType')">{{ detailPart.boschFailureType || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.responsibleEngineer')">{{ userDisplayName(detailPart.responsibleEngineer) }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.analyst')">{{ userDisplayName(detailPart.analyst) }}</a-descriptions-item>
+        <a-descriptions-item :label="t('common.status')">
+          <a-tag :color="PART_STATUS_MAP[detailPart.status]?.color || 'default'">
+            {{ getPartStatusLabel(detailPart.status) }}
+          </a-tag>
+        </a-descriptions-item>
+        <a-descriptions-item :label="t('returnPart.otherInfo')">{{ detailPart.otherInfo || '-' }}</a-descriptions-item>
+      </a-descriptions>
+
+      <!-- 客诉信息 -->
+      <a-descriptions :column="2" bordered size="small" :title="t('partDetail.complaintInfo')" style="margin-bottom: 16px">
+        <a-descriptions-item :label="t('partDetail.repairStation')">{{ detailPart.repairStation || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.complaintLocation')">{{ detailPart.complaintLocation || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.vehicleProductionDate')">{{ detailPart.vehicleProductionDate || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.vehiclePurchaseDate')">{{ detailPart.vehiclePurchaseDate || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.vehicleFailureDate')">{{ detailPart.vehicleFailureDate || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.vehicleVIN')">{{ detailPart.vehicleVIN || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.vehicleMileage')">{{ detailPart.vehicleMileage != null ? `${detailPart.vehicleMileage} km` : '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('returnPart.customerDescription')">{{ detailPart.customerDescription || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('returnPart.otherDescription')" :span="2">{{ detailPart.otherDescription || '-' }}</a-descriptions-item>
+      </a-descriptions>
+
+      <!-- 照片信息 -->
+      <div class="detail-section-title">{{ t('partDetail.photoInfo') }}</div>
+      <div v-if="detailPart.images && detailPart.images.length > 0" class="detail-images">
+        <a-image
+          v-for="(img, idx) in detailPart.images"
+          :key="idx"
+          :src="img"
+          :width="100"
+          :height="100"
+          style="object-fit: cover; border-radius: 4px; margin: 4px"
+        />
+      </div>
+      <a-empty v-else :description="t('partDetail.noPhotos')" :image-style="{ height: '40px' }" />
+    </template>
   </a-modal>
 </template>
 
@@ -657,5 +689,18 @@ const handleConfirmSampling = () => confirmDebounce.execute(async () => {
     height: auto;
     line-height: 1;
   }
+}
+
+.detail-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.detail-images {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 </style>
