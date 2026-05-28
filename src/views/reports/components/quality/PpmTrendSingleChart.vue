@@ -16,15 +16,22 @@ import { qualityApi } from '@/services/reportQuality'
 import { optionsApi } from '@/services/reportOptions'
 import { transformPpmTrendSingle } from '@/utils/transforms/quality/ppmTrendSingle'
 import AdvancedFilterBar from '@/components/AdvancedFilterBar.vue'
-import type { BU } from '@/constants/reports'
 
 use([CanvasRenderer, LineChart, TitleComponent, TooltipComponent, LegendComponent, GridComponent])
 
 interface Props {
-  bu: BU
+  bu: string
 }
 
 const props = defineProps<Props>()
+
+// 默认时间范围：当年1月到当前月份
+const currentYear = new Date().getFullYear()
+const currentMonth = new Date().getMonth() + 1
+const defaultDateRange: [string, string] = [
+  `${currentYear}-01`,
+  `${currentYear}-${String(currentMonth).padStart(2, '0')}`,
+]
 
 // 为每个 BU 创建独立的筛选状态
 const localFilters = ref({
@@ -41,14 +48,6 @@ const platformOptions = ref<{ label: string; value: string }[]>([])
 const customerOptions = ref<{ label: string; value: string }[]>([])
 const faultModeOptions = ref<{ label: string; value: string }[]>([])
 const partNoOptions = ref<{ label: string; value: string }[]>([])
-
-// 默认时间范围：当年1月到当前月份
-const currentYear = new Date().getFullYear()
-const currentMonth = new Date().getMonth() + 1
-const defaultDateRange: [string, string] = [
-  `${currentYear}-01`,
-  `${currentYear}-${String(currentMonth).padStart(2, '0')}`,
-]
 
 // 加载筛选项
 onMounted(async () => {
@@ -131,6 +130,7 @@ onUnmounted(() => {
 
 function handleFilterSearch(values: any) {
   localFilters.value = {
+    dateRange: localFilters.value.dateRange,
     platform: values.platform ?? [],
     customer: values.customer ?? [],
     bcso: values.bcso ?? [],

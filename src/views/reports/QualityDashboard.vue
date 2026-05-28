@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Row, Col } from 'ant-design-vue'
 import ReturnQuantityCard from './components/quality/ReturnQuantityCard.vue'
 import ReturnTreemapChart from './components/quality/ReturnTreemapChart.vue'
@@ -9,8 +9,7 @@ import AdvancedFilterBar from '@/components/AdvancedFilterBar.vue'
 import { storeToRefs } from 'pinia'
 import { useQualityStore } from '@/stores/reportQuality'
 import { optionsApi } from '@/services/reportOptions'
-import { BCSO_LIST, MIS_PERIODS } from '@/constants/reports'
-import type { KilometerRange, MisPeriod } from '@/constants/reports'
+import type { KilometerRange } from '@/constants/reports'
 
 const store = useQualityStore()
 const { filters } = storeToRefs(store)
@@ -29,52 +28,27 @@ const customerOptions = ref<{ label: string; value: string }[]>([])
 const platformOptions = ref<{ label: string; value: string }[]>([])
 const faultModeOptions = ref<{ label: string; value: string }[]>([])
 const partNoOptions = ref<{ label: string; value: string }[]>([])
+const buOptions = ref<string[]>([])
 
 // 加载筛选选项
 onMounted(async () => {
   try {
-    const [customers, platforms, faultModes, partNos] = await Promise.all([
+    const [customers, platforms, faultModes, partNos, buOpts] = await Promise.all([
       optionsApi.getCustomerOptions(),
       optionsApi.getPlatformOptions(),
       optionsApi.getFaultModeOptions(),
       optionsApi.getPartNoOptions(),
+      optionsApi.getBuOptions(),
     ])
     customerOptions.value = customers.map((c) => ({ label: c.label, value: c.value }))
     platformOptions.value = platforms.map((p) => ({ label: p.label, value: p.value }))
     faultModeOptions.value = faultModes.map((f) => ({ label: f.label, value: f.value }))
     partNoOptions.value = partNos.map((p) => ({ label: p.label, value: p.value }))
+    buOptions.value = buOpts.map((b) => b.value)
   } catch (e) {
     console.error('Failed to load filter options:', e)
   }
 })
-
-// PPM/IPB 折线图筛选项配置
-const ppmTrendFilterItems = computed(() => [
-  {
-    key: 'ppmPlatform',
-    label: '平台',
-    type: 'multi-select' as const,
-    options: platformOptions.value,
-  },
-  {
-    key: 'ppmCustomer',
-    label: '客户',
-    type: 'multi-select' as const,
-    options: customerOptions.value,
-  },
-  {
-    key: 'ppmBcso',
-    label: 'B/C/S/O',
-    type: 'multi-select' as const,
-    options: BCSO_LIST.map((v) => ({ label: v, value: v })),
-  },
-  {
-    key: 'ppmMis',
-    label: 'MIS',
-    type: 'multi-select' as const,
-    options: MIS_PERIODS.map((v) => ({ label: v, value: v })),
-  },
-])
 </script>
 
 <template>
@@ -224,28 +198,9 @@ const ppmTrendFilterItems = computed(() => [
               </svg>
               PPM / IPB 趋势
             </h3>
-            <div class="card-controls">
-              <FilterBar
-                :items="ppmTrendFilterItems"
-                :model-value="{
-                  ppmPlatform: filters.ppmPlatform ?? [],
-                  ppmCustomer: filters.ppmCustomer ?? [],
-                  ppmBcso: filters.ppmBcso ?? [],
-                  ppmMis: filters.ppmMis ?? [],
-                }"
-                @update:model-value="
-                  (val: Record<string, string[]>) => {
-                    store.setFilter('ppmPlatform', val.ppmPlatform)
-                    store.setFilter('ppmCustomer', val.ppmCustomer)
-                    store.setFilter('ppmBcso', val.ppmBcso)
-                    store.setFilter('ppmMis', val.ppmMis as MisPeriod[])
-                  }
-                "
-              />
-            </div>
           </div>
           <div class="chart-container">
-            <PpmTrendLineChart />
+            <PpmTrendLineChart :bu-list="buOptions" />
           </div>
         </div>
       </div>
