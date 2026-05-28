@@ -1,96 +1,86 @@
 import { computed } from 'vue'
 import { useDevMode } from './useDevMode'
-import { useDevUserStore } from '@/stores/devUser'
+import { useDevUserStore, ROLE_LABELS } from '@/stores/devUser'
+import { useUserInfoStore } from '@/stores/userInfo'
 import type { UserRole } from '@/stores/devUser'
 
-/**
- * Role that can edit submitted forms (non-draft status)
- */
 const EDIT_SUBMITTED_ROLE: UserRole = 'W_RBCC_AEP_WFAM_QMC_Leader'
 
-/**
- * Composable for checking user permissions
- */
+function hasRole(roleNames: string, role: string): boolean {
+  return roleNames.includes(role)
+}
+
 export function usePermissions() {
   const { isDevMode } = useDevMode()
   const devUserStore = useDevUserStore()
+  const userInfoStore = useUserInfoStore()
 
-  /**
-   * Check if current user has permission to edit submitted forms (non-draft status)
-   * Only QMC Leader can edit submitted forms
-   */
+  // dev 模式：单角色字符串；wujie 模式：逗号分隔的多角色字符串
+  const roleNames = computed(() => {
+    if (isDevMode.value) {
+      return devUserStore.currentUser.role
+    }
+    return userInfoStore.roleNames
+  })
+
+  const currentUserUsername = computed(() => {
+    if (isDevMode.value) {
+      return devUserStore.currentUser.ntAccount
+    }
+    return userInfoStore.username
+  })
+
   const canEditSubmittedForm = computed(() => {
-    if (isDevMode.value) {
-      // Dev mode: check dev user role
-      return devUserStore.currentUser.role === EDIT_SUBMITTED_ROLE
-    } else {
-      // Production mode: check from userInfo store
-      // TODO: Implement proper role extraction from auth header
-      return false
-    }
+    return hasRole(roleNames.value, EDIT_SUBMITTED_ROLE)
   })
 
-  /**
-   * Check if current user is QMC Leader
-   */
   const isQMCLeader = computed(() => {
-    if (isDevMode.value) {
-      return devUserStore.currentUser.role === 'W_RBCC_AEP_WFAM_QMC_Leader'
-    }
-    return false // TODO: Implement for production mode
+    return hasRole(roleNames.value, 'W_RBCC_AEP_WFAM_QMC_Leader')
   })
 
-  /**
-   * Check if current user is QMC Manager
-   */
   const isQMCManager = computed(() => {
-    if (isDevMode.value) {
-      return devUserStore.currentUser.role === 'W_RBCC_AEP_WFAM_QMC_Manager'
-    }
-    return false // TODO: Implement for production mode
+    return hasRole(roleNames.value, 'W_RBCC_AEP_WFAM_QMC_Manager')
   })
 
-  /**
-   * Check if current user is System Admin
-   */
   const isSystemAdmin = computed(() => {
-    if (isDevMode.value) {
-      return devUserStore.currentUser.role === 'W_RBCC_AEP_WFAM_SystemAdmin'
-    }
-    return false // TODO: Implement for production mode
+    return hasRole(roleNames.value, 'W_RBCC_AEP_WFAM_SystemAdmin')
   })
 
-  /**
-   * Check if current user is Analyst
-   */
+  // 分析员：有 Analyst 角色，但不是 Leader/Manager/Admin（与后端逻辑一致）
   const isAnalyst = computed(() => {
-    if (isDevMode.value) {
-      return devUserStore.currentUser.role === 'W_RBCC_AEP_WFAM_Analyst'
-    }
-    return false // TODO: Implement for production mode
+    const rn = roleNames.value
+    return hasRole(rn, 'W_RBCC_AEP_WFAM_Analyst')
+      && !hasRole(rn, 'W_RBCC_AEP_WFAM_QMC_Leader')
+      && !hasRole(rn, 'W_RBCC_AEP_WFAM_QMC_Manager')
+      && !hasRole(rn, 'W_RBCC_AEP_WFAM_SystemAdmin')
   })
 
-  /**
-   * Check if current user can view all analysis orders (Leader/Manager/Admin)
-   */
   const canViewAllAnalysisOrders = computed(() => {
-    if (isDevMode.value) {
-      const role = devUserStore.currentUser.role
-      return role === 'W_RBCC_AEP_WFAM_QMC_Leader' ||
-        role === 'W_RBCC_AEP_WFAM_QMC_Manager' ||
-        role === 'W_RBCC_AEP_WFAM_SystemAdmin'
-    }
-    return false // TODO: Implement for production mode
+    const rn = roleNames.value
+    return hasRole(rn, 'W_RBCC_AEP_WFAM_QMC_Leader') ||
+      hasRole(rn, 'W_RBCC_AEP_WFAM_QMC_Manager') ||
+      hasRole(rn, 'W_RBCC_AEP_WFAM_SystemAdmin')
   })
 
-  /**
-   * Get current user's role label
-   */
   const currentRoleLabel = computed(() => {
     if (isDevMode.value) {
       return devUserStore.currentRoleLabel
     }
-    return '' // TODO: Implement for production mode
+    // wujie 模式：匹配第一个已知的 WFAM 角色
+    const wfamRoles: UserRole[] = [
+      'W_RBCC_AEP_WFAM_SystemAdmin',
+      'W_RBCC_AEP_WFAM_QMC_Manager',
+      'W_RBCC_AEP_WFAM_QMC_Leader',
+      'W_RBCC_AEP_WFAM_Analyst',
+      'W_RBCC_AEP_WFAM_Customer_Quality',
+      'R_RBCC_AEP_WFAM_Visitor',
+    ]
+    for (const role of wfamRoles) {
+      if (hasRole(roleNames.value, role)) {
+        return ROLE_LABELS[role]
+      }
+    }
+    return ''
   })
 
   return {
@@ -101,5 +91,6 @@ export function usePermissions() {
     isAnalyst,
     canViewAllAnalysisOrders,
     currentRoleLabel,
+    currentUserUsername,
   }
 }

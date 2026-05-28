@@ -177,7 +177,7 @@ import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import { DownloadOutlined, PlusOutlined, CameraOutlined } from '@ant-design/icons-vue'
 import { partApi } from '@/services/partApi'
-import { analysisAttachmentApi, fileApi } from '@/services/fileApi'
+
 import { COMPLAINT_TYPES } from '@/constants/complaintTypes'
 import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import CameraCapture from '@/components/CameraCapture.vue'

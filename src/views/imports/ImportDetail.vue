@@ -169,14 +169,14 @@ const logsPagination = computed(() => ({
 }))
 
 const treeData = computed(() => {
-  const byFolder = new Map<string, Array<{ file: string; fail: number; total: number }>>()
+  const byFolder = new Map<string, Array<{ file: string; success: number; fail: number; total: number }>>()
 
   for (const summary of fileSummaries.value) {
     const normalized = summary.fileName.replace(/\\/g, '/')
     const idx = normalized.lastIndexOf('/')
     const folder = idx >= 0 ? normalized.substring(0, idx) : '/'
     if (!byFolder.has(folder)) byFolder.set(folder, [])
-    byFolder.get(folder)!.push({ file: summary.fileName, success: summary.successCount, total: summary.totalCount })
+    byFolder.get(folder)!.push({ file: summary.fileName, success: summary.successCount, fail: summary.failCount, total: summary.totalCount })
   }
 
   const folderNodes = Array.from(byFolder.entries()).map(([folder, files]) => ({

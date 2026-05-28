@@ -2,10 +2,35 @@
   <a-modal
     :open="visible"
     :title="t('reportForm.detailedAnalysis')"
-    width="800px"
+    :width="isPendingApproval ? '480px' : '800px'"
     @cancel="handleCancel"
     @ok="handleSubmit"
   >
+    <!-- ── 待审批只读卡片（复用 PartDetail report-card 样式） ─────────── -->
+    <template v-if="isPendingApproval">
+      <a-descriptions :column="1" size="small" bordered>
+        <a-descriptions-item :label="t('partDetail.template')">
+          {{ selectedTemplate?.name || '-' }}
+        </a-descriptions-item>
+        <a-descriptions-item :label="t('common.status')">
+          <a-tag :color="reportStatusColor">{{ reportStatusLabel }}</a-tag>
+        </a-descriptions-item>
+        <a-descriptions-item :label="t('reportForm.responsibility')">
+          <a-tag v-if="form.responsibility">{{ form.responsibility }}</a-tag>
+          <span v-else>-</span>
+        </a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.summary')">
+          {{ form.summary || '-' }}
+        </a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.submittedTime')">
+          {{ reportSubmittedAt || '-' }}
+        </a-descriptions-item>
+      </a-descriptions>
+    </template>
+
+    <!-- ── 完整编辑表单（非待审批状态） ─────────────────────────────── -->
+    <template v-else>
+
     <!-- 顶部匹配条件 -->
     <div class="match-conditions-card">
       <div class="match-conditions-header">
@@ -77,7 +102,51 @@
         </div>
 
         <template v-for="field in selectedTemplate.fields.filter(f => f.name !== 'responsibility')" :key="field.name">
-          <a-form-item :label="field.label" :name="['content', field.name]" :rules="field.required ? [{ required: true, message: t('reportForm.enterField', { field: field.label }) }] : []">
+          <!--
+            照片字段不用 a-form-item 包裹：
+            a-upload(picture-card) 会在非渲染上下文中调用默认 slot，
+            与 a-form-item 的 slot 渲染机制冲突，产生大量 "Slot invoked outside render" 告警。
+            用普通 div 手动渲染 label，彻底绕开该 AntDV 内部问题。
+          -->
+          <template v-if="field.type === 'photo' || field.type === 'photolist'">
+            <div class="photo-form-item">
+              <div class="photo-form-label">
+                <span v-if="field.required" class="required-star">* </span>{{ field.label }}
+              </div>
+              <div class="photo-upload-wrap">
+                <a-upload
+                  :file-list="photoFileLists[field.name] || []"
+                  list-type="picture-card"
+                  accept="image/*"
+                  v-bind="field.type === 'photo' ? { maxCount: 1 } : {}"
+                  :custom-request="(opts: any) => handlePhotoUpload(field.name, opts)"
+                  :disabled="isApproved"
+                  :on-remove="(f: any) => handlePhotoRemove(field.name, f)"
+                  @update:file-list="(list: any[]) => { photoFileLists[field.name] = list }"
+                >
+                  <!-- photo: max-count=1 时 AntDV 自动隐藏按钮，无需 v-if -->
+                  <!-- photolist: 始终显示按钮 -->
+                  <div class="photo-trigger">
+                    <PlusOutlined />
+                    <div>{{ t('common.upload') }}</div>
+                  </div>
+                </a-upload>
+                <span v-if="field.required" class="photo-required-tip">
+                  <span class="required-star">*</span> {{ t('reportForm.photoRequired') }}
+                </span>
+              </div>
+            </div>
+          </template>
+
+          <!-- 普通字段：使用 a-form-item（支持校验） -->
+          <a-form-item
+            v-else
+            :label="field.label"
+            :name="['content', field.name]"
+            :rules="field.required
+              ? [{ required: true, message: t('reportForm.enterField', { field: field.label }) }]
+              : []"
+          >
             <template v-if="field.type === 'text'">
               <a-input v-model:value="form.content[field.name]" :placeholder="t('reportForm.inputField', { field: field.label })" :disabled="isApproved" />
             </template>
@@ -92,7 +161,13 @@
               </a-select>
             </template>
             <template v-else-if="field.type === 'date'">
-              <a-date-picker v-model:value="form.content[field.name]" style="width: 100%" :disabled="isApproved" />
+              <!-- 始终传 dayjs 对象给 picker，防止 content 里残留字符串时 picker setup 崩溃 -->
+              <a-date-picker
+                :value="form.content[field.name] != null ? dayjs(form.content[field.name]) : null"
+                style="width: 100%"
+                :disabled="isApproved"
+                @update:value="(val: any) => { form.content[field.name] = val }"
+              />
             </template>
             <template v-else-if="field.type === 'number'">
               <a-input-number v-model:value="form.content[field.name]" style="width: 100%" :disabled="isApproved" />
@@ -105,31 +180,39 @@
         <a-form-item :label="t('reportForm.reportSummary')" name="summary">
           <a-textarea v-model:value="form.summary" :placeholder="t('reportForm.inputReportSummary')" :rows="2" show-count :maxlength="200" :disabled="isApproved" />
         </a-form-item>
-
-        <a-form-item :label="t('analysisForm.attachmentUpload')">
-          <a-upload v-model:file-list="form.attachments" :before-upload="() => false" :max-count="5" :disabled="isApproved">
-            <a-button :disabled="isApproved">
-              <UploadOutlined /> {{ t('common.upload') }}
-            </a-button>
-          </a-upload>
-        </a-form-item>
       </template>
 
       <a-empty v-else :description="t('reportForm.noTemplateMatched')" />
     </a-form>
 
+    </template><!-- end v-else (完整表单) -->
+
     <template #footer>
-      <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
-      <a-button @click="handleDownload" :disabled="!selectedTemplate">
-        <DownloadOutlined /> {{ t('analysisForm.downloadReport') }}
-      </a-button>
-      <template v-if="isApproved">
-        <!-- 审批通过：只读，无编辑操作 -->
+      <!-- 待审批：简洁卡片的操作按钮 -->
+      <template v-if="isPendingApproval">
+        <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
+        <a-button :disabled="!reportId" @click="handleDownload">
+          <DownloadOutlined /> {{ t('analysisForm.downloadReport') }}
+        </a-button>
+        <a-button type="primary" @click="handleViewApproval">
+          {{ t('analysisForm.viewApprovalProgress') }}
+        </a-button>
       </template>
-      <template v-else-if="isPendingApproval">
-        <a-button type="primary" @click="handleViewApproval">{{ t('analysisForm.viewApprovalProgress') }}</a-button>
+
+      <!-- 已审批通过：只读 -->
+      <template v-else-if="isApproved">
+        <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
+        <a-button :disabled="!selectedTemplate" @click="handleDownload">
+          <DownloadOutlined /> {{ t('analysisForm.downloadReport') }}
+        </a-button>
       </template>
+
+      <!-- 编辑态 -->
       <template v-else>
+        <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
+        <a-button @click="handleDownload" :disabled="!selectedTemplate">
+          <DownloadOutlined /> {{ t('analysisForm.downloadReport') }}
+        </a-button>
         <a-button :disabled="!selectedTemplate || saveDraftDebounce.isDebouncing.value" :loading="saveDraftDebounce.isDebouncing.value" @click="handleSaveDraft">{{ t('common.save') }}</a-button>
         <a-button type="primary" :disabled="!selectedTemplate || submitDebounce.isDebouncing.value" :loading="submitDebounce.isDebouncing.value" @click="handleSubmit">{{ t('analysisForm.submitApproval') }}</a-button>
       </template>
@@ -141,9 +224,10 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
-import { UploadOutlined, DownloadOutlined } from '@ant-design/icons-vue'
+import { PlusOutlined, DownloadOutlined } from '@ant-design/icons-vue'
 import { reportsApi } from '@/services/reportsApi'
 import { lookupApi } from '@/services/lookupApi'
+import { analysisAttachmentApi, fileApi } from '@/services/fileApi'
 import { PartStatus } from '@/types'
 import type { Part, ReportTemplate } from '@/types'
 import { useDebouncedClick } from '@/composables/useDebouncedClick'
@@ -161,6 +245,9 @@ const emit = defineEmits(['update:visible', 'success', 'view-approval'])
 const formRef = ref()
 const templates = ref<ReportTemplate[]>([])
 const reportId = ref<string>()
+// 报告只读摘要（待审批/已审批时展示卡片用）
+const reportStatus = ref<string>()
+const reportSubmittedAt = ref<string>()
 
 // 防抖处理（替代现有的 loading ref）
 const saveDraftDebounce = useDebouncedClick({ delay: 1000 })
@@ -181,13 +268,162 @@ const form = reactive({
   templateId: undefined as string | undefined,
   content: {} as Record<string, any>,
   summary: '',
-  attachments: [] as any[],
   responsibility: undefined as string | undefined,
 })
+
+// ── 照片字段管理 ──────────────────────────────────────────────────────────
+// key: field.name，value: ant-design UploadFile 对象列表
+const photoFileLists = reactive<Record<string, any[]>>({})
+
+/** 从已有报告内容初始化照片列表（打开弹窗时调用） */
+const initPhotoFileLists = (content: Record<string, any>, template: typeof selectedTemplate.value) => {
+  Object.keys(photoFileLists).forEach(k => { delete photoFileLists[k] })
+  if (!template) return
+  for (const field of template.fields) {
+    if (field.type === 'photo') {
+      const path = content[field.name]
+      photoFileLists[field.name] = path
+        ? [{ uid: `pre-${field.name}`, name: String(path).split('/').pop() || field.name, status: 'done', url: fileApi.getFileUrl(String(path)), response: { relativePath: path } }]
+        : []
+    } else if (field.type === 'photolist') {
+      const paths: string[] = Array.isArray(content[field.name]) ? content[field.name] : []
+      photoFileLists[field.name] = paths.map((p, i) => ({
+        uid: `pre-${field.name}-${i}`,
+        name: p.split('/').pop() || `photo_${i}`,
+        status: 'done',
+        url: fileApi.getFileUrl(p),
+        response: { relativePath: p },
+      }))
+    }
+  }
+}
+
+/**
+ * 上传前确保草稿已保存，返回 reportId。
+ * 照片上传需要 reportId 才能关联到正确的附件路径。
+ */
+const ensureReportSaved = async (): Promise<string | null> => {
+  if (reportId.value) return reportId.value
+  if (!props.part?.id || !selectedTemplate.value) {
+    message.warning(t('reportForm.noTemplateMatched'))
+    return null
+  }
+  if (!form.responsibility) {
+    message.warning(t('reportForm.selectResponsibility'))
+    return null
+  }
+  try {
+    const report = await reportsApi.saveReport({
+      partId: props.part.id,
+      templateId: selectedTemplate.value.id,
+      content: form.content,
+      summary: form.summary,
+      responsibility: form.responsibility,
+      status: 'draft',
+    })
+    reportId.value = report.id
+    return report.id
+  } catch {
+    message.error(t('message.saveFailed'))
+    return null
+  }
+}
+
+/** 照片/照片列表字段的上传处理（customRequest）
+ *  上传成功后立即更新 form.content 并异步持久化到 DB，
+ *  确保照片路径在重新打开弹窗时仍可见。
+ */
+const handlePhotoUpload = async (fieldName: string, { file, onSuccess, onError }: any) => {
+  const rid = await ensureReportSaved()
+  if (!rid) {
+    onError(new Error('Report not saved'))
+    return
+  }
+  try {
+    const result = await analysisAttachmentApi.upload(rid, file as File)
+    onSuccess(result)
+
+    // 立即更新 form.content 中的路径
+    const field = selectedTemplate.value?.fields.find(f => f.name === fieldName)
+    if (field?.type === 'photolist') {
+      const existing = Array.isArray(form.content[fieldName]) ? form.content[fieldName] : []
+      form.content[fieldName] = [...existing, result.relativePath]
+    } else {
+      form.content[fieldName] = result.relativePath
+    }
+
+    // 异步持久化到 DB（fire-and-forget）
+    reportsApi.saveReport({
+      partId: props.part!.id,
+      templateId: selectedTemplate.value!.id,
+      content: form.content,
+      summary: form.summary,
+      responsibility: form.responsibility,
+      status: 'draft',
+    }).catch(() => { /* 后台保存失败忽略，不影响上传体验 */ })
+  } catch (e) {
+    onError(e)
+    message.error(t('message.uploadFailed'))
+  }
+}
+
+/** 删除照片附件（返回 false 时 ant-design 会阻止从列表移除）
+ *  删除成功后立即更新 form.content 并异步持久化到 DB。
+ */
+const handlePhotoRemove = async (fieldName: string, file: any): Promise<boolean> => {
+  const relativePath = file.response?.relativePath
+  if (relativePath && reportId.value) {
+    try {
+      await analysisAttachmentApi.delete(reportId.value, relativePath)
+
+      // 立即更新 form.content 中的路径
+      const field = selectedTemplate.value?.fields.find(f => f.name === fieldName)
+      if (field?.type === 'photolist') {
+        const existing = Array.isArray(form.content[fieldName]) ? form.content[fieldName] : []
+        const updated = (existing as string[]).filter(p => p !== relativePath)
+        form.content[fieldName] = updated.length ? updated : undefined
+      } else {
+        form.content[fieldName] = undefined
+      }
+
+      // 异步持久化到 DB（fire-and-forget）
+      reportsApi.saveReport({
+        partId: props.part!.id,
+        templateId: selectedTemplate.value!.id,
+        content: form.content,
+        summary: form.summary,
+        responsibility: form.responsibility,
+        status: 'draft',
+      }).catch(() => { /* 后台保存失败忽略 */ })
+    } catch {
+      message.error(t('message.deleteFailed'))
+      return false
+    }
+  }
+  return true
+}
 
 // 根据选中的模板ID获取当前模板
 const selectedTemplate = computed(() => {
   return matchedTemplates.value.find(t => t.id === form.templateId) || null
+})
+
+// 报告状态展示（与 PartDetail 保持一致）
+const REPORT_STATUS_COLOR: Record<string, string> = {
+  draft: 'default',
+  submitted: 'processing',
+  approved: 'success',
+  rejected: 'error',
+}
+const reportStatusColor = computed(() => REPORT_STATUS_COLOR[reportStatus.value || ''] || 'default')
+const reportStatusLabel = computed(() => {
+  const map: Record<string, string> = {
+    draft: t('partDetail.reportDraft'),
+    submitted: t('partDetail.reportPending'),
+    approved: t('partDetail.reportApproved'),
+    rejected: t('partDetail.reportRejected'),
+  }
+  return map[reportStatus.value || ''] || (reportStatus.value || '-')
 })
 
 // 是否处于待审批状态（已提交，等待审批）
@@ -284,7 +520,7 @@ watch(() => props.visible, async (val) => {
       matchConditions.productPlatform = props.part.productPlatform
       matchConditions.failureType = props.part.failureType || undefined
 
-      // 加载现有报告（获取已保存的模板ID）
+      // 加载现有报告，并从报告对应的模板反查匹配条件
       let existingReportContent: Record<string, any> | null = null
       let existingReportSummary = ''
       if (props.part.id) {
@@ -292,49 +528,85 @@ watch(() => props.visible, async (val) => {
           const existingReport = await reportsApi.getLatestReportByPart(props.part.id)
           if (existingReport) {
             reportId.value = existingReport.id
-            form.templateId = existingReport.templateId
+            form.templateId = existingReport.templateId          // 保留上次用的模板
             existingReportContent = existingReport.content || {}
             existingReportSummary = existingReport.summary || ''
             form.responsibility = existingReport.responsibility || undefined
+            reportStatus.value = existingReport.status
+            reportSubmittedAt.value = existingReport.submittedAt
+
+            // 从模板元数据反查上次使用的匹配条件，确保 matchTemplates() 能找到同一模板
+            const savedTemplate = templates.value.find(t => t.id === existingReport.templateId)
+            if (savedTemplate) {
+              // 模板有明确的 productPlatform → 用模板的；否则 fallback 到 part 的字段
+              if (savedTemplate.productPlatform) {
+                matchConditions.productPlatform = savedTemplate.productPlatform
+              }
+              if (savedTemplate.failureType) {
+                matchConditions.failureType = savedTemplate.failureType
+              }
+            }
           } else {
-            // 没有现有报告，使用新表单
             reportId.value = undefined
             form.templateId = undefined
           }
         } catch {
-          // 没有现有报告，使用新表单
           reportId.value = undefined
           form.templateId = undefined
         }
       }
 
-      // 匹配模板（如果已有报告，会使用已保存的模板ID）
+      // 用还原后的匹配条件拉取模板列表，form.templateId 已设置，matchTemplates() 会优先保留它
       await matchTemplates()
 
-      // 如果有现有报告内容，转换日期字段为 dayjs 对象
+      // 用已有报告的内容填充最新模板的字段（字段名相同的自动对应，新增字段留空）
       if (existingReportContent && Object.keys(existingReportContent).length > 0) {
         form.summary = existingReportSummary
-        // 直接从 matchedTemplates 中查找当前模板
-        const currentTemplate = matchedTemplates.value.find(t => t.id === form.templateId)
-        form.content = convertDatesToDayjs(existingReportContent, currentTemplate || null)
+        const currentTemplate = matchedTemplates.value.find(t => t.id === form.templateId) || null
+        form.content = convertDatesToDayjs(existingReportContent, currentTemplate)
+        initPhotoFileLists(form.content, currentTemplate)
       } else {
         form.content = {}
         form.summary = ''
         form.responsibility = undefined
+        Object.keys(photoFileLists).forEach(k => { delete photoFileLists[k] })
       }
     }
   }
 })
 
-// 当模板变化时重置表单内容（仅当没有已保存的报告时）
+// 当模板变化时重置表单内容和照片列表（仅当没有已保存的报告时）
 watch(() => form.templateId, (newTemplateId) => {
   if (newTemplateId && !reportId.value) {
-    // 切换模板时清空内容
     form.content = {}
+    Object.keys(photoFileLists).forEach(k => { delete photoFileLists[k] })
   }
 })
 
+/**
+ * 校验所有 required 照片字段是否已上传。
+ * 因为照片字段脱离了 a-form-item，formRef.validate() 不会覆盖它们，需手动检查。
+ * @returns true = 通过，false = 有缺失（已 message.warning）
+ */
+const validateRequiredPhotos = (): boolean => {
+  if (!selectedTemplate.value) return true
+  for (const field of selectedTemplate.value.fields) {
+    if ((field.type === 'photo' || field.type === 'photolist') && field.required) {
+      const list = photoFileLists[field.name] || []
+      const uploaded = list.filter((f: any) => f.status === 'done')
+      if (uploaded.length === 0) {
+        message.warning(t('reportForm.photoFieldRequired', { field: field.label }))
+        return false
+      }
+    }
+  }
+  return true
+}
+
 const handleCancel = () => {
+  Object.keys(photoFileLists).forEach(k => { delete photoFileLists[k] })
+  reportStatus.value = undefined
+  reportSubmittedAt.value = undefined
   emit('update:visible', false)
 }
 
@@ -364,8 +636,8 @@ const handleSaveDraft = async () => {
       }
 
       const report = await reportsApi.saveReport({
-        partId: props.part.id,
-        templateId: selectedTemplate.value.id,
+        partId: props.part!.id,
+        templateId: selectedTemplate.value!.id,
         content: formattedContent,
         summary: form.summary,
         responsibility: form.responsibility,
@@ -407,6 +679,8 @@ const handleSubmit = async () => {
         return
       }
       await formRef.value?.validate()
+      // 照片字段不在 a-form-item 内，需单独校验
+      if (!validateRequiredPhotos()) return
 
       // 格式化日期字段
       const formattedContent: Record<string, any> = {}
@@ -419,8 +693,8 @@ const handleSubmit = async () => {
       }
 
       const report = await reportsApi.saveReport({
-        partId: props.part.id,
-        templateId: selectedTemplate.value.id,
+        partId: props.part!.id,
+        templateId: selectedTemplate.value!.id,
         content: formattedContent,
         summary: form.summary,
         responsibility: form.responsibility,
@@ -529,6 +803,70 @@ const handleSubmit = async () => {
       background: #4096ff;
       border-color: #4096ff;
     }
+  }
+}
+
+// ── 照片字段容器（替代 a-form-item，避免 slot-outside-render 告警） ──────
+.photo-form-item {
+  margin-bottom: 24px; // 与 a-form-item 默认间距一致
+
+  .photo-form-label {
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.88);
+
+    .required-star {
+      color: #ff4d4f;
+      font-family: SimSun, sans-serif;
+      font-size: 14px;
+      margin-inline-end: 4px;
+    }
+  }
+}
+
+// ── 照片上传字段样式 ─────────────────────────────────────────────────────
+.photo-upload-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  // 保证 picture-card 模式下不溢出表单
+  :deep(.ant-upload-list-picture-card) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  :deep(.ant-upload.ant-upload-select) {
+    width: 86px;
+    height: 86px;
+  }
+}
+
+.photo-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #595959;
+  height: 100%;
+
+  .anticon {
+    font-size: 20px;
+    color: #8c8c8c;
+  }
+}
+
+.photo-required-tip {
+  font-size: 12px;
+  color: #8c8c8c;
+  line-height: 1.4;
+
+  .required-star {
+    color: #ff4d4f;
+    margin-right: 2px;
   }
 }
 </style>

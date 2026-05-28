@@ -78,8 +78,8 @@ async function fetchData() {
 const rawData = ref<ReturnOrderTransformResult | null>(null)
 
 // chartOption 由 computed 生成，响应 yoyEnabled 变化
-const computedChartOption = computed<EChartsOption>(() => {
-  if (!rawData.value) return chartOption.value
+const computedChartOption = computed<EChartsOption>((): EChartsOption => {
+  if (!rawData.value) return chartOption.value as EChartsOption
 
   const { xAxisData, series, previousYearSeries } = rawData.value
 
@@ -103,7 +103,7 @@ const computedChartOption = computed<EChartsOption>(() => {
     xAxis: { type: 'category', data: xAxisFinalData },
     yAxis: { type: 'value' },
     series: finalSeries,
-  }
+  } as EChartsOption
 })
 
 // 监听筛选条件变化

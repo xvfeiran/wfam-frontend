@@ -14,7 +14,7 @@ export interface ReturnOrderTransformResult {
 export function transformReturnOrder(
   data: ReturnOrderData[],
   previousYearData?: ReturnOrderData[],
-  currentYear: number = new Date().getFullYear(),
+  _currentYear: number = new Date().getFullYear(),
 ): ReturnOrderTransformResult {
   // 按月份排序
   const sortedData = [...data].sort((a, b) => a.month.localeCompare(b.month))
@@ -67,5 +67,5 @@ function getYTDData<T>(dataList: T[], vKey: keyof T, isAverage = true) {
     return pValue + val
   }, 0)
 
-  return isAverage ? (sum / dataList.length).toFixed(0) : sum
+  return isAverage ? Math.round(sum / dataList.length) : sum
 }

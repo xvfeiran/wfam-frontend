@@ -37,6 +37,7 @@ export interface ReturnOrder {
   trackingNumber?: string
   returnQuantity: number
   complaintType?: string  // 投诉类型（BA代码，BA40代表售后件）
+  otherInfo?: string
   initialAnalysisQuantity: number
   detailedAnalysisQuantity: number
   scrappedQuantity: number
@@ -58,6 +59,7 @@ export interface Part {
   partCode: string
   businessUnit: string
   productPlatform: string
+  partProductionDate?: string
   productionShift?: string
   failureType?: string        // 客户失效类型（NVH/功能/外观）
   boschFailureType?: string   // 博世失效类型（BA代码）
@@ -73,6 +75,7 @@ export interface Part {
   vehicleMileage?: number
   customerDescription?: string
   otherDescription?: string
+  otherInfo?: string
   status: PartStatus
   isSample?: number  // 0=未抽样, 1=已抽样
   images: string[]
@@ -121,7 +124,7 @@ export interface ReportTemplate {
   updatedAt?: string
   fields: Array<{
     name: string
-    type: 'text' | 'number' | 'date' | 'select' | 'textarea'
+    type: 'text' | 'number' | 'date' | 'select' | 'textarea' | 'photo' | 'photolist'
     label: string
     required: boolean
     options?: string[]

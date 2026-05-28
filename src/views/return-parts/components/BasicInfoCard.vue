@@ -100,13 +100,18 @@
           </a-form-item>
         </a-col>
         <a-col :span="12">
-          <a-form-item :label="t('returnPart.productionShift')">
-            <a-input v-model:value="form.productionShift" />
+          <a-form-item :label="t('returnPart.partProductionDate')">
+            <a-date-picker v-model:value="form.partProductionDate" style="width: 100%" />
           </a-form-item>
         </a-col>
       </a-row>
 
       <a-row :gutter="24">
+        <a-col :span="12">
+          <a-form-item :label="t('returnPart.productionShift')">
+            <a-input v-model:value="form.productionShift" />
+          </a-form-item>
+        </a-col>
         <a-col :span="12">
           <a-form-item :label="t('returnPart.customerFailureType')" name="failureType">
             <a-select v-model:value="form.failureType" :placeholder="t('validation.selectCustomerFailureType')">
@@ -114,9 +119,19 @@
             </a-select>
           </a-form-item>
         </a-col>
+      </a-row>
+
+      <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('partDetail.responsibleEngineer')">
             <a-select v-model:value="form.responsibleEngineer" :placeholder="t('validation.pleaseSelect')" allowClear>
+              <a-select-option v-for="u in cqes" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
+            </a-select>
+          </a-form-item>
+        </a-col>
+        <a-col :span="12">
+          <a-form-item :label="t('partDetail.analyst')" name="analyst">
+            <a-select v-model:value="form.analyst" :placeholder="t('validation.pleaseSelect')" allowClear>
               <a-select-option v-for="u in analysts" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
             </a-select>
           </a-form-item>
@@ -124,11 +139,14 @@
       </a-row>
 
       <a-row :gutter="24">
-        <a-col :span="12">
-          <a-form-item :label="t('partDetail.analyst')" name="analyst">
-            <a-select v-model:value="form.analyst" :placeholder="t('validation.pleaseSelect')" allowClear>
-              <a-select-option v-for="u in analysts" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
-            </a-select>
+        <a-col :span="24">
+          <a-form-item :label="t('returnPart.otherInfo')" :label-col="{ span: 3 }" :wrapper-col="{ span: 19 }">
+            <a-textarea
+              v-model:value="form.otherInfo"
+              :maxlength="500"
+              :rows="3"
+              show-count
+            />
           </a-form-item>
         </a-col>
       </a-row>
@@ -150,10 +168,12 @@ interface Form {
   partCode: string
   businessUnit?: string
   productPlatform?: string
+  partProductionDate: any | null
   productionShift: string
   failureType?: string
   responsibleEngineer?: string
   analyst?: string
+  otherInfo?: string
 }
 
 interface Props {
@@ -165,6 +185,7 @@ interface Props {
   productPlatforms: string[]
   failureTypes: string[]
   analysts: { id: string; loginName: string; displayName: string }[]
+  cqes: { id: string; loginName: string; displayName: string }[]
   partId?: string
   submitted?: boolean
 }
@@ -246,7 +267,7 @@ const onSuffixBlur = () => {
 }
 
 // BU/Platform 变化时重新拼接 partNumber
-watch([() => props.form.businessUnit, () => props.form.productPlatform], ([newBu, newPlatform], [oldBu, oldPlatform]) => {
+watch([() => props.form.businessUnit, () => props.form.productPlatform], (_new, [oldBu, oldPlatform]) => {
   if (isPartNumberFixed.value) return
   const oldPrefix = (oldBu && oldPlatform) ? `${oldBu || 'BLANK'}-${oldPlatform || 'BLANK'}-` : ''
   let suffix: string

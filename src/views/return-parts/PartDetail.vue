@@ -34,29 +34,29 @@
       <!-- 左侧：基本信息 -->
       <a-col :span="16">
         <a-card :title="t('partDetail.basicInfo')" class="info-card">
+          <template #extra>
+            <span v-if="part?.orderNumber" class="related-order-badge" @click="goToOrder($event)">
+              <LinkOutlined />
+              <span class="related-order-label">{{ t('partDetail.relatedOrder') }}</span>
+              <span class="related-order-number">{{ part.orderNumber }}</span>
+            </span>
+          </template>
           <a-descriptions :column="2" bordered>
             <a-descriptions-item :label="t('returnPart.partNumber')">
               <a v-if="canEditPart && part?.partNumber" style="color: #1677ff" @click="handleEdit">{{ part.partNumber }}</a>
               <span v-else-if="part?.partNumber" style="color: #1677ff">{{ part.partNumber }}</span>
               <span v-else style="color: #999">-</span>
             </a-descriptions-item>
-            <a-descriptions-item :label="t('partDetail.relatedOrder')">
-              <a v-if="part?.orderNumber" style="color: #1677ff; cursor: pointer; text-decoration: underline" @click="goToOrder($event)">{{ part.orderNumber }}</a>
-              <span v-else style="color: #999">-</span>
-            </a-descriptions-item>
             <a-descriptions-item :label="t('returnPart.partCode')">{{ part?.partCode }}</a-descriptions-item>
             <a-descriptions-item :label="t('returnPart.businessUnit')">{{ part?.businessUnit }}</a-descriptions-item>
             <a-descriptions-item :label="t('returnPart.productPlatform')">{{ part?.productPlatform }}</a-descriptions-item>
+            <a-descriptions-item :label="t('partDetail.partProductionDate')">{{ part?.partProductionDate || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.productionShift')">{{ part?.productionShift || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.customerFailureType')">{{ part?.failureType ? t('returnPart.failureTypeLabels.' + part.failureType) : '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.boschFailureType')">{{ part?.boschFailureType || '-' }}</a-descriptions-item>
-            <a-descriptions-item :label="t('partDetail.responsibleEngineer')">{{ part?.responsibleEngineer || '-' }}</a-descriptions-item>
-            <a-descriptions-item :label="t('partDetail.analyst')" :span="2">{{ part?.analyst || '-' }}</a-descriptions-item>
-            <a-descriptions-item :label="t('common.status')" :span="2">
-              <a-tag :color="PART_STATUS_MAP[part?.status || 'in_initial_analysis']?.color || 'default'">
-                {{ getStatusLabel(part?.status) }}
-              </a-tag>
-            </a-descriptions-item>
+            <a-descriptions-item :label="t('partDetail.responsibleEngineer')">{{ userDisplayName(part?.responsibleEngineer) }}</a-descriptions-item>
+            <a-descriptions-item :label="t('partDetail.analyst')">{{ userDisplayName(part?.analyst) }}</a-descriptions-item>
+            <a-descriptions-item v-if="part?.otherInfo" :label="t('partDetail.otherInfo')" :span="2">{{ part.otherInfo }}</a-descriptions-item>
           </a-descriptions>
         </a-card>
 
@@ -100,7 +100,7 @@
         <a-card :title="t('partDetail.statusFlow')" class="status-card">
           <a-steps direction="vertical" :current="currentStep" size="small">
             <a-step :title="t('partDetail.stepInitialAnalysis')" :description="getStepDescription(0)" />
-            <a-step :title="t('partDetail.stepDetailedAnalysis')" :description="getStepDescription(1)" />
+            <a-step :title="t('partDetail.stepDetailedAnalysis')" :description="getStepDescription(1)" :status="getStep1Status()" />
             <a-step :title="t('partDetail.stepWorkonScrap')" :description="getStepDescription(2)" />
           </a-steps>
         </a-card>
@@ -140,6 +140,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
+import { LinkOutlined } from '@ant-design/icons-vue'
 import { partApi } from '@/services/partApi'
 import { reportsApi } from '@/services/reportsApi'
 import { fileApi } from '@/services/fileApi'
@@ -147,6 +148,7 @@ import { PART_STATUS_MAP, PartStatus } from '@/types'
 import type { Part, AnalysisReport, ReportTemplate } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
 import { useStatusLabels } from '@/composables/useStatusLabels'
+import { useUserNameMap } from '@/composables/useUserNameMap'
 import AnalysisReportModal from './components/AnalysisReportModal.vue'
 
 const getFileUrl = (relativePath: string) => {
@@ -158,6 +160,7 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const { canEditSubmittedForm, isQMCLeader } = usePermissions()
+const { displayName: userDisplayName, load: loadUserNameMap } = useUserNameMap()
 const partId = computed(() => route.params.id as string)
 const analysisOrderStatus = computed(() => typeof route.query.analysisOrderStatus === 'string' ? route.query.analysisOrderStatus : undefined)
 
@@ -243,6 +246,7 @@ const getStepDescription = (step: number) => {
   if (step === 1) {
     if (currentStep.value < 1) return ''
     const status = part.value?.status
+    if (status === PartStatus.ANALYSIS_SKIPPED) return t('partDetail.subSkipped')
     if (status === PartStatus.IN_DETAILED_ANALYSIS) return t('partDetail.subInProgress')
     if (status === PartStatus.PENDING_APPROVAL) return t('partDetail.subInApproval')
     if (currentStep.value > 1 || status === PartStatus.ANALYSIS_COMPLETED) return t('partDetail.completed')
@@ -255,6 +259,12 @@ const getStepDescription = (step: number) => {
     return t('partDetail.completed')
   }
   return ''
+}
+
+// ANALYSIS_SKIPPED 时将精分析步骤强制显示为"已完成"图标，而非"进行中"
+const getStep1Status = () => {
+  if (part.value?.status === PartStatus.ANALYSIS_SKIPPED) return 'finish'
+  return undefined
 }
 
 const getTemplateName = (templateId: string) => {
@@ -290,6 +300,7 @@ onMounted(async () => {
   const [reports, templateData] = await Promise.all([
     partApi.getReports(partId.value),
     reportsApi.getTemplates(),
+    loadUserNameMap(),
   ])
   report.value = reports.length > 0 ? reports[0] : null
   templates.value = templateData
@@ -307,9 +318,16 @@ const handleAnalysis = () => {
   analysisVisible.value = true
 }
 
-const handleAnalysisSuccess = () => {
+const handleAnalysisSuccess = async () => {
   analysisVisible.value = false
   message.success(t('partDetail.reportSubmitSuccess'))
+  // 重新加载 part 和 report，刷新状态步骤条和报告卡片
+  const [updatedPart, updatedReports] = await Promise.all([
+    partApi.getById(partId.value),
+    partApi.getReports(partId.value),
+  ])
+  part.value = updatedPart
+  report.value = updatedReports.length > 0 ? updatedReports[0] : null
 }
 
 const handleViewApproval = (partNumber: string) => {
@@ -359,6 +377,35 @@ const handleExportReport = async () => {
     margin-top: 12px;
     display: flex;
     gap: 8px;
+  }
+}
+
+.related-order-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: #f0f5ff;
+  border: 1px solid #adc6ff;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #2f54eb;
+  font-size: 13px;
+
+  &:hover {
+    background: #d6e4ff;
+    border-color: #2f54eb;
+  }
+
+  .related-order-label {
+    color: #8c8c8c;
+    font-size: 12px;
+  }
+
+  .related-order-number {
+    font-weight: 600;
+    letter-spacing: 0.3px;
   }
 }
 </style>

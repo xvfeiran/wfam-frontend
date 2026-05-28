@@ -95,6 +95,9 @@ const {
   return await returnOrderApi.list(apiParams)
 })
 
+// 默认按更新时间降序排列
+sortState.value = { field: 'updatedAt', order: 'descend' }
+
 const exportLoading = ref(false)
 
 // Check if the selected order can be edited
@@ -222,7 +225,7 @@ const handleExport = async () => {
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
-    link.download = `ReturnOrders_${today}.xlsx`
+    link.download = `退件明细_${today}.xlsx`
     link.click()
     URL.revokeObjectURL(link.href)
     message.success(t('message.exportSuccess'))
@@ -239,7 +242,10 @@ const handleExport = async () => {
         errMsg = raw.message
       }
     } catch { /* 解析失败，使用默认提示 */ }
-    message.error(errMsg, 6)
+    Modal.warning({
+      title: t('returnOrder.exportLimitTitle') || '导出数量超限',
+      content: errMsg,
+    })
   } finally {
     exportLoading.value = false
   }

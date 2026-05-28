@@ -43,7 +43,7 @@ async function fetchData() {
 
     // 每个年份的数据转换为 series
     const seriesData = yearRange.map((year, index) => {
-      const { xAxisData, series } = transformAnalysisDuration(results[index])
+      const { xAxisData: _xAxisData, series } = transformAnalysisDuration(results[index])
       return {
         year,
         series: {

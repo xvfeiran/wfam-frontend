@@ -34,6 +34,13 @@
       :content="order?.status === AnalysisOrderStatus.WORKON_SCRAPPED ? t('status.scrapped') : undefined"
       :font="{ color: 'rgba(0,0,0,0.07)', fontSize: 18 }"
     >
+    <a-alert
+      v-if="is0km"
+      :message="t('analysisOrder.zeroKmNotice')"
+      type="info"
+      show-icon
+      style="margin-bottom: 16px"
+    />
     <a-row :gutter="16">
       <a-col :span="16">
         <a-card :title="t('orderDetail.basicInfo')" class="info-card">

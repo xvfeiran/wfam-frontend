@@ -267,8 +267,8 @@
       <a-descriptions-item :label="t('partDetail.productionShift')">{{ detailPart.productionShift || '-' }}</a-descriptions-item>
       <a-descriptions-item :label="t('partDetail.customerFailureType')">{{ detailPart.failureType ? t('returnPart.failureTypeLabels.' + detailPart.failureType) : '-' }}</a-descriptions-item>
       <a-descriptions-item :label="t('partDetail.boschFailureType')">{{ detailPart.boschFailureType || '-' }}</a-descriptions-item>
-      <a-descriptions-item :label="t('partDetail.responsibleEngineer')">{{ detailPart.responsibleEngineer || '-' }}</a-descriptions-item>
-      <a-descriptions-item :label="t('partDetail.analyst')">{{ detailPart.analyst || '-' }}</a-descriptions-item>
+      <a-descriptions-item :label="t('partDetail.responsibleEngineer')">{{ userDisplayName(detailPart.responsibleEngineer) }}</a-descriptions-item>
+      <a-descriptions-item :label="t('partDetail.analyst')">{{ userDisplayName(detailPart.analyst) }}</a-descriptions-item>
       <a-descriptions-item :label="t('common.status')" :span="2">
         <a-tag :color="PART_STATUS_MAP[detailPart.status]?.color || 'default'">
           {{ getPartStatusLabel(detailPart.status) }}
@@ -289,10 +289,12 @@ import { AnalysisOrderStatus, PART_STATUS_MAP } from '@/types'
 import type { AnalysisOrder, Part } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
 import { useStatusLabels } from '@/composables/useStatusLabels'
+import { useUserNameMap } from '@/composables/useUserNameMap'
 
 const { t } = useI18n()
 const { canEditSubmittedForm } = usePermissions()
 const { getStatusLabel: getPartStatusLabel } = useStatusLabels()
+const { displayName: userDisplayName } = useUserNameMap()
 
 const props = defineProps<{
   visible: boolean

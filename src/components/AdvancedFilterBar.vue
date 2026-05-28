@@ -173,11 +173,6 @@ const columnsCount = computed(() => {
   return Math.max(1, Math.min(possibleColumns, 4)) // 最少1列，最多4列
 })
 
-// 根据筛选项数量计算行数（每行4个的情况下的行数）
-const rowsCount = computed(() => {
-  return Math.ceil(filterItems.value.length / columnsCount.value)
-})
-
 let resizeObserver: ResizeObserver | null = null
 
 onMounted(() => {
@@ -227,7 +222,7 @@ onMounted(() => {
 const tempSelectDate = ref<dayjs.Dayjs | null>(null)
 
 function handleMultiSelectChange(key: keyof FilterValues, val: string[]) {
-  localValues.value[key] = val.length ? val : null
+  ;(localValues.value as Record<string, string[] | null | undefined>)[key] = val.length ? val : null
 }
 
 function handleDateRangeChange(val: [dayjs.Dayjs, dayjs.Dayjs] | null) {
@@ -287,9 +282,9 @@ function handleReset() {
   handleSearch()
 }
 
-const dateDisplayValue = computed<[dayjs.Dayjs, dayjs.Dayjs] | null>(() => {
+const dateDisplayValue = computed<[dayjs.Dayjs, dayjs.Dayjs] | undefined>(() => {
   const range = localValues.value.dateRange
-  if (!range || !range[0] || !range[1]) return null
+  if (!range || !range[0] || !range[1]) return undefined
   return [dayjs(range[0], 'YYYY-MM'), dayjs(range[1], 'YYYY-MM')]
 })
 </script>
@@ -306,13 +301,13 @@ const dateDisplayValue = computed<[dayjs.Dayjs, dayjs.Dayjs] | null>(() => {
         <div v-if="item.type === 'date-range'" class="filter-item">
           <span class="filter-label">{{ item.label }}</span>
           <DatePicker.RangePicker
-            v-model:value="dateDisplayValue"
+            :value="dateDisplayValue as [dayjs.Dayjs, dayjs.Dayjs] | undefined"
             picker="month"
             format="YYYY-MM"
             style="width: 100%"
             :disabled-date="disabledDate"
-            @change="handleDateRangeChange"
-            @calendar-change="onCalendarChange"
+            @change="(...args: any[]) => handleDateRangeChange(args[0] as [dayjs.Dayjs, dayjs.Dayjs] | null)"
+            @calendar-change="(...args: any[]) => onCalendarChange(args[0] as [dayjs.Dayjs, dayjs.Dayjs])"
             @openChange="onOpenChange"
           />
         </div>
@@ -325,7 +320,7 @@ const dateDisplayValue = computed<[dayjs.Dayjs, dayjs.Dayjs] | null>(() => {
             style="width: 100%"
             mode="multiple"
             @change="
-              (val: string[]) => handleMultiSelectChange(item.key as keyof FilterValues, val)
+              (val: any) => handleMultiSelectChange(item.key as keyof FilterValues, val as string[])
             "
           >
             <Select.Option v-for="opt in getOptions(item.key)" :key="opt.value" :value="opt.value">

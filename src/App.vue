@@ -36,9 +36,8 @@ onMounted(() => {
   if (window.__POWERED_BY_WUJIE__) {
     const props = window.$wujie?.props
     if (props) {
-      // 保存父应用传入的 token
       if (props.userProfile?.accessToken) {
-        userInfoStore.setToken(props.userProfile.accessToken)
+        userInfoStore.setUserProfileFromToken(props.userProfile.accessToken)
       }
       // 初始语言同步（挂载时读取 props.locale）
       if (props.locale) {

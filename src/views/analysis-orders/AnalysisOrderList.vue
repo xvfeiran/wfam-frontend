@@ -4,10 +4,10 @@
 
     <!-- 搜索条件 -->
     <a-card class="search-card">
-      <a-form layout="inline" :model="searchForm">
+      <a-form layout="inline" :model="filters">
         <a-form-item :label="t('analysisOrder.orderNumber')">
           <a-input
-            v-model:value="searchForm.orderNumber"
+            v-model:value="filters.orderNumber"
             :placeholder="t('analysisOrder.orderNumber')"
             allow-clear
             style="width: 180px"
@@ -16,7 +16,7 @@
         </a-form-item>
         <a-form-item :label="t('partDetail.analyst')">
           <a-select
-            v-model:value="searchForm.analyst"
+            v-model:value="filters.analyst"
             :placeholder="t('validation.pleaseSelect')"
             allow-clear
             style="width: 160px"
@@ -26,7 +26,7 @@
         </a-form-item>
         <a-form-item :label="t('common.status')">
           <a-select
-            v-model:value="searchForm.statuses"
+            v-model:value="filters.statuses"
             mode="multiple"
             :placeholder="t('common.all')"
             allow-clear
@@ -49,7 +49,7 @@
     <a-card>
       <a-table
         :columns="columns"
-        :data-source="filteredOrders"
+        :data-source="filteredItems"
         :loading="loading"
         row-key="id"
         size="middle"
@@ -58,14 +58,13 @@
         :custom-row="customRow"
         :pagination="pagination"
         @change="handleTableChange"
-      >
-      </a-table>
+      />
     </a-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted, h, watch } from 'vue'
+import { ref, computed, onMounted, h, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
@@ -76,44 +75,25 @@ import { userApi } from '@/services/userApi'
 import { ANALYSIS_ORDER_STATUS_MAP, AnalysisOrderStatus } from '@/types'
 import type { AnalysisOrder } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
-import { useDevUserStore } from '@/stores/devUser'
 import { useStatusLabels } from '@/composables/useStatusLabels'
+import { useUserNameMap } from '@/composables/useUserNameMap'
+import { useTableList } from '@/composables/useTableList'
 
 const { t } = useI18n()
-const { isAnalyst } = usePermissions()
-const devUserStore = useDevUserStore()
+const { isAnalyst, currentUserUsername } = usePermissions()
+const { displayName: userDisplayName, load: loadUserNameMap } = useUserNameMap()
 const router = useRouter()
 const route = useRoute()
-const allOrders = ref<AnalysisOrder[]>([])
 const analysts = ref<{ id: string; loginName: string; displayName: string }[]>([])
-const loading = ref(false)
 
-const DEFAULT_EXCLUDED_STATUS = AnalysisOrderStatus.WORKON_SCRAPPED
-
-const defaultStatuses = computed(() =>
-  Object.values(AnalysisOrderStatus).filter(s => s !== DEFAULT_EXCLUDED_STATUS)
-)
-
-const searchForm = reactive({
+const filters = ref({
   orderNumber: '',
-  // 分析师用户默认选择自己
-  analyst: isAnalyst ? devUserStore.currentUser.ntAccount : undefined as string | undefined,
+  analyst: isAnalyst.value ? currentUserUsername.value : undefined as string | undefined,
   statuses: [] as string[],
 })
 
-const pagination = reactive({
-  current: 1,
-  pageSize: 10,
-  showSizeChanger: true,
-  showQuickJumper: true,
-  showTotal: (total: number) => t('common.total', { total }),
-  pageSizeOptions: ['10', '20', '50'],
-})
-
 const { getAnalysisLabel, normalizeStatus } = useStatusLabels()
-
 const statusOptions = Object.values(AnalysisOrderStatus)
-
 const getStatusLabel = (status: AnalysisOrderStatus | string) => getAnalysisLabel(status)
 
 const getStatusColor = (status: AnalysisOrderStatus | string) => {
@@ -123,141 +103,108 @@ const getStatusColor = (status: AnalysisOrderStatus | string) => {
     : 'default'
 }
 
-// 应用中搜索过滤
-const filteredOrders = computed(() => {
-  let result = allOrders.value
-  if (searchForm.orderNumber.trim()) {
-    const kw = searchForm.orderNumber.trim().toLowerCase()
-    result = result.filter(o => (o.orderNumber || '').toLowerCase().includes(kw))
+const {
+  loading,
+  filteredItems,
+  pagination,
+  handleTableChange,
+  loadData,
+  sortState,
+} = useTableList<AnalysisOrder>(async (tableParams) => {
+  const params: any = {
+    page: tableParams.page ?? 1,
+    pageSize: tableParams.pageSize ?? 10,
   }
-  if (searchForm.analyst) {
-    result = result.filter(o => o.analyst === searchForm.analyst)
+  if (tableParams.sortBy) {
+    params.sortBy = tableParams.sortBy
+    params.sortOrder = tableParams.sortOrder
   }
-  return result
+  if (filters.value.orderNumber?.trim()) params.orderNumber = filters.value.orderNumber.trim()
+  if (filters.value.analyst) params.analyst = filters.value.analyst
+  if (filters.value.statuses?.length) params.statuses = filters.value.statuses
+  return await analysisOrderApi.list(params)
 })
+
+// 默认按更新时间降序
+sortState.value = { field: 'updatedAt', order: 'descend' }
 
 const columns = computed<TableProps['columns']>(() => [
   {
     title: t('analysisOrder.orderNumber'),
     dataIndex: 'orderNumber',
     key: 'orderNumber',
-    sorter: (a: AnalysisOrder, b: AnalysisOrder) =>
-      (a.orderNumber || '').localeCompare(b.orderNumber || ''),
-    customRender: ({ text }: { text: string }) => text || '-'
+    sorter: true,
+    customRender: ({ text }: { text: string }) => text || '-',
   },
   {
     title: t('partDetail.analyst'),
     dataIndex: 'analyst',
     key: 'analyst',
-    sorter: (a: AnalysisOrder, b: AnalysisOrder) =>
-      (a.analyst || '').localeCompare(b.analyst || ''),
+    sorter: true,
     customRender: ({ text }: { text: string }) => {
       if (!text || text === '导入数据无此字段') return '-'
-      return text
+      return userDisplayName(text)
     },
   },
   {
     title: t('common.status'),
     dataIndex: 'status',
     key: 'status',
-    sorter: (a: AnalysisOrder, b: AnalysisOrder) =>
-      (a.status || '').localeCompare(b.status || ''),
+    sorter: true,
     customRender: ({ record }: { record: AnalysisOrder }) => {
       return h(Tag, { color: getStatusColor(record.status) }, () => getStatusLabel(record.status))
     },
   },
-  {
-    title: t('analysisOrder.createdAt'),
-    dataIndex: 'createdAt',
-    key: 'createdAt',
-    sorter: (a: AnalysisOrder, b: AnalysisOrder) =>
-      (a.createdAt || '').localeCompare(b.createdAt || ''),
-    customRender: ({ text }: { text: string }) => text ? text.replace('T', ' ').substring(0, 19) : '-',
-  },
-  {
-    title: t('analysisOrder.updatedAt'),
-    dataIndex: 'updatedAt',
-    key: 'updatedAt',
-    sorter: (a: AnalysisOrder, b: AnalysisOrder) =>
-      (a.updatedAt || '').localeCompare(b.updatedAt || ''),
-    customRender: ({ text }: { text: string }) => text ? text.replace('T', ' ').substring(0, 19) : '-',
-  },
 ])
 
-const handleSearch = () => {
+const handleSearch = async () => {
   pagination.current = 1
+  await loadData()
 }
 
-const handleReset = () => {
-  searchForm.orderNumber = ''
-  // 分析师重置时仍然选择自己，其他角色重置为未选择
-  searchForm.analyst = isAnalyst ? devUserStore.currentUser.ntAccount : undefined as any
-  searchForm.statuses = []
+const handleReset = async () => {
+  filters.value = {
+    orderNumber: '',
+    analyst: isAnalyst.value ? currentUserUsername.value : undefined,
+    statuses: [],
+  }
+  sortState.value = { field: 'updatedAt', order: 'descend' }
   pagination.current = 1
-}
-
-const handleTableChange: TableProps['onChange'] = (pag) => {
-  pagination.current = pag.current ?? 1
-  pagination.pageSize = pag.pageSize ?? 10
+  await loadData()
 }
 
 const customRow = (record: AnalysisOrder) => ({
-  onClick: () => goToDetail(record.id),
+  onClick: () => router.push(`/analysis-orders/${record.id}`),
   style: { cursor: 'pointer' },
-})
-
-const goToDetail = (id: string) => {
-  router.push(`/analysis-orders/${id}`)
-}
-
-onMounted(async () => {
-  applyTaskFiltersFromQuery()
-  loading.value = true
-  try {
-    const [ordersData, analystsData] = await Promise.all([
-      analysisOrderApi.list(searchForm.statuses),
-      userApi.listAnalysts(),
-    ])
-    allOrders.value = ordersData
-    analysts.value = analystsData
-    handleSearch()
-  } finally {
-    loading.value = false
-  }
 })
 
 function applyTaskFiltersFromQuery() {
   const status = typeof route.query.status === 'string' ? route.query.status : undefined
   const fromTask = typeof route.query.fromTask === 'string' ? route.query.fromTask : undefined
-
   if (status && Object.values(AnalysisOrderStatus).includes(status as AnalysisOrderStatus)) {
-    searchForm.statuses = [status as AnalysisOrderStatus]
+    filters.value.statuses = [status as AnalysisOrderStatus]
   }
   if (fromTask) {
     message.info(t('dashboard.taskFilterApplied'))
   }
 }
 
-watch(
-  () => searchForm.statuses,
-  (newStatuses) => {
-    loading.value = true
-    analysisOrderApi.list(newStatuses)
-      .then(data => {
-        allOrders.value = data
-      })
-      .finally(() => {
-        loading.value = false
-      })
-  },
-  { deep: true }
-)
+onMounted(async () => {
+  applyTaskFiltersFromQuery()
+  const [analystsData] = await Promise.all([
+    userApi.listAnalysts(),
+    loadUserNameMap(),
+    loadData(),
+  ])
+  analysts.value = analystsData
+})
 
 watch(
   () => route.query,
-  () => {
+  async () => {
     applyTaskFiltersFromQuery()
-    handleSearch()
+    pagination.current = 1
+    await loadData()
   },
 )
 </script>
