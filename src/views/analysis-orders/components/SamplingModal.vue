@@ -174,22 +174,42 @@
         <!-- 搜索筛选 -->
         <div class="manual-search">
           <a-row :gutter="12" align="middle">
-            <a-col :span="8">
-              <a-input
-                v-model:value="manualSearch.keyword"
-                :placeholder="t('message.manualSamplingPlaceholder')"
-                allow-clear
-              />
-            </a-col>
             <a-col :span="6">
+              <a-select
+                v-model:value="manualSearch.partCode"
+                :placeholder="t('returnPart.partCode')"
+                allow-clear
+                show-search
+                :filter-option="filterOption"
+                style="width: 100%"
+                @change="onPartCodeChange"
+              >
+                <a-select-option v-for="pc in partCodeOptions" :key="pc" :value="pc">
+                  {{ pc }}
+                </a-select-option>
+              </a-select>
+            </a-col>
+            <a-col :span="5">
               <a-select
                 v-model:value="manualSearch.businessUnit"
                 :placeholder="t('returnPart.businessUnit')"
                 allow-clear
                 style="width: 100%"
               >
-                <a-select-option v-for="bu in businessUnitOptions" :key="bu" :value="bu">
+                <a-select-option v-for="bu in masterBusinessUnits" :key="bu" :value="bu">
                   {{ bu }}
+                </a-select-option>
+              </a-select>
+            </a-col>
+            <a-col :span="5">
+              <a-select
+                v-model:value="manualSearch.failureType"
+                :placeholder="t('returnPart.failureType')"
+                allow-clear
+                style="width: 100%"
+              >
+                <a-select-option v-for="ft in failureTypeOptions" :key="ft" :value="ft">
+                  {{ t(`returnPart.failureTypeLabels.${ft}`) }}
                 </a-select-option>
               </a-select>
             </a-col>
@@ -284,6 +304,7 @@ import { message } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import { StopOutlined, FilterOutlined, ThunderboltOutlined, ClearOutlined } from '@ant-design/icons-vue'
 import { analysisOrderApi } from '@/services/analysisOrderApi'
+import { lookupApi } from '@/services/lookupApi'
 import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import { AnalysisOrderStatus, PART_STATUS_MAP } from '@/types'
 import type { AnalysisOrder, Part } from '@/types'
@@ -326,19 +347,27 @@ const detailPart = ref<Part | null>(null)
 
 // 手动抽样搜索状态
 const manualSearch = ref({
-  keyword: '',
+  partCode: undefined as string | undefined,
   businessUnit: undefined as string | undefined,
+  failureType: undefined as string | undefined,
 })
 const manualFilterApplied = ref({
-  keyword: '',
+  partCode: undefined as string | undefined,
   businessUnit: undefined as string | undefined,
+  failureType: undefined as string | undefined,
 })
 
-// BU 去重选项
-const businessUnitOptions = computed(() => {
-  const bus = new Set(availableParts.value.map(p => p.businessUnit).filter(Boolean))
-  return Array.from(bus).sort()
+// 零件号下拉选项（从当前可用零件去重）
+const partCodeOptions = computed(() => {
+  const codes = new Set(availableParts.value.map(p => p.partCode).filter(Boolean))
+  return Array.from(codes).sort()
 })
+
+// 业务单元下拉选项（从主数据）
+const masterBusinessUnits = ref<string[]>([])
+
+// 客户失效类型选项（NVH/外观/功能）
+const failureTypeOptions = ['NVH', 'APPEARANCE', 'FUNCTION']
 
 // 是否已完成抽样
 const isSampled = computed(() => {
@@ -379,22 +408,24 @@ const transferDataSource = computed(() =>
 
 // 手动抽样过滤后的数据源（已选中的始终可见）
 const manualFilteredSource = computed(() => {
-  const { keyword, businessUnit } = manualFilterApplied.value
-  if (!keyword && !businessUnit) return transferDataSource.value
+  const { partCode, businessUnit, failureType } = manualFilterApplied.value
+  if (!partCode && !businessUnit && !failureType) return transferDataSource.value
 
   return transferDataSource.value.filter(item => {
-    // 已选中的项始终可见
     if (selectedPartIds.value.includes(item.key)) return true
 
+    const part = availableParts.value.find(p => p.id === item.key)
+    if (!part) return false
+
     let match = true
-    if (keyword) {
-      const kw = keyword.toLowerCase()
-      const pn = (item.partNumber || '').toLowerCase()
-      const pc = (item.title || '').toLowerCase()
-      match = match && (pn.includes(kw) || pc.includes(kw))
+    if (partCode) {
+      match = match && part.partCode === partCode
     }
     if (businessUnit) {
-      match = match && item.description?.startsWith(businessUnit)
+      match = match && part.businessUnit === businessUnit
+    }
+    if (failureType) {
+      match = match && part.failureType === failureType
     }
     return match
   })
@@ -406,6 +437,21 @@ const showPartDetail = (partId: string) => {
   detailVisible.value = true
 }
 
+// 零件号选择时自动填充业务单元
+const onPartCodeChange = (partCode: string | undefined) => {
+  if (partCode) {
+    const matchingPart = availableParts.value.find(p => p.partCode === partCode)
+    if (matchingPart?.businessUnit) {
+      manualSearch.value.businessUnit = matchingPart.businessUnit
+    }
+  }
+}
+
+// Select 下拉搜索过滤
+const filterOption = (input: string, option: any) => {
+  return (option.key as string)?.toLowerCase().includes(input.toLowerCase())
+}
+
 // 手动抽样：应用筛选
 const applyManualFilter = () => {
   manualFilterApplied.value = { ...manualSearch.value }
@@ -413,15 +459,21 @@ const applyManualFilter = () => {
 
 // 手动抽样：重置筛选
 const resetManualFilter = () => {
-  manualSearch.value = { keyword: '', businessUnit: undefined }
-  manualFilterApplied.value = { keyword: '', businessUnit: undefined }
+  manualSearch.value = { partCode: undefined, businessUnit: undefined, failureType: undefined }
+  manualFilterApplied.value = { partCode: undefined, businessUnit: undefined, failureType: undefined }
 }
 
 // 当 visible 或 order 变化时加载数据并重置状态
 watch(
   () => [props.visible, props.order] as const,
-  ([visible, order]) => {
+  async ([visible, order]) => {
     if (!visible || !order) return
+
+    // 加载主数据业务单元选项（仅首次）
+    if (masterBusinessUnits.value.length === 0) {
+      const lookups = await lookupApi.getAll()
+      masterBusinessUnits.value = lookups.businessUnits
+    }
     internalReadOnly.value = props.readOnly ?? false
 
     samplingChoice.value = 'random'

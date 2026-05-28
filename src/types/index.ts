@@ -173,7 +173,7 @@ export interface AnalysisApplication {
   approveTime?: string
   status: ApprovalStatus
   summary: string
-  content: Record<string, string>
+  content: Record<string, any>
 }
 
 // 精分析报告字段标签映射

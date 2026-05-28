@@ -68,6 +68,13 @@ request.interceptors.response.use(
 
     const errMsg = data?.message || error.message || 'Network Error'
     console.error('[API Error]', errMsg)
+
+    // SMB 认证失败
+    if (error.response?.status === 503 && data?.message === 'SMB_AUTH_FAILURE') {
+      message.error(t('settings.smbAuthFailure'))
+      return Promise.reject(error)
+    }
+
     return Promise.reject(error)
   },
 )

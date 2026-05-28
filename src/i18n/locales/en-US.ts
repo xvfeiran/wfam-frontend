@@ -362,6 +362,7 @@ export default {
     smbEnv: 'Environment',
     smbEnvRequired: 'Please enter environment identifier',
     smbEnabled: 'Enable SMB Storage',
+    smbAuthFailure: 'SMB authentication failed. Please contact your system administrator to update the password.',
     testSmbConnection: 'Test Connection',
     smbTestSuccess: 'SMB connection test successful',
     smbTestFailed: 'SMB connection test failed',

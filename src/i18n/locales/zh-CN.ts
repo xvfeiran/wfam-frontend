@@ -379,6 +379,7 @@ export default {
     smbEnv: '环境',
     smbEnvRequired: '请输入环境标识',
     smbEnabled: '启用SMB存储',
+    smbAuthFailure: 'SMB认证失败，请联系系统管理员修改密码',
     testSmbConnection: '测试连接',
     smbTestSuccess: 'SMB连接测试成功',
     smbTestFailed: 'SMB连接测试失败',
