@@ -44,6 +44,7 @@ export interface ReturnOrder {
   scrappedQuantity: number
   qcCreatedQuantity: number
   qcNotCreatedQuantity: number
+  draftPartsCount?: number
   status: OrderStatus
   createdBy: string
   createdAt: string

@@ -391,6 +391,7 @@ export default {
   status: {
     draft: '草稿',
     submitted: '已提交',
+    registered: '退件登记/已完成',
     received: '已接收',
     inProgress: '处理中',
     closed: '已关闭',
@@ -482,6 +483,9 @@ export default {
     submitConfirmWarning: '提交后无法修改，请确认！',
     endEntryConfirmWarning: '结束录入后将无法添加或删除零件，并自动创建分析单。请确认！',
     endEntrySuccess: '结束录入成功，已创建分析单',
+    endEntryDisabledDraft: '请先提交退货单',
+    endEntryDisabledNoParts: '请先添加退件信息',
+    endEntryDisabledDraftParts: '存在未提交的退件，请先提交所有退件后再结束录入',
     submitFailed: '提交失败，请重试',
     exportFailed: '导出失败，请重试',
     importSuccess: '导入完成：成功 {success} 条，失败 {fail} 条',

@@ -1,6 +1,7 @@
 <template>
   <a-card class="filter-card">
     <a-form :model="localFilters">
+      <!-- 标识信息 -->
       <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('returnOrder.orderNumber')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
@@ -13,6 +14,7 @@
           </a-form-item>
         </a-col>
       </a-row>
+      <!-- 产品分类 -->
       <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('returnPart.businessUnit')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
@@ -29,6 +31,7 @@
           </a-form-item>
         </a-col>
       </a-row>
+      <!-- 流程管理 -->
       <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('common.status')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
@@ -40,19 +43,20 @@
           </a-form-item>
         </a-col>
         <a-col :span="12">
-          <a-form-item :label="t('returnPart.qcCreated')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-            <a-select v-model:value="localFilters.qcCreated" :placeholder="t('validation.pleaseSelect')" allowClear>
-              <a-select-option value="yes">{{ t('returnPart.qcCreatedYes') }}</a-select-option>
-              <a-select-option value="no">{{ t('returnPart.qcCreatedNo') }}</a-select-option>
+          <a-form-item :label="t('partDetail.analyst')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+            <a-select v-model:value="localFilters.analyst" :placeholder="t('validation.pleaseSelect')" allowClear showSearch>
+              <a-select-option v-for="u in analysts" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
             </a-select>
           </a-form-item>
         </a-col>
       </a-row>
+      <!-- 流程辅助筛选 -->
       <a-row :gutter="24">
         <a-col :span="12">
-          <a-form-item :label="t('partDetail.analyst')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-            <a-select v-model:value="localFilters.analyst" :placeholder="t('validation.pleaseSelect')" allowClear showSearch>
-              <a-select-option v-for="u in analysts" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
+          <a-form-item :label="t('returnPart.qcCreated')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+            <a-select v-model:value="localFilters.qcCreated" :placeholder="t('validation.pleaseSelect')" allowClear>
+              <a-select-option value="yes">{{ t('returnPart.qcCreatedYes') }}</a-select-option>
+              <a-select-option value="no">{{ t('returnPart.qcCreatedNo') }}</a-select-option>
             </a-select>
           </a-form-item>
         </a-col>
@@ -62,6 +66,7 @@
           </a-form-item>
         </a-col>
       </a-row>
+      <!-- 物理属性（区间筛选） -->
       <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('returnPart.vehicleMileageRange')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">

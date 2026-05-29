@@ -7,7 +7,9 @@
       <template #extra>
         <a-space>
           <a-button v-if="canShowEditButton && order?.status !== 'scrapped'" @click="handleEdit">{{ t('common.edit') }}</a-button>
-          <a-button v-if="order?.status === 'draft' || order?.status === 'submitted'" type="primary" :disabled="!canEndEntry" @click="handleEndEntry">{{ t('common.endEntry') }}</a-button>
+          <a-tooltip v-if="order?.status === 'draft' || order?.status === 'submitted'" :title="endEntryDisabledReason">
+            <a-button type="primary" :disabled="!canEndEntry" @click="handleEndEntry">{{ t('common.endEntry') }}</a-button>
+          </a-tooltip>
         </a-space>
       </template>
     </a-page-header>
@@ -161,7 +163,17 @@ const canAddPart = computed(() => {
 // End entry button: enabled only in submitted status with at least one part
 const canEndEntry = computed(() => {
   if (!order.value) return false
-  return order.value.status === 'submitted' && (order.value.initialAnalysisQuantity ?? 0) > 0
+  return order.value.status === 'submitted'
+    && (order.value.initialAnalysisQuantity ?? 0) > 0
+    && (order.value.draftPartsCount ?? 0) === 0
+})
+
+const endEntryDisabledReason = computed(() => {
+  if (!order.value) return ''
+  if (order.value.status === 'draft') return t('message.endEntryDisabledDraft')
+  if ((order.value.initialAnalysisQuantity ?? 0) === 0) return t('message.endEntryDisabledNoParts')
+  if ((order.value.draftPartsCount ?? 0) > 0) return t('message.endEntryDisabledDraftParts')
+  return ''
 })
 
 const { getOrderLabel } = useStatusLabels()
