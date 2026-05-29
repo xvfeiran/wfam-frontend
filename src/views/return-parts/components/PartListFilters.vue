@@ -56,6 +56,28 @@
             </a-select>
           </a-form-item>
         </a-col>
+        <a-col :span="12">
+          <a-form-item :label="t('returnPart.partProductionDateRange')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+            <a-range-picker v-model:value="localFilters.partProductionDateRange" style="width: 100%" />
+          </a-form-item>
+        </a-col>
+      </a-row>
+      <a-row :gutter="24">
+        <a-col :span="12">
+          <a-form-item :label="t('returnPart.vehicleMileageRange')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+            <div class="mileage-range">
+              <span class="range-value">{{ localFilters.vehicleMileageRange[0] }}</span>
+              <a-slider
+                v-model:value="localFilters.vehicleMileageRange"
+                range
+                :min="0"
+                :max="300000"
+                :step="1000"
+              />
+              <span class="range-value">{{ localFilters.vehicleMileageRange[1] }} km</span>
+            </div>
+          </a-form-item>
+        </a-col>
       </a-row>
       <a-row>
         <a-col :span="24" class="filter-buttons">
@@ -77,6 +99,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons-vue'
+import dayjs from 'dayjs'
 import { PartStatus } from '@/types'
 import { useStatusLabels } from '@/composables/useStatusLabels'
 
@@ -88,6 +111,8 @@ interface Filters {
   status?: string
   qcCreated?: string
   analyst?: string
+  partProductionDateRange?: [dayjs.Dayjs, dayjs.Dayjs]
+  vehicleMileageRange: [number, number]
 }
 
 interface Props {
@@ -124,6 +149,24 @@ const localFilters = computed({
     display: flex;
     align-items: center;
     justify-content: flex-end;
+  }
+
+  .mileage-range {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .ant-slider {
+      flex: 1;
+    }
+  }
+
+  .range-value {
+    font-size: 13px;
+    color: #333;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    min-width: 60px;
   }
 }
 </style>

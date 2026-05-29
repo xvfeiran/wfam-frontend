@@ -46,6 +46,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message, Modal } from 'ant-design-vue'
+import dayjs from 'dayjs'
 import { partApi } from '@/services/partApi'
 import { lookupApi } from '@/services/lookupApi'
 import { userApi } from '@/services/userApi'
@@ -78,6 +79,8 @@ const filters = ref({
   qcCreated: undefined as string | undefined,
   // 分析师用户默认选择自己
   analyst: isAnalyst.value ? currentUserUsername.value : undefined as string | undefined,
+  partProductionDateRange: undefined as [dayjs.Dayjs, dayjs.Dayjs] | undefined,
+  vehicleMileageRange: [0, 300000] as [number, number],
 })
 
 const {
@@ -108,6 +111,13 @@ const {
   if (filters.value.alertType) params.alertType = filters.value.alertType
   if (filters.value.qcCreated) params.qcCreated = filters.value.qcCreated
   if (filters.value.analyst) params.analyst = filters.value.analyst
+  if (filters.value.partProductionDateRange) {
+    params.partProductionDateFrom = filters.value.partProductionDateRange[0].format('YYYY-MM-DD')
+    params.partProductionDateTo = filters.value.partProductionDateRange[1].format('YYYY-MM-DD')
+  }
+  const [mileageFrom, mileageTo] = filters.value.vehicleMileageRange
+  if (mileageFrom > 0) params.vehicleMileageFrom = mileageFrom
+  if (mileageTo < 300000) params.vehicleMileageTo = mileageTo
 
   const result = await partApi.list(params)
   return { data: result.data, total: result.total }
@@ -170,6 +180,8 @@ const handleReset = async () => {
     qcCreated: undefined,
     // 分析师重置时仍然选择自己，其他角色重置为未选择
     analyst: isAnalyst.value ? currentUserUsername.value : undefined,
+    partProductionDateRange: undefined,
+    vehicleMileageRange: [0, 300000],
   }
   sortState.value = {}
   await loadData()
@@ -189,6 +201,13 @@ const handleExport = async () => {
     if (filters.value.status) params.status = filters.value.status
     if (filters.value.qcCreated) params.qcCreated = filters.value.qcCreated
     if (filters.value.analyst) params.analyst = filters.value.analyst
+    if (filters.value.partProductionDateRange) {
+      params.partProductionDateFrom = filters.value.partProductionDateRange[0].format('YYYY-MM-DD')
+      params.partProductionDateTo = filters.value.partProductionDateRange[1].format('YYYY-MM-DD')
+    }
+    const [mileageFrom, mileageTo] = filters.value.vehicleMileageRange
+    if (mileageFrom > 0) params.vehicleMileageFrom = String(mileageFrom)
+    if (mileageTo < 300000) params.vehicleMileageTo = String(mileageTo)
 
     const blob = await partApi.exportExcel(params)
 
