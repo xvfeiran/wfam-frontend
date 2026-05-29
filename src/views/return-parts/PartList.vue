@@ -80,7 +80,8 @@ const filters = ref({
   // 分析师用户默认选择自己
   analyst: isAnalyst.value ? currentUserUsername.value : undefined as string | undefined,
   partProductionDateRange: undefined as [dayjs.Dayjs, dayjs.Dayjs] | undefined,
-  vehicleMileageRange: [0, 300000] as [number, number],
+  vehicleMileageMin: undefined as number | undefined,
+  vehicleMileageMax: undefined as number | undefined,
 })
 
 const {
@@ -115,9 +116,8 @@ const {
     params.partProductionDateFrom = filters.value.partProductionDateRange[0].format('YYYY-MM-DD')
     params.partProductionDateTo = filters.value.partProductionDateRange[1].format('YYYY-MM-DD')
   }
-  const [mileageFrom, mileageTo] = filters.value.vehicleMileageRange
-  if (mileageFrom > 0) params.vehicleMileageFrom = mileageFrom
-  if (mileageTo < 300000) params.vehicleMileageTo = mileageTo
+  if (filters.value.vehicleMileageMin != null) params.vehicleMileageFrom = filters.value.vehicleMileageMin
+  if (filters.value.vehicleMileageMax != null) params.vehicleMileageTo = filters.value.vehicleMileageMax
 
   const result = await partApi.list(params)
   return { data: result.data, total: result.total }
@@ -133,6 +133,8 @@ const canEditSelectedPart = computed(() => {
   if (!selectedPart) return false
   // 未提交的售后件都可以编辑
   if (!selectedPart.partNumber) return true
+  // 信息录入/进行中状态的退件所有人都可以编辑
+  if (selectedPart.status === 'in_initial_analysis') return true
   // 已提交的售后件需要 QMC Leader 权限
   return canEditSubmittedForm.value
 })
@@ -181,7 +183,8 @@ const handleReset = async () => {
     // 分析师重置时仍然选择自己，其他角色重置为未选择
     analyst: isAnalyst.value ? currentUserUsername.value : undefined,
     partProductionDateRange: undefined,
-    vehicleMileageRange: [0, 300000],
+    vehicleMileageMin: undefined,
+    vehicleMileageMax: undefined,
   }
   sortState.value = {}
   await loadData()
@@ -205,9 +208,8 @@ const handleExport = async () => {
       params.partProductionDateFrom = filters.value.partProductionDateRange[0].format('YYYY-MM-DD')
       params.partProductionDateTo = filters.value.partProductionDateRange[1].format('YYYY-MM-DD')
     }
-    const [mileageFrom, mileageTo] = filters.value.vehicleMileageRange
-    if (mileageFrom > 0) params.vehicleMileageFrom = String(mileageFrom)
-    if (mileageTo < 300000) params.vehicleMileageTo = String(mileageTo)
+    if (filters.value.vehicleMileageMin != null) params.vehicleMileageFrom = String(filters.value.vehicleMileageMin)
+    if (filters.value.vehicleMileageMax != null) params.vehicleMileageTo = String(filters.value.vehicleMileageMax)
 
     const blob = await partApi.exportExcel(params)
 

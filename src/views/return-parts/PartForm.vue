@@ -99,7 +99,8 @@ const partId = computed(() => route.params.id as string)
 
 // 是否已提交到后端（仅编辑模式下根据后端返回的 partNumber 判断）
 const originallySubmitted = ref(false)
-const isSubmitted = computed(() => isEdit.value && originallySubmitted.value)
+const partStatus = ref('')
+const isSubmitted = computed(() => isEdit.value && originallySubmitted.value && partStatus.value !== 'in_initial_analysis')
 
 const canEditSubmittedPart = computed(() => {
   if (!isSubmitted.value) return true // 未提交都可以编辑
@@ -166,7 +167,7 @@ const isOcrProcessing = computed(() => zoneState.value === 'uploading' || zoneSt
 onMounted(async () => {
   const [lookups, ordersData, analystsData, cqesData] = await Promise.all([
     lookupApi.getAll(),
-    returnOrderApi.list({ statuses: ['draft', 'submitted'], pageSize: 100 }),
+    returnOrderApi.list({ statuses: ['submitted'], pageSize: 100 }),
     userApi.listAnalysts(),
     userApi.listCQEs(),
   ])
@@ -189,6 +190,7 @@ onMounted(async () => {
 
 function populateForm(part: any) {
   originallySubmitted.value = !!part.partNumber
+  partStatus.value = part.status || ''
   form.partNumber = part.partNumber
   form.orderId = part.orderId
   form.partCode = part.partCode

@@ -71,15 +71,35 @@
         <a-col :span="12">
           <a-form-item :label="t('returnPart.vehicleMileageRange')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
             <div class="mileage-range">
-              <span class="range-value">{{ localFilters.vehicleMileageRange[0] }}</span>
+              <div class="mileage-inputs">
+                <a-input-number
+                  v-model:value="localFilters.vehicleMileageMin"
+                  :min="0"
+                  :step="1000"
+                  :placeholder="t('returnPart.mileageNoLimit')"
+                  :formatter="formatMileage"
+                  :parser="parseMileage"
+                />
+                <span class="mileage-separator">~</span>
+                <a-input-number
+                  v-model:value="localFilters.vehicleMileageMax"
+                  :min="0"
+                  :step="1000"
+                  :placeholder="t('returnPart.mileageNoLimit')"
+                  :formatter="formatMileage"
+                  :parser="parseMileage"
+                />
+                <span class="mileage-unit">km</span>
+              </div>
               <a-slider
-                v-model:value="localFilters.vehicleMileageRange"
+                :value="sliderPositions"
+                @change="onSliderChange"
                 range
                 :min="0"
-                :max="300000"
-                :step="1000"
+                :max="100"
+                :marks="sliderMarks"
+                :tip-formatter="formatSliderTip"
               />
-              <span class="range-value">{{ localFilters.vehicleMileageRange[1] }} km</span>
             </div>
           </a-form-item>
         </a-col>
@@ -108,6 +128,8 @@ import dayjs from 'dayjs'
 import { PartStatus } from '@/types'
 import { useStatusLabels } from '@/composables/useStatusLabels'
 
+const MAX_MILEAGE = 300000
+
 interface Filters {
   orderNumber: string
   partCode: string
@@ -117,7 +139,8 @@ interface Filters {
   qcCreated?: string
   analyst?: string
   partProductionDateRange?: [dayjs.Dayjs, dayjs.Dayjs]
-  vehicleMileageRange: [number, number]
+  vehicleMileageMin?: number
+  vehicleMileageMax?: number
 }
 
 interface Props {
@@ -143,6 +166,43 @@ const localFilters = computed({
   get: () => props.filters,
   set: (value) => emit('update:filters', value)
 })
+
+// Quadratic mapping: gives ~58% of slider to 0-100k km range
+const toSliderPos = (km: number) => Math.round(Math.sqrt(km / MAX_MILEAGE) * 100)
+const toKm = (pos: number) => Math.round(Math.pow(pos / 100, 2) * MAX_MILEAGE)
+
+const sliderPositions = computed<[number, number]>(() => [
+  toSliderPos(props.filters.vehicleMileageMin ?? 0),
+  toSliderPos(Math.min(props.filters.vehicleMileageMax ?? MAX_MILEAGE, MAX_MILEAGE)),
+])
+
+const onSliderChange = ([from, to]: number[]) => {
+  emit('update:filters', {
+    ...props.filters,
+    vehicleMileageMin: from > 0 ? toKm(from) : undefined,
+    vehicleMileageMax: to < 100 ? toKm(to) : undefined,
+  })
+}
+
+const sliderMarks: Record<number, string> = {
+  0: '0',
+  41: '5万',
+  58: '10万',
+  82: '20万',
+  100: '30万',
+}
+
+const formatSliderTip = (val: number | undefined) => {
+  if (val == null) return ''
+  return toKm(val).toLocaleString() + ' km'
+}
+
+const formatMileage = (v: string | number | undefined) => {
+  if (v == null || v === '') return ''
+  return `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
+const parseMileage = (v: string) => v.replace(/,/g, '')
 </script>
 
 <style lang="less" scoped>
@@ -157,21 +217,25 @@ const localFilters = computed({
   }
 
   .mileage-range {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+    .mileage-inputs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
 
-    .ant-slider {
-      flex: 1;
+      .ant-input-number {
+        flex: 1;
+      }
+
+      .mileage-separator {
+        color: #999;
+      }
+
+      .mileage-unit {
+        color: #666;
+        white-space: nowrap;
+      }
     }
-  }
-
-  .range-value {
-    font-size: 13px;
-    color: #333;
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-    min-width: 60px;
   }
 }
 </style>

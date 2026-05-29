@@ -137,6 +137,7 @@ export default {
     vehicleMileage: 'Vehicle Mileage',
     partProductionDateRange: 'Part Production Date Range',
     vehicleMileageRange: 'Mileage Range (km)',
+    mileageNoLimit: 'No limit',
     customerDescription: 'Customer Description',
     otherDescription: 'Other Description',
     otherInfo: 'Other Information',

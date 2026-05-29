@@ -144,6 +144,7 @@ export default {
     vehicleMileage: '车辆行驶里程',
     partProductionDateRange: '零件生产日期范围',
     vehicleMileageRange: '公里数范围',
+    mileageNoLimit: '不限',
     customerDescription: '客户失效描述',
     otherDescription: '其他描述',
     otherInfo: '其他信息',

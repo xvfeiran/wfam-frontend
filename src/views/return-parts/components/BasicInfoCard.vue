@@ -77,7 +77,7 @@
           </a-form-item>
         </a-col>
         <a-col :span="12">
-          <a-form-item :label="t('returnPart.businessUnit')">
+          <a-form-item :label="t('returnPart.businessUnit')" name="businessUnit">
             <a-input
               v-model:value="form.businessUnit"
               :placeholder="businessUnitPlaceholder"
@@ -90,7 +90,7 @@
 
       <a-row :gutter="24">
         <a-col :span="12">
-          <a-form-item :label="t('returnPart.productPlatform')">
+          <a-form-item :label="t('returnPart.productPlatform')" name="productPlatform">
             <a-input
               v-model:value="form.productPlatform"
               :placeholder="productPlatformPlaceholder"
@@ -455,6 +455,8 @@ const validatePartCodeExists = async (_rule: any, value: string) => {
 const formRules = computed(() => ({
   orderId: [{ required: true, message: t('validation.selectOrder') }],
   partCode: [{ validator: validatePartCodeExists, trigger: 'change' }],
+  businessUnit: [{ required: true, message: t('validation.selectBusinessUnit') }],
+  productPlatform: [{ required: true, message: t('validation.selectProductPlatform') }],
   analyst: [{ required: true, message: t('validation.selectAnalyst') }],
 }))
 

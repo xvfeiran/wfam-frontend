@@ -187,6 +187,8 @@ const canEditPart = computed(() => {
   if (!part.value) return false
   // 未提交的单据所有人都可以编辑
   if (!part.value.partNumber) return true
+  // 信息录入/进行中状态的退件所有人都可以编辑
+  if (part.value.status === 'in_initial_analysis') return true
   // 已提交的单据需要检查权限
   return canEditSubmittedForm.value
 })
