@@ -8,11 +8,12 @@ import PpmTrendLineChart from './components/quality/PpmTrendLineChart.vue'
 import AdvancedFilterBar from '@/components/AdvancedFilterBar.vue'
 import { storeToRefs } from 'pinia'
 import { useQualityStore } from '@/stores/reportQuality'
-import { optionsApi } from '@/services/reportOptions'
+import { useReportOptionsStore } from '@/stores/reportOptions'
 import type { KilometerRange } from '@/constants/reports'
 
 const store = useQualityStore()
 const { filters } = storeToRefs(store)
+const optionsStore = useReportOptionsStore()
 
 // 页面加载动画状态
 const isLoaded = ref(false)
@@ -21,33 +22,7 @@ onMounted(() => {
   setTimeout(() => {
     isLoaded.value = true
   }, 100)
-})
-
-// 筛选选项数据
-const customerOptions = ref<{ label: string; value: string }[]>([])
-const platformOptions = ref<{ label: string; value: string }[]>([])
-const faultModeOptions = ref<{ label: string; value: string }[]>([])
-const partNoOptions = ref<{ label: string; value: string }[]>([])
-const buOptions = ref<string[]>([])
-
-// 加载筛选选项
-onMounted(async () => {
-  try {
-    const [customers, platforms, faultModes, partNos, buOpts] = await Promise.all([
-      optionsApi.getCustomerOptions(),
-      optionsApi.getPlatformOptions(),
-      optionsApi.getFaultModeOptions(),
-      optionsApi.getPartNoOptions(),
-      optionsApi.getBuOptions(),
-    ])
-    customerOptions.value = customers.map((c) => ({ label: c.label, value: c.value }))
-    platformOptions.value = platforms.map((p) => ({ label: p.label, value: p.value }))
-    faultModeOptions.value = faultModes.map((f) => ({ label: f.label, value: f.value }))
-    partNoOptions.value = partNos.map((p) => ({ label: p.label, value: p.value }))
-    buOptions.value = buOpts.map((b) => b.value)
-  } catch (e) {
-    console.error('Failed to load filter options:', e)
-  }
+  optionsStore.fetchOptions()
 })
 </script>
 
@@ -119,11 +94,11 @@ onMounted(async () => {
     <!-- 售后件柱状图 -->
     <section class="chart-section">
       <div class="section-label">
-        <span class="label-line label-line--blue"></span>
+        <span class="label-line"></span>
         <span class="label-text">售后件趋势</span>
       </div>
       <div class="chart-card chart-card--full">
-        <div class="card-glow card-glow--blue"></div>
+        <div class="card-glow"></div>
         <div class="card-inner">
           <div class="card-header">
             <h3 class="card-title">
@@ -147,10 +122,13 @@ onMounted(async () => {
                 faultMode: true,
                 partNo: true,
               }"
-              :customer-options="customerOptions"
-              :platform-options="platformOptions"
-              :fault-mode-options="faultModeOptions"
-              :part-no-options="partNoOptions"
+              :customer-options="optionsStore.customerOptions"
+              :bu-options="optionsStore.buOptions"
+              :platform-options="optionsStore.platformOptions"
+              :fault-mode-options="optionsStore.faultModeOptions"
+              :part-no-options="optionsStore.partNoOptions"
+              :bcso-options="optionsStore.bcsoOptions"
+              :mileage-options="optionsStore.kilometerOptions"
               :initial-values="{
                 dateRange: filters.returnBarDateRange,
                 customer: filters.returnBarCustomer ?? [],
@@ -188,22 +166,7 @@ onMounted(async () => {
         <span class="label-line label-line--green"></span>
         <span class="label-text">质量趋势</span>
       </div>
-      <div class="chart-card chart-card--full">
-        <div class="card-glow card-glow--green"></div>
-        <div class="card-inner">
-          <div class="card-header">
-            <h3 class="card-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-              </svg>
-              PPM / IPB 趋势
-            </h3>
-          </div>
-          <div class="chart-container">
-            <PpmTrendLineChart :bu-list="buOptions" />
-          </div>
-        </div>
-      </div>
+      <PpmTrendLineChart :bu-list="optionsStore.businessUnits" />
     </section>
   </div>
 </template>
@@ -340,7 +303,7 @@ onMounted(async () => {
     .label-line {
       width: 36px;
       height: 3px;
-      background: linear-gradient(90deg, @accent-danger, @accent-warning);
+      background: linear-gradient(90deg, @accent-success, @accent-secondary);
       border-radius: 2px;
 
       &--blue {
@@ -456,7 +419,7 @@ onMounted(async () => {
       left: 0;
       right: 0;
       height: 3px;
-      background: linear-gradient(90deg, @accent-danger, @accent-warning);
+      background: linear-gradient(90deg, @accent-success, @accent-secondary);
       opacity: 0;
       transition: opacity 0.3s ease;
 
@@ -495,18 +458,18 @@ onMounted(async () => {
         svg {
           width: 20px;
           height: 20px;
-          color: @accent-danger;
+          color: @accent-success;
         }
       }
 
       .card-badge {
         padding: 5px 12px;
-        background: rgba(239, 68, 68, 0.08);
-        border: 1px solid rgba(239, 68, 68, 0.15);
+        background: rgba(16, 185, 129, 0.08);
+        border: 1px solid rgba(16, 185, 129, 0.15);
         border-radius: 20px;
         font-size: 11px;
         font-weight: 600;
-        color: @accent-danger;
+        color: @accent-success;
         letter-spacing: 0.5px;
       }
     }
@@ -524,12 +487,12 @@ onMounted(async () => {
 
     &--treemap {
       .card-title svg {
-        color: @accent-primary;
+        color: @accent-success;
       }
       .card-badge {
-        background: rgba(37, 99, 235, 0.08);
-        border-color: rgba(37, 99, 235, 0.15);
-        color: @accent-primary;
+        background: rgba(16, 185, 129, 0.08);
+        border-color: rgba(16, 185, 129, 0.15);
+        color: @accent-success;
       }
     }
 

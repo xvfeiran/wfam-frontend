@@ -11,6 +11,7 @@ import {
 import VChart from 'vue-echarts'
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { Switch, Space } from 'ant-design-vue'
+import dayjs from 'dayjs'
 import type { EChartsOption } from 'echarts'
 import { storeToRefs } from 'pinia'
 import { useAnalysisStore } from '@/stores/reportAnalysis'
@@ -63,7 +64,9 @@ async function fetchData() {
       analysisApi.getReturnOrderData({ ...params, dateRange: previousYearRange.value }),
     ])
 
-    const selectedYear = filters.value.analysisDurationYearRange[0] ?? new Date().getFullYear()
+    const selectedYear = filters.value.returnOrderDateRange?.[0]
+      ? dayjs(filters.value.returnOrderDateRange[0]).year()
+      : new Date().getFullYear()
 
     // 存储转换后的数据，供 chartOption computed 使用
     rawData.value = transformReturnOrder(currentRes, previousRes, selectedYear)
@@ -85,22 +88,16 @@ const computedChartOption = computed<EChartsOption>((): EChartsOption => {
 
   const finalSeries: ChartSeries[] = [...series]
 
-  // 同比去年数据 - 仅当开关开启时添加
   if (yoyEnabled.value && previousYearSeries) {
-    finalSeries.push({
-      ...previousYearSeries,
-      itemStyle: { color: '#18f0ff' },
-    })
+    finalSeries.push(previousYearSeries)
   }
 
-  // xAxisFinalData 在此处计算，不存储
-  const xAxisFinalData = [...xAxisData, 'YTD']
-
+  // X 轴仅显示月份，无需拼接 YTD
   return {
     tooltip: { trigger: 'axis' },
     legend: { top: 0, data: finalSeries.map((s) => s.name) },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-    xAxis: { type: 'category', data: xAxisFinalData },
+    xAxis: { type: 'category', data: xAxisData },
     yAxis: { type: 'value' },
     series: finalSeries,
   } as EChartsOption

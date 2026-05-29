@@ -1,20 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { qualityApi } from '@/services/reportQuality'
-import { transformReturnQuantity } from '@/utils/transforms/quality/returnQuantity'
 
 const loading = ref(true)
-const rawData = ref<ReturnQuantityCardData | null>(null)
-
 const displayedCount = ref(0)
 const animationDuration = 1200
-
-interface ReturnQuantityCardData {
-  currentCount: number
-  previousCount: number
-  trendValue: number
-  updateDate: string
-}
 
 function animateCount(target: number) {
   const startTime = performance.now()
@@ -37,11 +27,9 @@ function animateCount(target: number) {
 async function fetchData() {
   loading.value = true
   try {
-    const res = await qualityApi.getReturnQuantity()
-    rawData.value = transformReturnQuantity(res)
-    if (rawData.value) {
-      animateCount(rawData.value.currentCount)
-    }
+    const currentYear = String(new Date().getFullYear())
+    const count = await qualityApi.getReturnQuantity(currentYear)
+    animateCount(count)
   } finally {
     loading.value = false
   }

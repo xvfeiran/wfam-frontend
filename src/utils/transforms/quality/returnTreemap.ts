@@ -27,7 +27,7 @@ export function transformReturnTreemap(data: ReturnTreemapData[]): TreemapNode[]
       name: bu,
       value: items.reduce((sum, d) => sum + d.count, 0),
       children: items.map((item) => ({
-        name: item.customer,
+        name: item.customerName,
         value: item.count,
       })),
     }

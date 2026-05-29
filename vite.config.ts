@@ -12,6 +12,14 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
+    proxy: {
+      '/report-options': {
+        target: 'https://wfam-api.quality.tmp-service.bosch.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/report-options/, ''),
+      },
+    },
   },
   css: {
     preprocessorOptions: {

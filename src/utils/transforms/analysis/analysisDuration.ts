@@ -10,9 +10,9 @@ export interface AnalysisDurationTransformResult {
 export function transformAnalysisDuration(
   data: AnalysisDurationData[],
 ): AnalysisDurationTransformResult {
-  const dataMap = new Map(data.map((d) => [d.bu, d.avgDay]))
+  const dataMap = new Map(data.map((d) => [d.bu, d.avgDays]))
   const xAxisData = [...new Set(data.map((d) => d.bu))]
-  const ytdValue = data.reduce((sum, d) => sum + d.avgDay, 0)
+  const ytdValue = data.reduce((sum, d) => sum + d.avgDays, 0)
 
   const series: ChartSeries = {
     name: '分析时长',

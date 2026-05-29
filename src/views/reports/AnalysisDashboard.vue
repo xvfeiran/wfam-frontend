@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { Row, Col, Select } from 'ant-design-vue'
+import { ref, onMounted, computed } from 'vue'
+import { Row, Col, Select, DatePicker } from 'ant-design-vue'
 import type { SelectValue } from 'ant-design-vue/es/select'
 import dayjs from 'dayjs'
 import AnalysisDurationChart from './components/analysis/AnalysisDurationChart.vue'
@@ -10,18 +10,24 @@ import AdvancedFilterBar from '@/components/AdvancedFilterBar.vue'
 import type { FilterValues } from '@/components/AdvancedFilterBar.vue'
 import { storeToRefs } from 'pinia'
 import { useAnalysisStore } from '@/stores/reportAnalysis'
-import { optionsApi } from '@/services/reportOptions'
+import { useReportOptionsStore } from '@/stores/reportOptions'
 
 const store = useAnalysisStore()
 const { filters } = storeToRefs(store)
+const optionsStore = useReportOptionsStore()
 
-// 平均抽样比例年份选项（当前年 + 前2年）
-const currentYear = dayjs().year()
-const samplingRatioYearOptions = [
-  { label: String(currentYear - 2), value: currentYear - 2 },
-  { label: String(currentYear - 1), value: currentYear - 1 },
-  { label: String(currentYear), value: currentYear },
-]
+// 平均抽样比例年份（dayjs 对象用于 DatePicker）
+const samplingYear = computed({
+  get: () => dayjs().year(filters.value.samplingRatioYear),
+  set: (val: dayjs.Dayjs) => {
+    if (!val) return
+    store.setFilter('samplingRatioYear', val.year())
+  },
+})
+
+function disabledSamplingYear(current: dayjs.Dayjs): boolean {
+  return current.year() > dayjs().year()
+}
 
 // 页面加载动画状态
 const isLoaded = ref(false)
@@ -30,37 +36,20 @@ onMounted(() => {
   setTimeout(() => {
     isLoaded.value = true
   }, 100)
+  optionsStore.fetchOptions()
 })
 
-// 分析时长图年份筛选（多选）
-const analysisDurationYearOptions = [
-  { label: '2024', value: 2024 },
-  { label: '2025', value: 2025 },
-  { label: '2026', value: 2026 },
-]
+// 分析时长图年份筛选（多选，当前年及前5年）
+const analysisDurationYearOptions = Array.from({ length: 6 }, (_, i) => {
+  const year = dayjs().year() - i
+  return { label: String(year), value: year }
+})
 
 const pendingAnalysisDurationYears = ref<number[]>([...filters.value.analysisDurationYearRange])
 
 // 售后件柱状图默认时间范围：当前年1月 ~ 当前月
 const returnOrderInitialValues = ref<Partial<FilterValues>>({
   dateRange: [dayjs().startOf('year').format('YYYY-MM'), dayjs().format('YYYY-MM')],
-})
-
-// 加载筛选选项
-const customerOptions = ref<{ label: string; value: string }[]>([])
-const platformOptions = ref<{ label: string; value: string }[]>([])
-
-onMounted(async () => {
-  try {
-    const [customers, platforms] = await Promise.all([
-      optionsApi.getCustomerOptions(),
-      optionsApi.getPlatformOptions(),
-    ])
-    customerOptions.value = customers.map((c) => ({ label: c.label, value: c.value }))
-    platformOptions.value = platforms.map((p) => ({ label: p.label, value: p.value }))
-  } catch (e) {
-    console.error('Failed to load filter options:', e)
-  }
 })
 
 
@@ -77,6 +66,11 @@ function handleSearch(values: any) {
 // 分析时长图年份筛选变化
 function handleAnalysisDurationYearChange(value: SelectValue) {
   const arr = (Array.isArray(value) ? value : value != null ? [value] : []) as number[]
+  if (arr.length === 0) {
+    // 至少保留1个年份，回退 UI 到 store 值
+    pendingAnalysisDurationYears.value = [...filters.value.analysisDurationYearRange]
+    return
+  }
   store.setFilter('analysisDurationYearRange', arr)
 }
 
@@ -84,9 +78,6 @@ function handleReset() {
   store.resetFilters()
 }
 
-function handleSamplingYearChange(value: number) {
-  store.setFilter('samplingRatioYear', value)
-}
 </script>
 
 <template>
@@ -126,7 +117,7 @@ function handleSamplingYearChange(value: number) {
         <span class="label-text">核心指标</span>
       </div>
       <Row :gutter="[24, 24]" align="stretch">
-        <Col :xs="24" :sm="24" :md="12" :lg="12" :xl="12" style="display: flex">
+        <Col :xs="24" :sm="24" :md="24" :lg="24" :xl="24" style="display: flex">
           <div class="chart-card chart-card--primary" style="flex: 1">
             <div class="card-glow"></div>
             <div class="card-inner">
@@ -141,7 +132,7 @@ function handleSamplingYearChange(value: number) {
                 <span class="card-badge">年度累计</span>
               </div>
               <div class="card-filter-bar">
-                <span class="filter-label">时间范围：</span>
+                <span class="filter-label">年份：</span>
                 <Select
                   v-model:value="pendingAnalysisDurationYears"
                   mode="multiple"
@@ -155,7 +146,7 @@ function handleSamplingYearChange(value: number) {
             </div>
           </div>
         </Col>
-        <Col :xs="24" :sm="24" :md="12" :lg="12" :xl="12" style="display: flex">
+        <Col :xs="24" :sm="24" :md="24" :lg="24" :xl="24" style="display: flex">
           <div class="chart-card chart-card--secondary" style="flex: 1">
             <div class="card-glow"></div>
             <div class="card-inner">
@@ -174,11 +165,13 @@ function handleSamplingYearChange(value: number) {
               </div>
               <div class="card-filter-bar">
                 <span class="filter-label">年份：</span>
-                <Select
-                  :value="filters.samplingRatioYear"
-                  :options="samplingRatioYearOptions"
+                <DatePicker
+                  :value="samplingYear"
+                  picker="year"
+                  format="YYYY年"
                   style="min-width: 200px"
-                  @change="handleSamplingYearChange"
+                  :disabled-date="disabledSamplingYear"
+                  @change="(val: any) => { if (val) samplingYear = val }"
                 />
               </div>
               <SamplingRatioCard />
@@ -211,6 +204,7 @@ function handleSamplingYearChange(value: number) {
             <AdvancedFilterBar
               :visible-filters="{
                 dateRange: true,
+                singleYear: true,
                 customer: true,
                 bu: true,
                 platform: true,
@@ -219,8 +213,13 @@ function handleSamplingYearChange(value: number) {
                 bcso: true
               }"
               :initial-values="returnOrderInitialValues"
-              :customer-options="customerOptions"
-              :platform-options="platformOptions"
+              :customer-options="optionsStore.customerOptions"
+              :bu-options="optionsStore.buOptions"
+              :platform-options="optionsStore.platformOptions"
+              :fault-mode-options="optionsStore.faultModeOptions"
+              :part-no-options="optionsStore.partNoOptions"
+              :bcso-options="optionsStore.bcsoOptions"
+              :mileage-options="optionsStore.kilometerOptions"
               @search="handleSearch"
               @reset="handleReset"
             />

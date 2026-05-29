@@ -1,14 +1,8 @@
-// 售后件总数数据
- interface ReturnQuantityData {
-  currentYearCount: number
-  previousYearCount: number
-  updateDate: string
-}
-
 // 矩形树图数据
 interface ReturnTreemapData {
-  bu: BU
-  customer: string
+  bu: string
+  customerName: string
+  customerId: string
   count: number
 }
 
@@ -16,16 +10,19 @@ interface ReturnTreemapData {
 interface ReturnBarData {
   month: string
   count: number
-  productionDate: string // 生产日期
 }
 
 // PPM/IPB 折线图数据
 interface PpmTrendData {
-  bu: BU
-  mis: MisPeriod
+  mis1: string
+  mis3: string
+  mis6: string
+  mis12: string
+  mis24: string
+  mis36: string
+  mis48: string
+  mis60: string
   month: string // '2025-01' 格式
-  ppm: number
-  ipb: number
 }
 
 // API 参数
@@ -41,12 +38,11 @@ interface ReturnBarParams {
 }
 
 interface PpmTrendParams {
-  bu?: string | null
+  bu?: string[] | null
   dateRange: [string, string] | null
   platform: string[] | null
   customer: string[] | null
   faultMode: string[] | null
   partNo: string[] | null
   bcso: string[] | null
-  mis: MisPeriod[] | null
 }

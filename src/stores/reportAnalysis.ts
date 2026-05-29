@@ -33,14 +33,16 @@ export const useAnalysisStore = defineStore('analysis', () => {
 
   // 计算属性：当前年份范围（基于分析时长图选择的首个年份，用于售后件柱状图）
   const currentYearRange = computed<[string, string]>(() => {
-    const year = filters.value.analysisDurationYearRange[0] ?? dayjs().year()
-    return [`${year}-01-01`, `${year}-12-31`]
+    const dateRange = filters.value.returnOrderDateRange
+    const year = dateRange?.[0] ? dayjs(dateRange[0]).year() : dayjs().year()
+    return [`${year}-01`, `${year}-12`]
   })
 
   // 计算属性：去年年份范围（用于 YoY）
   const previousYearRange = computed<[string, string]>(() => {
-    const year = filters.value.analysisDurationYearRange[0] ?? dayjs().year()
-    return [`${year - 1}-01-01`, `${year - 1}-12-31`]
+    const dateRange = filters.value.returnOrderDateRange
+    const year = dateRange?.[0] ? dayjs(dateRange[0]).year() - 1 : dayjs().year() - 1
+    return [`${year}-01`, `${year}-12`]
   })
 
   // 设置筛选值

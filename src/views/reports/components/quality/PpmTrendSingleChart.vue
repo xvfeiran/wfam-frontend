@@ -13,8 +13,8 @@ import { ref, watch, onMounted, onUnmounted } from 'vue'
 import type { EChartsOption } from 'echarts'
 import { Radio } from 'ant-design-vue'
 import { qualityApi } from '@/services/reportQuality'
-import { optionsApi } from '@/services/reportOptions'
 import { transformPpmTrendSingle } from '@/utils/transforms/quality/ppmTrendSingle'
+import { useReportOptionsStore } from '@/stores/reportOptions'
 import AdvancedFilterBar from '@/components/AdvancedFilterBar.vue'
 
 use([CanvasRenderer, LineChart, TitleComponent, TooltipComponent, LegendComponent, GridComponent])
@@ -24,6 +24,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const optionsStore = useReportOptionsStore()
 
 // 默认时间范围：当年1月到当前月份
 const currentYear = new Date().getFullYear()
@@ -43,30 +44,6 @@ const localFilters = ref({
   partNo: [] as string[],
 })
 
-// 筛选项
-const platformOptions = ref<{ label: string; value: string }[]>([])
-const customerOptions = ref<{ label: string; value: string }[]>([])
-const faultModeOptions = ref<{ label: string; value: string }[]>([])
-const partNoOptions = ref<{ label: string; value: string }[]>([])
-
-// 加载筛选项
-onMounted(async () => {
-  try {
-    const [platforms, customers, faultModes, partNos] = await Promise.all([
-      optionsApi.getPlatformOptions(),
-      optionsApi.getCustomerOptions(),
-      optionsApi.getFaultModeOptions(),
-      optionsApi.getPartNoOptions(),
-    ])
-    platformOptions.value = platforms.map((p) => ({ label: p.label, value: p.value }))
-    customerOptions.value = customers.map((c) => ({ label: c.label, value: c.value }))
-    faultModeOptions.value = faultModes.map((f) => ({ label: f.label, value: f.value }))
-    partNoOptions.value = partNos.map((p) => ({ label: p.label, value: p.value }))
-  } catch (e) {
-    console.error('Failed to load filter options:', e)
-  }
-})
-
 const chartRef = ref<InstanceType<typeof VChart> | null>(null)
 const loading = ref(false)
 
@@ -84,14 +61,13 @@ async function fetchData() {
   loading.value = true
   try {
     const params: PpmTrendParams = {
-      bu: props.bu,
+      bu: [props.bu],
       dateRange: defaultDateRange,
       platform: localFilters.value.platform.length ? localFilters.value.platform : null,
       customer: localFilters.value.customer.length ? localFilters.value.customer : null,
       bcso: localFilters.value.bcso.length ? localFilters.value.bcso : null,
       faultMode: localFilters.value.faultMode.length ? localFilters.value.faultMode : null,
       partNo: localFilters.value.partNo.length ? localFilters.value.partNo : null,
-      mis: null,
     }
     const res = await qualityApi.getPpmTrend(params)
     const { series, xAxisData } = transformPpmTrendSingle(res, metricType.value)
@@ -144,7 +120,12 @@ function handleFilterSearch(values: any) {
 <template>
   <div class="ppm-single-chart">
     <div class="chart-header">
-      <div class="bu-badge">{{ bu }}</div>
+      <h3 class="chart-title">
+        <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+        {{ bu }} - PPM / IPB 趋势
+      </h3>
       <Radio.Group v-model:value="metricType" option-type="button" :options="metricOptions" />
     </div>
 
@@ -160,10 +141,10 @@ function handleFilterSearch(values: any) {
           faultMode: true,
           partNo: true,
         }"
-        :customer-options="customerOptions"
-        :platform-options="platformOptions"
-        :fault-mode-options="faultModeOptions"
-        :part-no-options="partNoOptions"
+        :customer-options="optionsStore.customerOptions"
+        :platform-options="optionsStore.platformOptions"
+        :fault-mode-options="optionsStore.faultModeOptions"
+        :part-no-options="optionsStore.partNoOptions"
         :initial-values="{
           customer: localFilters.customer,
           bcso: localFilters.bcso,
@@ -197,13 +178,20 @@ function handleFilterSearch(values: any) {
   padding: 12px 16px;
   border-bottom: 1px solid #f0f0f0;
 
-  .bu-badge {
-    font-size: 16px;
-    font-weight: 700;
-    color: #2563eb;
-    padding: 4px 12px;
-    background: rgba(37, 99, 235, 0.1);
-    border-radius: 6px;
+  .chart-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+
+    .title-icon {
+      width: 20px;
+      height: 20px;
+      color: #10b981;
+    }
   }
 }
 

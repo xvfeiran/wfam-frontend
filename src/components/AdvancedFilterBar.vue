@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Select, DatePicker, Button, Space } from 'ant-design-vue'
 import dayjs from 'dayjs'
+import { useReportOptionsStore } from '@/stores/reportOptions'
 
 // ============ Types ============
 export interface FilterOption {
@@ -11,6 +12,7 @@ export interface FilterOption {
 
 export interface VisibleFilters {
   dateRange?: boolean
+  singleYear?: boolean
   customer?: boolean
   bu?: boolean
   platform?: boolean
@@ -34,9 +36,12 @@ export interface FilterValues {
 interface Props {
   visibleFilters?: VisibleFilters
   customerOptions?: FilterOption[]
+  buOptions?: FilterOption[]
   platformOptions?: FilterOption[]
   faultModeOptions?: FilterOption[]
   partNoOptions?: FilterOption[]
+  bcsoOptions?: FilterOption[]
+  mileageOptions?: FilterOption[]
   initialValues?: Partial<FilterValues>
 }
 
@@ -49,58 +54,29 @@ interface Emits {
 const props = withDefaults(defineProps<Props>(), {
   visibleFilters: () => ({}),
   customerOptions: () => [],
+  buOptions: () => [],
   platformOptions: () => [],
   faultModeOptions: () => [],
   partNoOptions: () => [],
+  bcsoOptions: () => [],
+  mileageOptions: () => [],
   initialValues: () => ({}),
 })
 
 const emit = defineEmits<Emits>()
-
-// ============ Filter Definitions ============
-const defaultOptions = {
-  bu: [
-    { label: 'WS', value: 'WS' },
-    { label: 'CA', value: 'CA' },
-    { label: 'TS', value: 'TS' },
-    { label: 'IB', value: 'IB' },
-  ],
-  bcso: [
-    { label: 'B', value: 'B' },
-    { label: 'C', value: 'C' },
-    { label: 'S', value: 'S' },
-    { label: 'O', value: 'O' },
-  ],
-  mileage: [
-    { label: '0-1000', value: '0-1000' },
-    { label: '1000-5000', value: '1000-5000' },
-    { label: '5000-10000', value: '5000-10000' },
-    { label: '10000-20000', value: '10000-20000' },
-    { label: '20000-40000', value: '20000-40000' },
-    { label: '40000-60000', value: '40000-60000' },
-    { label: '60000-100000', value: '60000-100000' },
-    { label: '100000-150000', value: '100000-150000' },
-  ],
-}
+const optionsStore = useReportOptionsStore()
+const partNoLoading = ref(false)
 
 function getOptions(key: string): FilterOption[] {
   switch (key) {
-    case 'bu':
-      return defaultOptions.bu
-    case 'bcso':
-      return defaultOptions.bcso
-    case 'mileage':
-      return defaultOptions.mileage
-    case 'customer':
-      return props.customerOptions
-    case 'platform':
-      return props.platformOptions
-    case 'faultMode':
-      return props.faultModeOptions
-    case 'partNo':
-      return props.partNoOptions
-    default:
-      return []
+    case 'customer':  return props.customerOptions
+    case 'bu':        return props.buOptions
+    case 'platform':  return props.platformOptions
+    case 'faultMode': return props.faultModeOptions
+    case 'partNo':    return props.partNoOptions
+    case 'bcso':      return props.bcsoOptions
+    case 'mileage':   return props.mileageOptions
+    default:          return []
   }
 }
 
@@ -114,7 +90,9 @@ const filterItems = computed(() => {
   }> = []
   const vf = props.visibleFilters
 
-  if (vf.dateRange !== false) {
+  if (vf.dateRange !== false && vf.singleYear) {
+    items.push({ key: 'dateRange', label: '年份', type: 'single-year' })
+  } else if (vf.dateRange !== false) {
     items.push({ key: 'dateRange', label: '时间范围', type: 'date-range' })
   }
   if (vf.customer !== false) {
@@ -233,6 +211,30 @@ function handleDateRangeChange(val: [dayjs.Dayjs, dayjs.Dayjs] | null) {
   }
 }
 
+// ---- 单年选择模式 ----
+const selectedYear = computed({
+  get: () => {
+    const range = localValues.value.dateRange
+    if (!range?.[0]) return undefined
+    return dayjs(range[0], 'YYYY')
+  },
+  set: (val: dayjs.Dayjs | undefined) => {
+    if (!val) return // 不允许置空
+    const year = val.year()
+    const currentYear = dayjs().year()
+    const currentMonth = dayjs().month() + 1
+    if (year === currentYear) {
+      localValues.value.dateRange = [`${year}-01`, `${year}-${String(currentMonth).padStart(2, '0')}`]
+    } else {
+      localValues.value.dateRange = [`${year}-01`, `${year}-12`]
+    }
+  },
+})
+
+function disabledYear(current: dayjs.Dayjs): boolean {
+  return current.year() > dayjs().year()
+}
+
 function onOpenChange(open: boolean) {
   if (!open) {
     tempSelectDate.value = null
@@ -282,6 +284,15 @@ function handleReset() {
   handleSearch()
 }
 
+async function handlePartNoSearch(keyword: string) {
+  partNoLoading.value = true
+  try {
+    await optionsStore.searchPartNos(keyword)
+  } finally {
+    partNoLoading.value = false
+  }
+}
+
 const dateDisplayValue = computed<[dayjs.Dayjs, dayjs.Dayjs] | undefined>(() => {
   const range = localValues.value.dateRange
   if (!range || !range[0] || !range[1]) return undefined
@@ -298,7 +309,22 @@ const dateDisplayValue = computed<[dayjs.Dayjs, dayjs.Dayjs] | undefined>(() => 
       }"
     >
       <template v-for="item in filterItems" :key="item.key">
-        <div v-if="item.type === 'date-range'" class="filter-item">
+        <!-- 单年选择 -->
+        <div v-if="item.type === 'single-year'" class="filter-item">
+          <span class="filter-label">{{ item.label }}</span>
+          <DatePicker
+            :value="selectedYear"
+            picker="year"
+            format="YYYY年"
+            placeholder="选择年份"
+            style="width: 100%"
+            :disabled-date="disabledYear"
+            @change="(val: any) => { if (val) selectedYear = val }"
+          />
+        </div>
+
+        <!-- 日期范围 -->
+        <div v-else-if="item.type === 'date-range'" class="filter-item">
           <span class="filter-label">{{ item.label }}</span>
           <DatePicker.RangePicker
             :value="dateDisplayValue as [dayjs.Dayjs, dayjs.Dayjs] | undefined"
@@ -312,6 +338,28 @@ const dateDisplayValue = computed<[dayjs.Dayjs, dayjs.Dayjs] | undefined>(() => 
           />
         </div>
 
+        <!-- 零件号：支持远程搜索 + 虚拟列表 -->
+        <div v-else-if="item.key === 'partNo'" class="filter-item">
+          <span class="filter-label">{{ item.label }}</span>
+          <Select
+            :value="localValues.partNo ?? []"
+            :placeholder="'输入零件号搜索'"
+            style="width: 100%"
+            mode="multiple"
+            show-search
+            :filter-option="false"
+            :loading="partNoLoading"
+            :virtual="true"
+            @search="handlePartNoSearch"
+            @change="(val: any) => handleMultiSelectChange('partNo', val as string[])"
+          >
+            <Select.Option v-for="opt in getOptions('partNo')" :key="opt.value" :value="opt.value">
+              {{ opt.label }}
+            </Select.Option>
+          </Select>
+        </div>
+
+        <!-- 其他多选筛选项 -->
         <div v-else class="filter-item">
           <span class="filter-label">{{ item.label }}</span>
           <Select
@@ -319,6 +367,9 @@ const dateDisplayValue = computed<[dayjs.Dayjs, dayjs.Dayjs] | undefined>(() => 
             :placeholder="item.placeholder || `选择${item.label}`"
             style="width: 100%"
             mode="multiple"
+            show-search
+            :filter-option="true"
+            :virtual="true"
             @change="
               (val: any) => handleMultiSelectChange(item.key as keyof FilterValues, val as string[])
             "

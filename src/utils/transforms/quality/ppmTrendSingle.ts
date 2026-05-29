@@ -1,32 +1,39 @@
 import { MIS_PERIODS } from '@/constants/reports'
 
+const MIS_KEYS = MIS_PERIODS.map((m) => m.toLowerCase()) as (keyof PpmTrendData)[]
+
 /**
  * 转换单个 BU 的 PPM/IPB 折线图数据
+ * 接口返回 PPM 值（string，带3位小数），前端据此计算 PPM 和 IPB
  */
 export function transformPpmTrendSingle(
   data: PpmTrendData[],
-  metricType: 'ppm' | 'ipb' = 'ppm'
+  metricType: 'ppm' | 'ipb' = 'ppm',
 ) {
-  // 获取所有月份并排序
-  const monthSet = new Set<string>()
-  data.forEach(d => monthSet.add(d.month))
-  const xAxisData = [...monthSet].sort()
+  const sortedData = [...data].sort((a, b) => a.month.localeCompare(b.month))
+  const xAxisData = sortedData.map((d) => d.month)
 
-  // 按 MIS 分组
   const series: ChartSeries[] = []
 
-  for (const mis of MIS_PERIODS) {
-    const filteredData = data.filter(d => d.mis === mis)
-    const sortedData = filteredData.sort((a, b) => a.month.localeCompare(b.month))
+  for (let i = 0; i < MIS_PERIODS.length; i++) {
+    const mis = MIS_PERIODS[i]
+    const key = MIS_KEYS[i]
 
-    if (sortedData.length > 0) {
+    const hasData = sortedData.some((d) => {
+      const val = d[key]
+      return val != null && val !== ''
+    })
+
+    if (hasData) {
       series.push({
         name: mis,
         type: 'line',
-        data: sortedData.map(d => ({
-          name: d.month,
-          value: metricType === 'ppm' ? d.ppm : d.ipb
-        }))
+        data: sortedData.map((d) => {
+          const ppmValue = parseFloat(d[key]) || 0
+          // PPM: 取整展示；IPB = PPM × 1000
+          const value = metricType === 'ppm' ? Math.round(ppmValue) : ppmValue * 1000
+          return { name: d.month, value }
+        }),
       })
     }
   }
