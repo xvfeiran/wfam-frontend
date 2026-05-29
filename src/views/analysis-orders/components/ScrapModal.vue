@@ -59,6 +59,28 @@
           </a-typography-text>
         </div>
       </a-form-item>
+
+      <a-form-item
+        v-if="form.scrapStatus === 'completed_workon' && isScrapInProgress"
+        :label="t('message.workonScrapNo')"
+        :required="form.scrapStatus === 'completed_workon'"
+        :validate-status="scrapNoError ? 'error' : undefined"
+        :help="scrapNoError"
+      >
+        <a-input
+          v-model:value="form.workonScrapNo"
+          :placeholder="t('message.workonScrapNoPlaceholder')"
+          allow-clear
+        />
+      </a-form-item>
+
+      <div v-if="isScrapped && props.order?.workonScrapNo" class="status-hint">
+        <a-descriptions :column="1" size="small">
+          <a-descriptions-item :label="t('message.workonScrapNo')">
+            {{ props.order.workonScrapNo }}
+          </a-descriptions-item>
+        </a-descriptions>
+      </div>
     </a-form>
 
     <template #footer>
@@ -71,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed, watch } from 'vue'
+import { reactive, computed, watch, ref } from 'vue'
 import { message } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import { LinkOutlined } from '@ant-design/icons-vue'
@@ -93,7 +115,10 @@ const emit = defineEmits(['update:visible', 'success'])
 
 const form = reactive({
   scrapStatus: 'pending_workon' as 'pending_workon' | 'completed_workon',
+  workonScrapNo: '',
 })
+
+const scrapNoError = ref('')
 
 // 防抖处理
 const submitDebounce = useDebouncedClick({ delay: 1000 })
@@ -177,6 +202,8 @@ watch(
   (visible) => {
     if (visible) {
       form.scrapStatus = isScrapInProgress.value || isScrapped.value ? 'completed_workon' : 'pending_workon'
+      form.workonScrapNo = ''
+      scrapNoError.value = ''
     }
   }
 )
@@ -192,10 +219,19 @@ const handleSubmit = async () => {
   }
   if (!props.order) return
 
+  if (form.scrapStatus === 'completed_workon' && isScrapInProgress.value) {
+    const trimmed = form.workonScrapNo.trim()
+    if (!trimmed) {
+      scrapNoError.value = t('message.workonScrapNoRequired')
+      return
+    }
+    scrapNoError.value = ''
+  }
+
   submitDebounce.execute(async () => {
     try {
       if (form.scrapStatus === 'completed_workon' && isScrapInProgress.value) {
-        await analysisOrderApi.workonConfirm(props.order!.id)
+        await analysisOrderApi.workonConfirm(props.order!.id, { workonScrapNo: form.workonScrapNo.trim() })
       } else {
         await analysisOrderApi.scrap(props.order!.id)
       }

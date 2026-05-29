@@ -42,7 +42,7 @@ export const analysisOrderApi = {
   scrap(id: string): Promise<AnalysisOrder> {
     return request.post(`/analysis-orders/${id}/scrap`) as unknown as Promise<AnalysisOrder>
   },
-  workonConfirm(id: string): Promise<AnalysisOrder> {
-    return request.post(`/analysis-orders/${id}/scrap/workon-confirm`) as unknown as Promise<AnalysisOrder>
+  workonConfirm(id: string, data: { workonScrapNo: string }): Promise<AnalysisOrder> {
+    return request.post(`/analysis-orders/${id}/scrap/workon-confirm`, data) as unknown as Promise<AnalysisOrder>
   },
 }

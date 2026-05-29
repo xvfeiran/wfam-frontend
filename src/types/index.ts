@@ -202,6 +202,7 @@ export interface AnalysisOrder {
   orderNumber?: string
   analyst: string
   status: AnalysisOrderStatus
+  workonScrapNo?: string
   statusChangedAt?: string
   parts?: Part[]
   createdBy: string
