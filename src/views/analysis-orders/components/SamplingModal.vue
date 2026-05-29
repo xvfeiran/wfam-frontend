@@ -174,7 +174,7 @@
         <!-- 搜索筛选 -->
         <div class="manual-search">
           <a-row :gutter="12" align="middle">
-            <a-col :span="6">
+            <a-col :span="5">
               <a-select
                 v-model:value="manualSearch.partCode"
                 :placeholder="t('returnPart.partCode')"
@@ -189,7 +189,7 @@
                 </a-select-option>
               </a-select>
             </a-col>
-            <a-col :span="5">
+            <a-col :span="4">
               <a-select
                 v-model:value="manualSearch.businessUnit"
                 :placeholder="t('returnPart.businessUnit')"
@@ -201,7 +201,7 @@
                 </a-select-option>
               </a-select>
             </a-col>
-            <a-col :span="5">
+            <a-col :span="4">
               <a-select
                 v-model:value="manualSearch.failureType"
                 :placeholder="t('returnPart.failureType')"
@@ -214,6 +214,13 @@
               </a-select>
             </a-col>
             <a-col :span="6">
+              <a-range-picker
+                v-model:value="manualSearch.partProductionDateRange"
+                :placeholder="[t('returnPart.partProductionDateRange'), t('returnPart.partProductionDateRange')]"
+                style="width: 100%"
+              />
+            </a-col>
+            <a-col :span="5">
               <a-space>
                 <a-button type="primary" @click="applyManualFilter">
                   {{ t('common.search') }}
@@ -222,6 +229,29 @@
                   {{ t('common.reset') }}
                 </a-button>
               </a-space>
+            </a-col>
+          </a-row>
+          <a-row :gutter="12" align="middle" style="margin-top: 8px">
+            <a-col :span="2">
+              <span class="range-label">{{ t('returnPart.vehicleMileageRange') }}</span>
+            </a-col>
+            <a-col :span="2">
+              <span class="range-value">{{ manualSearch.vehicleMileageRange[0] }}</span>
+            </a-col>
+            <a-col :span="16">
+              <a-slider
+                v-model:value="manualSearch.vehicleMileageRange"
+                range
+                :min="mileageMin"
+                :max="mileageMax"
+                :step="mileageStep"
+              />
+            </a-col>
+            <a-col :span="2">
+              <span class="range-value">{{ manualSearch.vehicleMileageRange[1] }}</span>
+            </a-col>
+            <a-col :span="2">
+              <span class="range-value">km</span>
             </a-col>
           </a-row>
         </div>
@@ -333,6 +363,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { message } from 'ant-design-vue'
+import dayjs from 'dayjs'
 import { useI18n } from 'vue-i18n'
 import { StopOutlined, FilterOutlined, ThunderboltOutlined, ClearOutlined } from '@ant-design/icons-vue'
 import { analysisOrderApi } from '@/services/analysisOrderApi'
@@ -382,11 +413,15 @@ const manualSearch = ref({
   partCode: undefined as string | undefined,
   businessUnit: undefined as string | undefined,
   failureType: undefined as string | undefined,
+  partProductionDateRange: undefined as [dayjs.Dayjs, dayjs.Dayjs] | undefined,
+  vehicleMileageRange: [0, 0] as [number, number],
 })
 const manualFilterApplied = ref({
   partCode: undefined as string | undefined,
   businessUnit: undefined as string | undefined,
   failureType: undefined as string | undefined,
+  partProductionDateRange: undefined as [dayjs.Dayjs, dayjs.Dayjs] | undefined,
+  vehicleMileageRange: undefined as [number, number] | undefined,
 })
 
 // 零件号下拉选项（从当前可用零件去重）
@@ -400,6 +435,20 @@ const masterBusinessUnits = ref<string[]>([])
 
 // 客户失效类型选项（NVH/外观/功能）
 const failureTypeOptions = ['NVH', 'APPEARANCE', 'FUNCTION']
+
+// 公里数范围滑块边界（从当前零件数据动态计算）
+const mileageBounds = computed(() => {
+  const miles = availableParts.value.map(p => p.vehicleMileage).filter((m): m is number => m != null)
+  if (miles.length === 0) return { min: 0, max: 100000, step: 1000 }
+  const min = Math.min(...miles)
+  const max = Math.max(...miles)
+  const range = max - min
+  const step = range > 100000 ? 5000 : range > 10000 ? 1000 : range > 1000 ? 100 : 10
+  return { min: Math.floor(min / step) * step, max: Math.ceil(max / step) * step, step }
+})
+const mileageMin = computed(() => mileageBounds.value.min)
+const mileageMax = computed(() => mileageBounds.value.max)
+const mileageStep = computed(() => mileageBounds.value.step)
 
 // 是否已完成抽样
 const isSampled = computed(() => {
@@ -440,8 +489,9 @@ const transferDataSource = computed(() =>
 
 // 手动抽样过滤后的数据源（已选中的始终可见）
 const manualFilteredSource = computed(() => {
-  const { partCode, businessUnit, failureType } = manualFilterApplied.value
-  if (!partCode && !businessUnit && !failureType) return transferDataSource.value
+  const { partCode, businessUnit, failureType, partProductionDateRange, vehicleMileageRange } = manualFilterApplied.value
+  const hasNoFilter = !partCode && !businessUnit && !failureType && !partProductionDateRange && !vehicleMileageRange
+  if (hasNoFilter) return transferDataSource.value
 
   return transferDataSource.value.filter(item => {
     if (selectedPartIds.value.includes(item.key)) return true
@@ -458,6 +508,17 @@ const manualFilteredSource = computed(() => {
     }
     if (failureType) {
       match = match && part.failureType === failureType
+    }
+    if (partProductionDateRange) {
+      const [start, end] = partProductionDateRange
+      const partDate = part.partProductionDate ? dayjs(part.partProductionDate) : null
+      match = match && partDate != null && partDate.isAfter(start.subtract(1, 'day')) && partDate.isBefore(end.add(1, 'day'))
+    }
+    if (vehicleMileageRange) {
+      const [rangeMin, rangeMax] = vehicleMileageRange
+      if (rangeMin !== mileageMin.value || rangeMax !== mileageMax.value) {
+        match = match && part.vehicleMileage != null && part.vehicleMileage >= rangeMin && part.vehicleMileage <= rangeMax
+      }
     }
     return match
   })
@@ -491,8 +552,20 @@ const applyManualFilter = () => {
 
 // 手动抽样：重置筛选
 const resetManualFilter = () => {
-  manualSearch.value = { partCode: undefined, businessUnit: undefined, failureType: undefined }
-  manualFilterApplied.value = { partCode: undefined, businessUnit: undefined, failureType: undefined }
+  manualSearch.value = {
+    partCode: undefined,
+    businessUnit: undefined,
+    failureType: undefined,
+    partProductionDateRange: undefined,
+    vehicleMileageRange: [mileageMin.value, mileageMax.value],
+  }
+  manualFilterApplied.value = {
+    partCode: undefined,
+    businessUnit: undefined,
+    failureType: undefined,
+    partProductionDateRange: undefined,
+    vehicleMileageRange: undefined,
+  }
 }
 
 // 当 visible 或 order 变化时加载数据并重置状态
@@ -658,6 +731,18 @@ const handleConfirmSampling = () => confirmDebounce.execute(async () => {
 
 .manual-search {
   margin-bottom: 16px;
+
+  .range-label {
+    font-size: 13px;
+    color: #555;
+    white-space: nowrap;
+  }
+
+  .range-value {
+    font-size: 13px;
+    color: #333;
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 .modal-footer {

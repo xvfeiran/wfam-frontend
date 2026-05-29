@@ -135,6 +135,8 @@ export default {
     vehicleFailureDate: 'Vehicle Failure Date',
     vehicleVIN: 'Vehicle VIN',
     vehicleMileage: 'Vehicle Mileage',
+    partProductionDateRange: 'Part Production Date Range',
+    vehicleMileageRange: 'Mileage Range (km)',
     customerDescription: 'Customer Description',
     otherDescription: 'Other Description',
     otherInfo: 'Other Information',
