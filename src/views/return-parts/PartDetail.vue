@@ -144,10 +144,9 @@ import { LinkOutlined } from '@ant-design/icons-vue'
 import { partApi } from '@/services/partApi'
 import { reportsApi } from '@/services/reportsApi'
 import { fileApi } from '@/services/fileApi'
-import { PART_STATUS_MAP, PartStatus } from '@/types'
+import { PartStatus } from '@/types'
 import type { Part, AnalysisReport, ReportTemplate } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
-import { useStatusLabels } from '@/composables/useStatusLabels'
 import { useUserNameMap } from '@/composables/useUserNameMap'
 import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import AnalysisReportModal from './components/AnalysisReportModal.vue'
@@ -293,8 +292,6 @@ const getReportStatusLabel = (status: string) => {
   return labelMap[status] || status
 }
 
-const { getPartLabel } = useStatusLabels()
-const getStatusLabel = (status?: string) => status ? getPartLabel(status) : '-'
 
 onMounted(async () => {
   part.value = await partApi.getById(partId.value)

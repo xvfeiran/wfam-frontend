@@ -399,7 +399,6 @@ export default {
     samplingCompleted: 'Sampling Completed',
     pendingScrap: 'Pending Scrap',
     completed: 'Completed',
-    registered: 'Registered',
     pendingDetailedAnalysis: 'Pending Detailed Analysis',
   },
   validation: {

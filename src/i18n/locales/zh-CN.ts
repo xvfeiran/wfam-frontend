@@ -415,7 +415,6 @@ export default {
     samplingCompleted: '抽样完成',
     pendingScrap: '待报废',
     completed: '已完成',
-    registered: '已登记',
     pendingDetailedAnalysis: '待精分析',
   },
   validation: {
