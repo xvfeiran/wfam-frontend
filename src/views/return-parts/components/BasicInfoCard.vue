@@ -276,7 +276,10 @@ watch([() => props.form.businessUnit, () => props.form.productPlatform], (_new, 
       ? props.form.partNumber.slice(oldPrefix.length)
       : ''
   } else {
-    suffix = props.form.partNumber || ''
+    const newPrefix = partNumberPrefix.value
+    suffix = (newPrefix && props.form.partNumber?.startsWith(newPrefix))
+      ? props.form.partNumber.slice(newPrefix.length)
+      : (props.form.partNumber || '')
   }
   if (partNumberPrefix.value && suffix) {
     props.form.partNumber = partNumberPrefix.value + suffix
