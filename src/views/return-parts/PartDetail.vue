@@ -171,7 +171,7 @@ const analysisVisible = ref(false)
 const exportDebounce = useDebouncedClick({ delay: 1000 })
 const qcNoInput = ref('')
 
-const QC_VISIBLE_STATUSES = [PartStatus.PENDING_APPROVAL, PartStatus.ANALYSIS_COMPLETED, PartStatus.SCRAP_IN_PROGRESS, PartStatus.SCRAPPED]
+const QC_VISIBLE_STATUSES = [PartStatus.PENDING_APPROVAL, PartStatus.ANALYSIS_COMPLETED, PartStatus.ANALYSIS_SKIPPED, PartStatus.SCRAP_IN_PROGRESS, PartStatus.SCRAPPED]
 const isQcVisible = computed(() => part.value ? QC_VISIBLE_STATUSES.includes(part.value.status) : false)
 
 /**
