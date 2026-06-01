@@ -204,6 +204,7 @@ export interface AnalysisOrder {
   analyst: string
   status: AnalysisOrderStatus
   workonScrapNo?: string
+  scrapStartedAt?: string
   statusChangedAt?: string
   parts?: Part[]
   createdBy: string

@@ -80,6 +80,26 @@
             <a-step :title="t('analysisOrder.stepWorkonScrap')" :description="getStepDescription(2)" />
           </a-steps>
         </a-card>
+
+        <!-- 报废详情卡片（报废中/已报废时显示） -->
+        <a-card
+          v-if="isScrapStatus"
+          :title="t('analysisOrder.scrapDetail')"
+          class="scrap-detail-card"
+          style="margin-top: 16px"
+        >
+          <a-descriptions :column="1" bordered size="small">
+            <a-descriptions-item v-if="order?.scrapStartedAt" :label="t('analysisOrder.scrapStartedAt')">
+              {{ formatDateTime(order.scrapStartedAt) }}
+            </a-descriptions-item>
+            <a-descriptions-item v-if="order?.workonScrapNo" :label="t('message.workonScrapNo')">
+              {{ order.workonScrapNo }}
+            </a-descriptions-item>
+            <a-descriptions-item v-if="isScrapped && order?.statusChangedAt" :label="t('analysisOrder.scrapCompletedAt')">
+              {{ formatDateTime(order.statusChangedAt) }}
+            </a-descriptions-item>
+          </a-descriptions>
+        </a-card>
       </a-col>
     </a-row>
 
@@ -161,6 +181,29 @@ const currentStep = computed(() => {
   if (!order.value) return 0
   return statusStepMap[order.value.status] ?? 0
 })
+
+const isScrapStatus = computed(() => {
+  if (!order.value) return false
+  return order.value.status === AnalysisOrderStatus.WORKON_SCRAP_IN_PROGRESS
+    || order.value.status === AnalysisOrderStatus.WORKON_SCRAPPED
+})
+
+const isScrapped = computed(() => {
+  return order.value?.status === AnalysisOrderStatus.WORKON_SCRAPPED
+})
+
+const formatDateTime = (dateStr?: string) => {
+  if (!dateStr) return '-'
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return dateStr
+  return d.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
 
 const canScrap = computed(() => {
   if (!order.value) return false

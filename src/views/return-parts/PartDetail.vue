@@ -162,7 +162,6 @@ const router = useRouter()
 const { canEditSubmittedForm, isQMCLeader } = usePermissions()
 const { displayName: userDisplayName, load: loadUserNameMap } = useUserNameMap()
 const partId = computed(() => route.params.id as string)
-const analysisOrderStatus = computed(() => typeof route.query.analysisOrderStatus === 'string' ? route.query.analysisOrderStatus : undefined)
 
 const part = ref<Part | null>(null)
 const report = ref<AnalysisReport | null>(null)
@@ -194,12 +193,29 @@ const canEditPart = computed(() => {
 })
 
 /**
- * 精分析按钮权限：需要分析单已完成抽样（非 pending_sampling 状态）
- * 如果没有分析单状态信息（如从退货单列表进入），默认允许
+ * 精分析按钮权限：
+ * - 已抽样 + 精分析进行中 → 可点击进行精分析
+ * - 精分析已提交/已完成/审批中/报废中/已报废 → 可点击查看报告
+ * - 其他状态（信息录入中/已完成/已跳过精分析等）→ 禁用
  */
 const canAnalysis = computed(() => {
-  if (!analysisOrderStatus.value) return true // 无状态信息时默认允许
-  return analysisOrderStatus.value !== 'pending_sampling'
+  if (!part.value) return false
+  const { status } = part.value
+
+  // 精分析进行中：必须是已抽样的零件才能进行精分析
+  if (status === PartStatus.IN_DETAILED_ANALYSIS) {
+    return part.value.isSample === 1
+  }
+
+  // 精分析已完成或后续状态：可以查看报告
+  const viewOnlyStatuses: PartStatus[] = [
+    PartStatus.ANALYSIS_REPORT_SUBMITTED,
+    PartStatus.PENDING_APPROVAL,
+    PartStatus.ANALYSIS_COMPLETED,
+    PartStatus.SCRAP_IN_PROGRESS,
+    PartStatus.SCRAPPED,
+  ]
+  return viewOnlyStatuses.includes(status as PartStatus)
 })
 
 /**
