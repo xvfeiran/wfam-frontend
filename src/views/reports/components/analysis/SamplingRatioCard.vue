@@ -227,7 +227,7 @@ function getColor(ratio: number): string {
 .value-container {
   display: flex;
   align-items: baseline;
-  gap: 2px;
+  gap: 4px;
   line-height: 1;
 }
 
@@ -241,7 +241,7 @@ function getColor(ratio: number): string {
 .value-number {
   font-size: 56px;
   font-weight: 800;
-  letter-spacing: -3px;
+  letter-spacing: 0px;
   background: linear-gradient(135deg, var(--color) 0%, color-mix(in srgb, var(--color) 60%, #1e293b) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
