@@ -33,6 +33,7 @@ export default {
     applyAll: 'Apply All',
     stop: 'Stop',
     viewOnly: 'View Only',
+    refresh: 'Refresh',
   },
   menu: {
     home: 'Home',

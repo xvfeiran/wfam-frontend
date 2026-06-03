@@ -33,6 +33,7 @@ export default {
     applyAll: '全部应用',
     stop: '停止',
     viewOnly: '仅查看',
+    refresh: '刷新',
   },
   menu: {
     home: '首页',
