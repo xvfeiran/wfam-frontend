@@ -83,6 +83,7 @@ export default {
     totalPartsCount: '共计 {count} 个退件信息',
     confirmCascadeDelete: '删除退货单和退件信息',
     exportLimitTitle: '导出数量超限',
+    exportLimitContent: '当前查询结果超过单次导出上限（10000 条），请修改查询条件后点击「查询」缩小导出范围。',
     status: {
       draft: '草稿',
       submitted: '信息登记/已完成',

@@ -83,6 +83,7 @@ export default {
     totalPartsCount: 'Total: {count} part(s)',
     confirmCascadeDelete: 'Delete Orders and Parts',
     exportLimitTitle: 'Export Limit Exceeded',
+    exportLimitContent: 'The current query exceeds the export limit (10,000 rows). Please refine your search criteria and click "Search" to reduce the result set.',
   },
   orderDetail: {
     title: 'Return Order Detail - {orderNumber}',
