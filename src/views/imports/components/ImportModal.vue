@@ -16,30 +16,15 @@
             <a-select-option value="part">{{ t('importModule.part') }}</a-select-option>
           </a-select>
         </a-form-item>
-        <a-form-item :label="t('importModule.importSource')">
-          <a-radio-group v-model:value="sourceType">
-            <a-radio value="file">{{ t('importModule.sourceFile') }}</a-radio>
-            <a-radio value="folder">{{ t('importModule.sourceFolder') }}</a-radio>
-          </a-radio-group>
-        </a-form-item>
         <a-form-item :label="t('importModule.fileName')">
-          <a-upload v-if="sourceType === 'file'" :before-upload="handleBeforeUpload" :show-upload-list="false" accept=".xlsx,.xls">
+          <a-upload :before-upload="handleBeforeUpload" :show-upload-list="false" accept=".zip">
             <a-button>
               <template #icon><upload-outlined /></template>
               {{ selectedFile ? selectedFile.name : t('importModule.selectFile') }}
             </a-button>
           </a-upload>
-          <a-input
-            v-else
-            v-model:value="folderPath"
-            :placeholder="t('importModule.folderPathPlaceholder')"
-            allow-clear
-          />
-          <div v-if="sourceType === 'file' && selectedFile" style="margin-top: 4px; color: #888; font-size: 12px;">
+          <div v-if="selectedFile" style="margin-top: 4px; color: #888; font-size: 12px;">
             {{ selectedFile.name }} — {{ (selectedFile.size / 1024).toFixed(1) }} KB
-          </div>
-          <div v-else-if="sourceType === 'folder'" style="margin-top: 4px; color: #888; font-size: 12px;">
-            {{ t('importModule.folderImportHint') }}
           </div>
         </a-form-item>
       </a-form>
@@ -48,7 +33,7 @@
         <a-button
           type="primary"
           :loading="uploadDebounce.isDebouncing.value"
-          :disabled="!importType || (sourceType === 'file' ? !selectedFile : !folderPath.trim())"
+          :disabled="!importType || !selectedFile"
           @click="handleUpload"
         >
           {{ uploadDebounce.isDebouncing.value ? t('importModule.uploading') : t('common.confirm') }}
@@ -141,9 +126,7 @@ type Phase = 'select' | 'processing' | 'result'
 
 const phase        = ref<Phase>('select')
 const importType   = ref<string | undefined>('part')
-const sourceType   = ref<'file' | 'folder'>('file')
 const selectedFile = ref<File | null>(null)
-const folderPath   = ref('')
 const uploading    = ref(false)
 const polling      = ref(false)
 const result       = ref<ImportRecord | null>(null)
@@ -204,14 +187,10 @@ async function handleUpload() {
         }
         record = await importApi.importReturnOrders(selectedFile.value)
       } else if (importType.value === 'part') {
-        if (sourceType.value === 'folder') {
-          record = await importApi.importPartsByFolder(folderPath.value.trim())
-        } else {
-          if (!selectedFile.value) {
-            throw new Error(t('importModule.selectFile'))
-          }
-          record = await importApi.importParts(selectedFile.value)
+        if (!selectedFile.value) {
+          throw new Error(t('importModule.selectFile'))
         }
+        record = await importApi.importParts(selectedFile.value)
       } else {
         throw new Error('不支持的导入类型')
       }
@@ -241,7 +220,7 @@ async function doPoll(id: string) {
     result.value = {
       id,
       importType: importType.value || 'part',
-      fileName: sourceType.value === 'folder' ? folderPath.value : (selectedFile.value?.name ?? ''),
+      fileName: selectedFile.value?.name ?? '',
       status: 'failed', totalCount: 0, successCount: 0, failCount: 0,
       failLogs: '[]',
       importLogs: JSON.stringify([{ row: 0, status: 'failed', error: '处理超时，请联系管理员查看日志' }]),
@@ -280,9 +259,7 @@ function handleClose() {
   stopPoll()
   phase.value = 'select'
   importType.value = 'part'
-  sourceType.value = 'file'
   selectedFile.value = null
-  folderPath.value = ''
   uploading.value = false
   result.value = null
   shouldRefreshOnClose.value = false

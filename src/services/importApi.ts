@@ -45,10 +45,6 @@ export const importApi = {
     })
   },
 
-  importPartsByFolder(folderPath: string): Promise<ImportRecord> {
-    return request.post('/imports/parts/folder', { folderPath })
-  },
-
   getById(id: string): Promise<ImportRecord> {
     return request.get(`/imports/${id}`)
   },
