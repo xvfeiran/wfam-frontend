@@ -26,6 +26,7 @@
             <a-select v-model:value="localFilters.status" :placeholder="t('validation.pleaseSelect')" allowClear>
               <a-select-option value="draft">{{ t('returnOrder.status.draft') }}</a-select-option>
               <a-select-option value="submitted">{{ t('returnOrder.status.submitted') }}</a-select-option>
+              <a-select-option value="registered">{{ t('returnOrder.status.registered') }}</a-select-option>
               <a-select-option value="scrapped">{{ t('returnOrder.status.scrapped') }}</a-select-option>
             </a-select>
           </a-form-item>
