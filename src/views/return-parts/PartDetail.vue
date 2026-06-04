@@ -267,6 +267,7 @@ const getStepDescription = (step: number) => {
     const status = part.value?.status
     if (status === PartStatus.ANALYSIS_SKIPPED) return t('partDetail.subSkipped')
     if (status === PartStatus.IN_DETAILED_ANALYSIS) return t('partDetail.subInProgress')
+    if (status === PartStatus.ANALYSIS_REPORT_SUBMITTED) return t('partDetail.subSubmitted')
     if (status === PartStatus.PENDING_APPROVAL) return t('partDetail.subInApproval')
     if (currentStep.value > 1 || status === PartStatus.ANALYSIS_COMPLETED) return t('partDetail.completed')
     return t('partDetail.inProgress')

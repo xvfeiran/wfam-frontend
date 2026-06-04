@@ -139,40 +139,36 @@ export function useOCR(form: Record<string, any>, partId?: string) {
   }
 
   const loadLatestOcrForPart = async (currentPartId: string) => {
+    const task = await ocrApi.getLatestTaskByPartId(currentPartId)
+    if (!task?.taskId) return
+    ocrTaskId.value = task.taskId
+
     try {
-      const task = await ocrApi.getLatestTaskByPartId(currentPartId)
-      if (!task?.taskId) return
-      ocrTaskId.value = task.taskId
-
-      try {
-        const imageBlob = await ocrApi.getTaskImage(task.taskId)
-        previewUrl.value = URL.createObjectURL(imageBlob)
-      } catch {
-        previewUrl.value = ''
-      }
-
-      if (task.status === 'SUCCESS') {
-        if (task.result) {
-          writeResultsToForm(task.result, false)
-        } else {
-          setAllError()
-        }
-        zoneState.value = 'success'
-        return
-      }
-
-      if (task.status === 'FAILED') {
-        setAllError()
-        zoneState.value = 'failed'
-        return
-      }
-
-      if (task.status === 'PROCESSING' || task.status === 'CREATED') {
-        zoneState.value = 'processing'
-        startPolling(task.taskId)
-      }
+      const imageBlob = await ocrApi.getTaskImage(task.taskId)
+      previewUrl.value = URL.createObjectURL(imageBlob)
     } catch {
-      // 无历史 OCR 图片时静默处理，保持 idle
+      previewUrl.value = ''
+    }
+
+    if (task.status === 'SUCCESS') {
+      if (task.result) {
+        writeResultsToForm(task.result, false)
+      } else {
+        setAllError()
+      }
+      zoneState.value = 'success'
+      return
+    }
+
+    if (task.status === 'FAILED') {
+      setAllError()
+      zoneState.value = 'failed'
+      return
+    }
+
+    if (task.status === 'PROCESSING' || task.status === 'CREATED') {
+      zoneState.value = 'processing'
+      startPolling(task.taskId)
     }
   }
 

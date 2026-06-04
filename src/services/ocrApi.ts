@@ -38,8 +38,10 @@ export const ocrApi = {
     return request.get(`/ocr/tasks/${taskId}`) as unknown as Promise<OcrTask>
   },
 
-  getLatestTaskByPartId(partId: string): Promise<OcrTask> {
-    return request.get('/ocr/tasks/latest', { params: { partId } }) as unknown as Promise<OcrTask>
+  getLatestTaskByPartId(partId: string): Promise<OcrTask | null> {
+    return request.get('/ocr/tasks/latest', { params: { partId }, _silent: true } as any)
+      .then(res => res as unknown as OcrTask)
+      .catch(() => null)
   },
 
   getTaskImage(taskId: string): Promise<Blob> {

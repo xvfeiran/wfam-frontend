@@ -67,7 +67,9 @@ request.interceptors.response.use(
     }
 
     const errMsg = data?.message || error.message || 'Network Error'
-    console.error('[API Error]', errMsg)
+    if (!(error.config as any)?._silent) {
+      console.error('[API Error]', errMsg)
+    }
 
     // SMB 相关错误（503）
     if (error.response?.status === 503) {

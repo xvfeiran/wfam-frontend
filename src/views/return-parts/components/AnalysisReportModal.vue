@@ -6,8 +6,8 @@
     @cancel="handleCancel"
     @ok="handleSubmit"
   >
-    <!-- ── 待审批只读卡片（复用 PartDetail report-card 样式） ─────────── -->
-    <template v-if="isPendingApproval">
+    <!-- ── 已提交/待审批只读卡片（复用 PartDetail report-card 样式） ─── -->
+    <template v-if="isReportSubmitted || isPendingApproval">
       <a-descriptions :column="1" size="small" bordered>
         <a-descriptions-item :label="t('partDetail.template')">
           {{ selectedTemplate?.name || '-' }}
@@ -211,8 +211,21 @@
     </template><!-- end v-else (完整表单) -->
 
     <template #footer>
+      <!-- 已提交（等待所有抽样件提交后进入审批）：只读 + 撤回 -->
+      <template v-if="isReportSubmitted">
+        <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
+        <a-button :disabled="!reportId || downloadDebounce.isDebouncing.value" :loading="downloadDebounce.isDebouncing.value" @click="handleDownload">
+          <DownloadOutlined /> {{ t('analysisForm.downloadReport') }}
+        </a-button>
+        <a-popconfirm :title="t('approval.confirmWithdrawApplication')" @confirm="handleWithdraw">
+          <a-button type="primary" danger :disabled="!reportId || withdrawDebounce.isDebouncing.value" :loading="withdrawDebounce.isDebouncing.value">
+            {{ t('common.withdraw') }}
+          </a-button>
+        </a-popconfirm>
+      </template>
+
       <!-- 待审批：简洁卡片的操作按钮 -->
-      <template v-if="isPendingApproval">
+      <template v-else-if="isPendingApproval">
         <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
         <a-button :disabled="!reportId || downloadDebounce.isDebouncing.value" :loading="downloadDebounce.isDebouncing.value" @click="handleDownload">
           <DownloadOutlined /> {{ t('analysisForm.downloadReport') }}
@@ -277,6 +290,7 @@ const reportSubmittedAt = ref<string>()
 const saveDraftDebounce = useDebouncedClick({ delay: 1000 })
 const submitDebounce = useDebouncedClick({ delay: 1000 })
 const downloadDebounce = useDebouncedClick({ delay: 1000 })
+const withdrawDebounce = useDebouncedClick({ delay: 1000 })
 
 // Camera & manual upload state
 const cameraOpen = ref(false)
@@ -540,6 +554,11 @@ const isPendingApproval = computed(() => {
   return props.part?.status === PartStatus.PENDING_APPROVAL
 })
 
+// 是否处于已提交状态（报告已提交，等待所有抽样件提交后进入审批）
+const isReportSubmitted = computed(() => {
+  return props.part?.status === PartStatus.ANALYSIS_REPORT_SUBMITTED
+})
+
 // 是否已审批通过（只读，不可再编辑）
 const isApproved = computed(() => {
   return props.part?.status === PartStatus.ANALYSIS_COMPLETED
@@ -724,6 +743,19 @@ const handleViewApproval = () => {
   emit('view-approval', props.part?.partNumber)
 }
 
+const handleWithdraw = () => {
+  withdrawDebounce.execute(async () => {
+    if (!reportId.value) return
+    try {
+      await reportsApi.withdrawReport(reportId.value)
+      emit('update:visible', false)
+      emit('success')
+    } catch {
+      message.error(t('message.operationFailed'))
+    }
+  })
+}
+
 const handleSaveDraft = async () => {
   if (!props.part?.id || !selectedTemplate.value) return
   saveDraftDebounce.execute(async () => {
@@ -805,15 +837,19 @@ const handleSubmit = async () => {
         }
       }
 
+      // Step 1: 保存报告数据（draft）
       const report = await reportsApi.saveReport({
         partId: props.part!.id,
         templateId: selectedTemplate.value!.id,
         content: formattedContent,
         summary: form.summary,
         responsibility: form.responsibility,
-        status: 'submitted',
+        status: 'draft',
       })
       reportId.value = report.id
+
+      // Step 2: 调用专用提交端点，触发 Part → analysis_report_submitted 联动
+      await reportsApi.submitReport(report.id)
       emit('success')
     } catch {
       message.error(t('validation.formError'))

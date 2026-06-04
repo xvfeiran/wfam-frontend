@@ -1,7 +1,7 @@
 <template>
   <a-modal
     :open="visible"
-    :title="t('returnPart.ocrPreview')"
+    :title="t('ocr.ocrPreview')"
     :width="1000"
     :closable="true"
     :mask-closable="false"
@@ -118,7 +118,7 @@
           </a-form-item>
 
           <a-form-item :label="t('returnPart.customerDescription')">
-            <a-text-area
+            <a-textarea
               v-model:value="localForm.customerDescription"
               :placeholder="t('returnPart.customerDescPlaceholder')"
               :rows="3"
