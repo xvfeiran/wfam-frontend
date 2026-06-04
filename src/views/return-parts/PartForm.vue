@@ -160,7 +160,7 @@ const form = reactive({
 
 const imagePaths = ref<string[]>([])
 
-const { zoneState, previewUrl, ocrResults, ocrTaskId, elapsedSeconds, handleOCRUpload, retryOCR, stopOCR, retake } = useOCR(form, partId.value || undefined)
+const { zoneState, previewUrl, ocrResults, ocrTaskId, elapsedSeconds, handleOCRUpload, retryOCR, stopOCR, retake } = useOCR(form)
 
 const isOcrProcessing = computed(() => zoneState.value === 'uploading' || zoneState.value === 'processing')
 
@@ -212,6 +212,7 @@ function populateForm(part: any) {
   form.vehicleMileage = part.vehicleMileage
   form.customerDescription = part.customerDescription || ''
   form.otherDescription = part.otherDescription || ''
+  imagePaths.value = part.images || []
 }
 
 // 监听订单选择变化，获取订单详情以判断是否为0km
