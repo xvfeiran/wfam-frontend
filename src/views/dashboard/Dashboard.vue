@@ -321,7 +321,7 @@ const handleTaskClick = (task: Task) => {
     return
   }
   if (task.type === 'approval') {
-    router.push({ path: '/approval', query: { tab: 'pendingApproval', fromTask: task.type } })
+    router.push({ path: '/approval', query: { tab: 'myApproval', fromTask: task.type } })
     return
   }
   if (task.type === 'scrap_confirm') {

@@ -174,6 +174,7 @@ export interface AnalysisApplication {
   approveTime?: string
   status: ApprovalStatus
   summary: string
+  templateId?: string
   content: Record<string, any>
 }
 
