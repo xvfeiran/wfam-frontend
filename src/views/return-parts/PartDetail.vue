@@ -297,6 +297,7 @@ const getReportStatusColor = (status: string) => {
     submitted: 'processing',
     approved: 'success',
     rejected: 'error',
+    withdrawn: 'processing',
   }
   return colorMap[status] || 'default'
 }
@@ -307,6 +308,7 @@ const getReportStatusLabel = (status: string) => {
     submitted: t('partDetail.reportPending'),
     approved: t('partDetail.reportApproved'),
     rejected: t('partDetail.reportRejected'),
+    withdrawn: t('partDetail.subInProgress'),
   }
   return labelMap[status] || status
 }
