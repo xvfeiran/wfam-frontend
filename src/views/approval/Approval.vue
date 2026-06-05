@@ -125,58 +125,13 @@
       </a-form>
     </a-modal>
 
-    <!-- 精分析报告查看弹窗 -->
-    <a-modal
-      v-model:open="reportModalVisible"
-      :title="t('approval.reportDetail')"
-      width="800px"
-      :footer="null"
-    >
-      <template v-if="currentReport">
-        <a-descriptions :column="2" bordered>
-          <a-descriptions-item :label="t('approval.reportNumber')">{{ currentReport.reportNumber }}</a-descriptions-item>
-          <a-descriptions-item :label="t('returnPart.partNumber')">{{ currentReport.partNumber }}</a-descriptions-item>
-          <a-descriptions-item :label="t('returnPart.productPlatform')">{{ currentReport.productPlatform }}</a-descriptions-item>
-          <a-descriptions-item :label="t('returnPart.failureType')">{{ currentReport.failureType ? t('returnPart.failureTypeLabels.' + currentReport.failureType) : '-' }}</a-descriptions-item>
-          <a-descriptions-item :label="t('approval.submitter')">{{ currentReport.submitter }}</a-descriptions-item>
-          <a-descriptions-item :label="t('approval.submitTime')">{{ currentReport.submitTime }}</a-descriptions-item>
-        </a-descriptions>
-        <a-divider>{{ t('approval.reportContent') }}</a-divider>
-        <a-descriptions :column="1" bordered size="small">
-          <a-descriptions-item v-for="(value, key) in currentReport.content" :key="key" :label="getFieldLabel(key)">
-            <!-- 单张照片字段 -->
-            <template v-if="isPhotoField(key as string)">
-              <a-image
-                v-if="value && typeof value === 'string'"
-                :src="getFileUrl(value)"
-                :width="120"
-                style="cursor: zoom-in; border-radius: 4px;"
-              />
-              <span v-else>-</span>
-            </template>
-            <!-- 多张照片字段 -->
-            <template v-else-if="isPhotoListField(key as string)">
-              <a-image-preview-group v-if="Array.isArray(value) && value.length > 0">
-                <a-space :size="8" wrap>
-                  <a-image
-                    v-for="(path, idx) in value"
-                    :key="idx"
-                    :src="getFileUrl(path)"
-                    :width="120"
-                    style="cursor: zoom-in; border-radius: 4px;"
-                  />
-                </a-space>
-              </a-image-preview-group>
-              <span v-else>-</span>
-            </template>
-            <!-- 普通文本字段 -->
-            <template v-else>
-              {{ value ?? '-' }}
-            </template>
-          </a-descriptions-item>
-        </a-descriptions>
-      </template>
-    </a-modal>
+    <!-- 精分析报告查看弹窗（复用 AnalysisReportModal） -->
+    <AnalysisReportModal
+      v-model:visible="reportModalVisible"
+      :part="selectedPart"
+      :readonly="true"
+      @success="handleReportModalSuccess"
+    />
   </div>
 </template>
 
@@ -189,17 +144,16 @@ import { CheckOutlined, CloseOutlined, EyeOutlined, DownOutlined } from '@ant-de
 import {
   ApprovalStatus,
   APPROVAL_STATUS_MAP,
-  ANALYSIS_FIELD_LABELS,
   type AnalysisApplication,
-  type ReportTemplate,
 } from '@/types'
+import type { Part } from '@/types'
 import { useStatusLabels } from '@/composables/useStatusLabels'
 import { usePermissions } from '@/composables/usePermissions'
 import { approvalApi } from '@/services/approvalApi'
-import { reportsApi } from '@/services/reportsApi'
-import { fileApi } from '@/services/fileApi'
+import { partApi } from '@/services/partApi'
 import { useApprovalColumns } from '@/composables/useApprovalColumns'
 import { useDebouncedClick } from '@/composables/useDebouncedClick'
+import AnalysisReportModal from '@/views/return-parts/components/AnalysisReportModal.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -213,46 +167,7 @@ const rejectModalVisible = ref(false)
 const reportModalVisible = ref(false)
 const rejectReason = ref('')
 const currentRejectRecord = ref<AnalysisApplication | null>(null)
-const currentReport = ref<AnalysisApplication | null>(null)
-
-// 模板缓存：用于判断字段类型（photo / photolist / text 等）
-const templateCache = ref<Record<string, ReportTemplate>>({})
-
-/** 构建文件完整 URL */
-const getFileUrl = (relativePath: string) => fileApi.getFileUrl(relativePath)
-
-/** 加载模板（带缓存），仅在有 templateId 时调用 */
-const loadTemplate = async (templateId: string): Promise<ReportTemplate | null> => {
-  if (templateCache.value[templateId]) return templateCache.value[templateId]
-  try {
-    // 从已启用的模板列表中查找
-    const allTemplates = await reportsApi.getTemplates()
-    for (const t of allTemplates) {
-      templateCache.value[t.id] = t
-    }
-    return templateCache.value[templateId] || null
-  } catch {
-    return null
-  }
-}
-
-/** 判断字段是否为单张照片类型 */
-const isPhotoField = (fieldName: string): boolean => {
-  if (!currentReport.value?.templateId) return false
-  const tmpl = templateCache.value[currentReport.value.templateId]
-  if (!tmpl) return false
-  const field = tmpl.fields.find(f => f.name === fieldName)
-  return field?.type === 'photo'
-}
-
-/** 判断字段是否为多张照片类型 */
-const isPhotoListField = (fieldName: string): boolean => {
-  if (!currentReport.value?.templateId) return false
-  const tmpl = templateCache.value[currentReport.value.templateId]
-  if (!tmpl) return false
-  const field = tmpl.fields.find(f => f.name === fieldName)
-  return field?.type === 'photolist'
-}
+const selectedPart = ref<Part | null>(null)
 
 // 防抖处理
 const rejectDebounce = useDebouncedClick({ delay: 1000 })
@@ -329,11 +244,6 @@ const getStatusColor = (status: ApprovalStatus) => {
 // 状态标签映射
 const getStatusLabel = (status: ApprovalStatus) => getApprovalLabel(status)
 
-// 字段标签映射
-const getFieldLabel = (key: string) => {
-  return ANALYSIS_FIELD_LABELS[key] || key
-}
-
 // 撤回申请
 const handleCancelApplication = (record: AnalysisApplication) => {
   Modal.confirm({
@@ -348,14 +258,19 @@ const handleCancelApplication = (record: AnalysisApplication) => {
   })
 }
 
-// 查看报告
+// 查看报告（通过 partId 加载 Part，复用 AnalysisReportModal）
 const handleViewReport = async (record: AnalysisApplication) => {
-  currentReport.value = record
-  reportModalVisible.value = true
-  // 如果有 templateId，预加载模板以识别图片字段
-  if (record.templateId) {
-    await loadTemplate(record.templateId)
+  try {
+    selectedPart.value = await partApi.getById(record.partId)
+    reportModalVisible.value = true
+  } catch {
+    message.error(t('message.operationFailed'))
   }
+}
+
+// 报告弹窗操作成功回调
+const handleReportModalSuccess = async () => {
+  reportModalVisible.value = false
 }
 
 // 审批通过

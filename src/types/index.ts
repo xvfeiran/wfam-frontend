@@ -167,6 +167,7 @@ export interface AnalysisApplication {
   id: string
   reportNumber: string
   partNumber: string
+  partId: string
   productPlatform: string
   failureType: string
   submitter?: string
@@ -175,6 +176,7 @@ export interface AnalysisApplication {
   approveTime?: string
   status: ApprovalStatus
   summary: string
+  rejectReason?: string
   templateId?: string
   content: Record<string, any>
 }
