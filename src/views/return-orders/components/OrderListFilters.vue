@@ -10,7 +10,7 @@
         <a-col :span="12">
           <a-form-item :label="t('returnOrder.customer')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
             <a-select v-model:value="localFilters.customerId" :placeholder="t('validation.selectCustomer')" allowClear showSearch optionFilterProp="label">
-              <a-select-option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</a-select-option>
+              <a-select-option v-for="c in customers" :key="c.id" :value="c.code || c.name">{{ c.code || c.name }}</a-select-option>
             </a-select>
           </a-form-item>
         </a-col>

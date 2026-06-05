@@ -27,7 +27,7 @@
             <a-form-item :label="t('returnOrder.customer')" name="customerId">
               <a-select v-model:value="form.customerId" :placeholder="t('validation.selectCustomer')">
                 <a-select-option v-for="c in customers" :key="c.id" :value="c.id">
-                  {{ c.name }}
+                  {{ c.code || c.name }}
                 </a-select-option>
               </a-select>
             </a-form-item>
