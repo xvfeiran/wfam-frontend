@@ -140,7 +140,6 @@
           <a-descriptions-item :label="t('returnPart.failureType')">{{ currentReport.failureType ? t('returnPart.failureTypeLabels.' + currentReport.failureType) : '-' }}</a-descriptions-item>
           <a-descriptions-item :label="t('approval.submitter')">{{ currentReport.submitter }}</a-descriptions-item>
           <a-descriptions-item :label="t('approval.submitTime')">{{ currentReport.submitTime }}</a-descriptions-item>
-          <a-descriptions-item :label="t('approval.reportSummary')" :span="2">{{ currentReport.summary }}</a-descriptions-item>
         </a-descriptions>
         <a-divider>{{ t('approval.reportContent') }}</a-divider>
         <a-descriptions :column="1" bordered size="small">

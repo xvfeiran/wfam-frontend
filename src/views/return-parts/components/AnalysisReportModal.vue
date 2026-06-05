@@ -19,9 +19,6 @@
           <a-tag v-if="form.responsibility">{{ form.responsibility }}</a-tag>
           <span v-else>-</span>
         </a-descriptions-item>
-        <a-descriptions-item :label="t('partDetail.summary')">
-          {{ form.summary || '-' }}
-        </a-descriptions-item>
         <a-descriptions-item :label="t('partDetail.submittedTime')">
           {{ reportSubmittedAt || '-' }}
         </a-descriptions-item>
@@ -30,6 +27,15 @@
 
     <!-- ── 完整编辑表单（非待审批状态） ─────────────────────────────── -->
     <template v-else>
+
+    <!-- 驳回原因提示 -->
+    <a-alert
+      v-if="reportRejectReason"
+      :message="t('partDetail.rejectReason') + '：' + reportRejectReason"
+      type="error"
+      show-icon
+      style="margin-bottom: 16px"
+    />
 
     <!-- 顶部匹配条件 -->
     <div class="match-conditions-card">
@@ -44,7 +50,7 @@
             style="width: 160px"
             @change="handleMatchConditionsChange"
             allow-clear
-            :disabled="isApproved"
+            :disabled="isFormDisabled"
             show-search
             :filter-option="filterOption"
           >
@@ -59,7 +65,7 @@
             style="width: 160px"
             @change="handleMatchConditionsChange"
             allow-clear
-            :disabled="isApproved"
+            :disabled="isFormDisabled"
           >
             <a-select-option v-for="ft in failureTypeOptions" :key="ft" :value="ft">
               {{ t('returnPart.failureTypeLabels.' + ft) }}
@@ -85,7 +91,7 @@
             {{ t('reportForm.responsibility') }}
             <span class="required-star">*</span>
           </span>
-          <a-radio-group v-model:value="form.responsibility" :disabled="isApproved" size="large">
+          <a-radio-group v-model:value="form.responsibility" :disabled="isFormDisabled" size="large">
             <a-radio-button value="B">
               <span class="resp-code">B</span> Bosch
             </a-radio-button>
@@ -115,7 +121,7 @@
               </div>
               <div class="photo-upload-wrap">
                 <!-- Upload + Camera action buttons -->
-                <div v-if="!isApproved && canUploadMore(field)" class="photo-action-buttons">
+                <div v-if="isAssignedAnalyst && !isApproved && canUploadMore(field)" class="photo-action-buttons">
                   <div class="photo-action-btn" @click="triggerPhotoUpload(field.name, field.type)">
                     <UploadOutlined />
                     <span>{{ t('ocr.uploadPhoto') }}</span>
@@ -133,7 +139,7 @@
                   accept="image/*"
                   v-bind="field.type === 'photo' ? { maxCount: 1 } : {}"
                   :custom-request="(opts: any) => handlePhotoUpload(field.name, opts)"
-                  :disabled="isApproved"
+                  :disabled="isFormDisabled"
                   :on-remove="(f: any) => handlePhotoRemove(field.name, f)"
                   @update:file-list="(list: any[]) => { photoFileLists[field.name] = list }"
                 >
@@ -156,13 +162,13 @@
               : []"
           >
             <template v-if="field.type === 'text'">
-              <a-input v-model:value="form.content[field.name]" :placeholder="t('reportForm.inputField', { field: field.label })" :disabled="isApproved" />
+              <a-input v-model:value="form.content[field.name]" :placeholder="t('reportForm.inputField', { field: field.label })" :disabled="isFormDisabled" />
             </template>
             <template v-else-if="field.type === 'textarea'">
-              <a-textarea v-model:value="form.content[field.name]" :placeholder="t('reportForm.inputField', { field: field.label })" :rows="3" :disabled="isApproved" />
+              <a-textarea v-model:value="form.content[field.name]" :placeholder="t('reportForm.inputField', { field: field.label })" :rows="3" :disabled="isFormDisabled" />
             </template>
             <template v-else-if="field.type === 'select'">
-              <a-select v-model:value="form.content[field.name]" :placeholder="t('reportForm.selectField', { field: field.label })" :disabled="isApproved">
+              <a-select v-model:value="form.content[field.name]" :placeholder="t('reportForm.selectField', { field: field.label })" :disabled="isFormDisabled">
                 <a-select-option v-for="opt in field.options" :key="opt" :value="opt">
                   {{ opt }}
                 </a-select-option>
@@ -173,21 +179,15 @@
               <a-date-picker
                 :value="form.content[field.name] != null ? dayjs(form.content[field.name]) : null"
                 style="width: 100%"
-                :disabled="isApproved"
+                :disabled="isFormDisabled"
                 @update:value="(val: any) => { form.content[field.name] = val }"
               />
             </template>
             <template v-else-if="field.type === 'number'">
-              <a-input-number v-model:value="form.content[field.name]" style="width: 100%" :disabled="isApproved" />
+              <a-input-number v-model:value="form.content[field.name]" style="width: 100%" :disabled="isFormDisabled" />
             </template>
           </a-form-item>
         </template>
-
-        <a-divider>{{ t('reportForm.reportSummary') }}</a-divider>
-
-        <a-form-item :label="t('reportForm.reportSummary')" name="summary">
-          <a-textarea v-model:value="form.summary" :placeholder="t('reportForm.inputReportSummary')" :rows="2" show-count :maxlength="200" :disabled="isApproved" />
-        </a-form-item>
       </template>
 
       <a-empty v-else :description="t('reportForm.noTemplateMatched')" />
@@ -217,7 +217,7 @@
         <a-button :disabled="!reportId || downloadDebounce.isDebouncing.value" :loading="downloadDebounce.isDebouncing.value" @click="handleDownload">
           <DownloadOutlined /> {{ t('analysisForm.downloadReport') }}
         </a-button>
-        <a-popconfirm :title="t('approval.confirmWithdrawApplication')" @confirm="handleWithdraw">
+        <a-popconfirm v-if="isAssignedAnalyst" :title="t('approval.confirmWithdrawApplication')" @confirm="handleWithdraw">
           <a-button type="primary" danger :disabled="!reportId || withdrawDebounce.isDebouncing.value" :loading="withdrawDebounce.isDebouncing.value">
             {{ t('common.withdraw') }}
           </a-button>
@@ -243,14 +243,14 @@
         </a-button>
       </template>
 
-      <!-- 编辑态 -->
+      <!-- 编辑态（非分析师只读查看） -->
       <template v-else>
         <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
         <a-button :disabled="!selectedTemplate || downloadDebounce.isDebouncing.value" :loading="downloadDebounce.isDebouncing.value" @click="handleDownload">
           <DownloadOutlined /> {{ t('analysisForm.downloadReport') }}
         </a-button>
-        <a-button :disabled="!selectedTemplate || saveDraftDebounce.isDebouncing.value" :loading="saveDraftDebounce.isDebouncing.value" @click="handleSaveDraft">{{ t('common.save') }}</a-button>
-        <a-button type="primary" :disabled="!selectedTemplate || submitDebounce.isDebouncing.value" :loading="submitDebounce.isDebouncing.value" @click="handleSubmit">{{ t('analysisForm.submitApproval') }}</a-button>
+        <a-button v-if="isAssignedAnalyst" :disabled="!selectedTemplate || saveDraftDebounce.isDebouncing.value" :loading="saveDraftDebounce.isDebouncing.value" @click="handleSaveDraft">{{ t('common.save') }}</a-button>
+        <a-button v-if="isAssignedAnalyst" type="primary" :disabled="!selectedTemplate || submitDebounce.isDebouncing.value" :loading="submitDebounce.isDebouncing.value" @click="handleSubmit">{{ t('analysisForm.submitApproval') }}</a-button>
       </template>
     </template>
   </a-modal>
@@ -267,10 +267,12 @@ import { analysisAttachmentApi, fileApi } from '@/services/fileApi'
 import { PartStatus } from '@/types'
 import type { Part, ReportTemplate } from '@/types'
 import { useDebouncedClick } from '@/composables/useDebouncedClick'
+import { usePermissions } from '@/composables/usePermissions'
 import dayjs from 'dayjs'
 import CameraCapture from '@/components/CameraCapture.vue'
 
 const { t } = useI18n()
+const { currentUserUsername } = usePermissions()
 
 const props = defineProps<{
   visible: boolean
@@ -279,12 +281,19 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:visible', 'success', 'view-approval'])
 
+// 仅当前用户是该零件的分析师时才允许编辑/暂存/提交
+const isAssignedAnalyst = computed(() => {
+  if (!props.part?.analyst) return true // 未指定分析师时允许操作（向后兼容）
+  return currentUserUsername.value === props.part.analyst
+})
+
 const formRef = ref()
 const templates = ref<ReportTemplate[]>([])
 const reportId = ref<string>()
 // 报告只读摘要（待审批/已审批时展示卡片用）
 const reportStatus = ref<string>()
 const reportSubmittedAt = ref<string>()
+const reportRejectReason = ref<string>()
 
 // 防抖处理（替代现有的 loading ref）
 const saveDraftDebounce = useDebouncedClick({ delay: 1000 })
@@ -312,7 +321,6 @@ const failureTypeOptions = ref<string[]>([])
 const form = reactive({
   templateId: undefined as string | undefined,
   content: {} as Record<string, any>,
-  summary: '',
   responsibility: undefined as string | undefined,
 })
 
@@ -362,7 +370,7 @@ const ensureReportSaved = async (): Promise<string | null> => {
       partId: props.part.id,
       templateId: selectedTemplate.value.id,
       content: form.content,
-      summary: form.summary,
+
       responsibility: form.responsibility,
       status: 'draft',
     })
@@ -411,7 +419,7 @@ const uploadPhotoFile = async (fieldName: string, file: File) => {
       partId: props.part!.id,
       templateId: selectedTemplate.value!.id,
       content: form.content,
-      summary: form.summary,
+
       responsibility: form.responsibility,
       status: 'draft',
     }).catch(() => {})
@@ -480,7 +488,7 @@ const handlePhotoUpload = async (fieldName: string, { file, onSuccess, onError }
       partId: props.part!.id,
       templateId: selectedTemplate.value!.id,
       content: form.content,
-      summary: form.summary,
+
       responsibility: form.responsibility,
       status: 'draft',
     }).catch(() => { /* 后台保存失败忽略，不影响上传体验 */ })
@@ -514,7 +522,7 @@ const handlePhotoRemove = async (fieldName: string, file: any): Promise<boolean>
         partId: props.part!.id,
         templateId: selectedTemplate.value!.id,
         content: form.content,
-        summary: form.summary,
+  
         responsibility: form.responsibility,
         status: 'draft',
       }).catch(() => { /* 后台保存失败忽略 */ })
@@ -563,6 +571,9 @@ const isReportSubmitted = computed(() => {
 const isApproved = computed(() => {
   return props.part?.status === PartStatus.ANALYSIS_COMPLETED
 })
+
+// 表单是否只读（已审批通过 或 非指定分析师）
+const isFormDisabled = computed(() => isApproved.value || !isAssignedAnalyst.value)
 
 // 匹配模板函数
 const matchTemplates = async () => {
@@ -650,7 +661,6 @@ watch(() => props.visible, async (val) => {
 
       // 加载现有报告，并从报告对应的模板反查匹配条件
       let existingReportContent: Record<string, any> | null = null
-      let existingReportSummary = ''
       if (props.part.id) {
         try {
           const existingReport = await reportsApi.getLatestReportByPart(props.part.id)
@@ -658,10 +668,10 @@ watch(() => props.visible, async (val) => {
             reportId.value = existingReport.id
             form.templateId = existingReport.templateId          // 保留上次用的模板
             existingReportContent = existingReport.content || {}
-            existingReportSummary = existingReport.summary || ''
             form.responsibility = existingReport.responsibility || undefined
             reportStatus.value = existingReport.status
             reportSubmittedAt.value = existingReport.submittedAt
+            reportRejectReason.value = existingReport.rejectReason || undefined
 
             // 从模板元数据反查上次使用的匹配条件，确保 matchTemplates() 能找到同一模板
             const savedTemplate = templates.value.find(t => t.id === existingReport.templateId)
@@ -689,13 +699,11 @@ watch(() => props.visible, async (val) => {
 
       // 用已有报告的内容填充最新模板的字段（字段名相同的自动对应，新增字段留空）
       if (existingReportContent && Object.keys(existingReportContent).length > 0) {
-        form.summary = existingReportSummary
         const currentTemplate = matchedTemplates.value.find(t => t.id === form.templateId) || null
         form.content = convertDatesToDayjs(existingReportContent, currentTemplate)
         initPhotoFileLists(form.content, currentTemplate)
       } else {
         form.content = {}
-        form.summary = ''
         form.responsibility = undefined
         Object.keys(photoFileLists).forEach(k => { delete photoFileLists[k] })
       }
@@ -735,6 +743,7 @@ const handleCancel = () => {
   Object.keys(photoFileLists).forEach(k => { delete photoFileLists[k] })
   reportStatus.value = undefined
   reportSubmittedAt.value = undefined
+  reportRejectReason.value = undefined
   emit('update:visible', false)
 }
 
@@ -780,7 +789,7 @@ const handleSaveDraft = async () => {
         partId: props.part!.id,
         templateId: selectedTemplate.value!.id,
         content: formattedContent,
-        summary: form.summary,
+  
         responsibility: form.responsibility,
         status: 'draft',
       })
@@ -842,7 +851,7 @@ const handleSubmit = async () => {
         partId: props.part!.id,
         templateId: selectedTemplate.value!.id,
         content: formattedContent,
-        summary: form.summary,
+  
         responsibility: form.responsibility,
         status: 'draft',
       })

@@ -113,7 +113,9 @@
                 {{ getReportStatusLabel(report.status) }}
               </a-tag>
             </a-descriptions-item>
-            <a-descriptions-item :label="t('partDetail.summary')">{{ report.summary || '-' }}</a-descriptions-item>
+            <a-descriptions-item v-if="report.status === 'rejected' && report.rejectReason" :label="t('partDetail.rejectReason')">
+              <span style="color: #ff4d4f">{{ report.rejectReason }}</span>
+            </a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.submittedTime')">{{ report.submittedAt || '-' }}</a-descriptions-item>
           </a-descriptions>
           <div class="report-actions">
@@ -297,7 +299,7 @@ const getReportStatusColor = (status: string) => {
     submitted: 'processing',
     approved: 'success',
     rejected: 'error',
-    withdrawn: 'processing',
+    withdrawn: 'default',
   }
   return colorMap[status] || 'default'
 }
@@ -308,7 +310,7 @@ const getReportStatusLabel = (status: string) => {
     submitted: t('partDetail.reportPending'),
     approved: t('partDetail.reportApproved'),
     rejected: t('partDetail.reportRejected'),
-    withdrawn: t('partDetail.subInProgress'),
+    withdrawn: t('partDetail.reportWithdrawn'),
   }
   return labelMap[status] || status
 }

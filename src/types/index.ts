@@ -101,6 +101,7 @@ export interface AnalysisReport {
   submittedAt?: string
   approvedBy?: string
   approvedAt?: string
+  rejectReason?: string
   createdBy: string
   createdAt: string
 }
