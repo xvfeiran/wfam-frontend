@@ -235,23 +235,38 @@
             <a-col :span="2">
               <span class="range-label">{{ t('returnPart.vehicleMileageRange') }}</span>
             </a-col>
-            <a-col :span="2">
-              <span class="range-value">{{ manualSearch.vehicleMileageRange[0] }}</span>
-            </a-col>
-            <a-col :span="16">
-              <a-slider
-                v-model:value="manualSearch.vehicleMileageRange"
-                range
-                :min="mileageMin"
-                :max="mileageMax"
-                :step="mileageStep"
-              />
-            </a-col>
-            <a-col :span="2">
-              <span class="range-value">{{ manualSearch.vehicleMileageRange[1] }}</span>
-            </a-col>
-            <a-col :span="2">
-              <span class="range-value">km</span>
+            <a-col :span="22">
+              <div class="mileage-range">
+                <div class="mileage-inputs">
+                  <a-input-number
+                    v-model:value="manualSearch.vehicleMileageMin"
+                    :min="0"
+                    :step="1000"
+                    :placeholder="t('returnPart.mileageNoLimit')"
+                    :formatter="formatMileage"
+                    :parser="parseMileage"
+                  />
+                  <span class="mileage-separator">~</span>
+                  <a-input-number
+                    v-model:value="manualSearch.vehicleMileageMax"
+                    :min="0"
+                    :step="1000"
+                    :placeholder="t('returnPart.mileageNoLimit')"
+                    :formatter="formatMileage"
+                    :parser="parseMileage"
+                  />
+                  <span class="mileage-unit">km</span>
+                </div>
+                <a-slider
+                  v-model:value="sliderPositions"
+                  @change="onSliderChange"
+                  range
+                  :min="0"
+                  :max="100"
+                  :marks="sliderMarks"
+                  :tip-formatter="formatSliderTip"
+                />
+              </div>
             </a-col>
           </a-row>
         </div>
@@ -414,14 +429,16 @@ const manualSearch = ref({
   businessUnit: undefined as string | undefined,
   failureType: undefined as string | undefined,
   partProductionDateRange: undefined as [dayjs.Dayjs, dayjs.Dayjs] | undefined,
-  vehicleMileageRange: [0, 0] as [number, number],
+  vehicleMileageMin: undefined as number | undefined,
+  vehicleMileageMax: undefined as number | undefined,
 })
 const manualFilterApplied = ref({
   partCode: undefined as string | undefined,
   businessUnit: undefined as string | undefined,
   failureType: undefined as string | undefined,
   partProductionDateRange: undefined as [dayjs.Dayjs, dayjs.Dayjs] | undefined,
-  vehicleMileageRange: undefined as [number, number] | undefined,
+  vehicleMileageMin: undefined as number | undefined,
+  vehicleMileageMax: undefined as number | undefined,
 })
 
 // 零件号下拉选项（从当前可用零件去重）
@@ -436,19 +453,41 @@ const masterBusinessUnits = ref<string[]>([])
 // 客户失效类型选项（NVH/外观/功能）
 const failureTypeOptions = ['NVH', 'APPEARANCE', 'FUNCTION']
 
-// 公里数范围滑块边界（从当前零件数据动态计算）
-const mileageBounds = computed(() => {
-  const miles = availableParts.value.map(p => p.vehicleMileage).filter((m): m is number => m != null)
-  if (miles.length === 0) return { min: 0, max: 100000, step: 1000 }
-  const min = Math.min(...miles)
-  const max = Math.max(...miles)
-  const range = max - min
-  const step = range > 100000 ? 5000 : range > 10000 ? 1000 : range > 1000 ? 100 : 10
-  return { min: Math.floor(min / step) * step, max: Math.ceil(max / step) * step, step }
-})
-const mileageMin = computed(() => mileageBounds.value.min)
-const mileageMax = computed(() => mileageBounds.value.max)
-const mileageStep = computed(() => mileageBounds.value.step)
+// 公里数范围：固定上限 300,000 km，使用二次映射提供更精确的控制
+const MAX_MILEAGE = 300000
+
+const toSliderPos = (km: number) => Math.round(Math.sqrt(km / MAX_MILEAGE) * 100)
+const toKm = (pos: number) => Math.round(Math.pow(pos / 100, 2) * MAX_MILEAGE)
+
+const sliderPositions = computed<[number, number]>(() => [
+  toSliderPos(manualSearch.value.vehicleMileageMin ?? 0),
+  toSliderPos(Math.min(manualSearch.value.vehicleMileageMax ?? MAX_MILEAGE, MAX_MILEAGE)),
+])
+
+const onSliderChange = ([from, to]: number[]) => {
+  manualSearch.value.vehicleMileageMin = from > 0 ? toKm(from) : undefined
+  manualSearch.value.vehicleMileageMax = to < 100 ? toKm(to) : undefined
+}
+
+const sliderMarks: Record<number, string> = {
+  0: '0',
+  41: '5万',
+  58: '10万',
+  82: '20万',
+  100: '30万',
+}
+
+const formatSliderTip = (val: number | undefined) => {
+  if (val == null) return ''
+  return toKm(val).toLocaleString() + ' km'
+}
+
+const formatMileage = (v: string | number | undefined) => {
+  if (v == null || v === '') return ''
+  return `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
+const parseMileage = (v: string) => v.replace(/,/g, '')
 
 // 是否已完成抽样
 const isSampled = computed(() => {
@@ -489,8 +528,8 @@ const transferDataSource = computed(() =>
 
 // 手动抽样过滤后的数据源（已选中的始终可见）
 const manualFilteredSource = computed(() => {
-  const { partCode, businessUnit, failureType, partProductionDateRange, vehicleMileageRange } = manualFilterApplied.value
-  const hasNoFilter = !partCode && !businessUnit && !failureType && !partProductionDateRange && !vehicleMileageRange
+  const { partCode, businessUnit, failureType, partProductionDateRange, vehicleMileageMin, vehicleMileageMax } = manualFilterApplied.value
+  const hasNoFilter = !partCode && !businessUnit && !failureType && !partProductionDateRange && vehicleMileageMin == null && vehicleMileageMax == null
   if (hasNoFilter) return transferDataSource.value
 
   return transferDataSource.value.filter(item => {
@@ -514,11 +553,11 @@ const manualFilteredSource = computed(() => {
       const partDate = part.partProductionDate ? dayjs(part.partProductionDate) : null
       match = match && partDate != null && partDate.isAfter(start.subtract(1, 'day')) && partDate.isBefore(end.add(1, 'day'))
     }
-    if (vehicleMileageRange) {
-      const [rangeMin, rangeMax] = vehicleMileageRange
-      if (rangeMin !== mileageMin.value || rangeMax !== mileageMax.value) {
-        match = match && part.vehicleMileage != null && part.vehicleMileage >= rangeMin && part.vehicleMileage <= rangeMax
-      }
+    if (vehicleMileageMin != null) {
+      match = match && part.vehicleMileage != null && part.vehicleMileage >= vehicleMileageMin
+    }
+    if (vehicleMileageMax != null) {
+      match = match && part.vehicleMileage != null && part.vehicleMileage <= vehicleMileageMax
     }
     return match
   })
@@ -557,14 +596,16 @@ const resetManualFilter = () => {
     businessUnit: undefined,
     failureType: undefined,
     partProductionDateRange: undefined,
-    vehicleMileageRange: [mileageMin.value, mileageMax.value],
+    vehicleMileageMin: undefined,
+    vehicleMileageMax: undefined,
   }
   manualFilterApplied.value = {
     partCode: undefined,
     businessUnit: undefined,
     failureType: undefined,
     partProductionDateRange: undefined,
-    vehicleMileageRange: undefined,
+    vehicleMileageMin: undefined,
+    vehicleMileageMax: undefined,
   }
 }
 
@@ -738,10 +779,26 @@ const handleConfirmSampling = () => confirmDebounce.execute(async () => {
     white-space: nowrap;
   }
 
-  .range-value {
-    font-size: 13px;
-    color: #333;
-    font-variant-numeric: tabular-nums;
+  .mileage-range {
+    .mileage-inputs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+
+      :deep(.ant-input-number) {
+        flex: 1;
+      }
+
+      .mileage-separator {
+        color: #999;
+      }
+
+      .mileage-unit {
+        color: #666;
+        white-space: nowrap;
+      }
+    }
   }
 }
 
