@@ -304,7 +304,7 @@ const getTaskCountStyle = (priority: string) => {
 
 const handleTaskClick = (task: Task) => {
   if (task.type === 'initial_analysis') {
-    navigateTo('/return-orders', { status: 'submitted', fromTask: task.type })
+    navigateTo('/return-parts', { status: 'in_initial_analysis', fromTask: task.type })
     return
   }
   if (task.type === 'detailed_analysis') {
