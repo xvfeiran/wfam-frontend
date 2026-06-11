@@ -31,8 +31,11 @@ export function navigateTo(
   path: string,
   query?: Record<string, string>,
 ) {
+  const prefix = '[WFAM navigateTo]'
+
   // 同标签内（如 /return-orders → /return-orders/123）
   if (isSameTab(path)) {
+    console.log(prefix, '同标签跳转 → router.push', { path, query })
     router.push({ path, query })
     return
   }
@@ -40,11 +43,21 @@ export function navigateTo(
   // 跨标签 + dev=1 模式 → 用 router.push，侧边栏高亮会自动跟着变
   const { isDevMode } = useDevMode()
   if (isDevMode.value) {
+    console.log(prefix, 'dev=1 模式 → router.push', { path, query })
     router.push({ path, query })
     return
   }
 
   // 跨标签 + AEP 嵌入模式 → jump
+  console.log(prefix, '跨标签跳转，检查 wujie 环境...', {
+    __POWERED_BY_WUJIE__: window.__POWERED_BY_WUJIE__,
+    '$wujie 存在': !!window.$wujie,
+    'props 存在': !!window.$wujie?.props,
+    'props 所有 key': window.$wujie?.props ? Object.keys(window.$wujie.props) : [],
+    'jump 存在': !!window.$wujie?.props?.jump,
+    'jump 类型': typeof window.$wujie?.props?.jump,
+  })
+
   if (window.__POWERED_BY_WUJIE__) {
     const jump = window.$wujie?.props?.jump as
       | ((aepPath: string, config: { appName: string; path: string; appId: number }, params?: Record<string, string>) => void)
@@ -52,17 +65,32 @@ export function navigateTo(
 
     if (jump) {
       const segment = getFirstSegment(path)
-      jump(
-        `/${segment}`,
-        {
+      const jumpArgs = {
+        aepPath: `/${segment}`,
+        config: {
           appName: AEP_CONFIG.appName,
           path: `/${segment}`,
           appId: AEP_CONFIG.appId,
         },
-        query ?? {},
-      )
+        params: query ?? {},
+      }
+      console.log(prefix, '调用 jump()', jumpArgs)
+
+      try {
+        jump(jumpArgs.aepPath, jumpArgs.config, jumpArgs.params)
+        console.log(prefix, 'jump() 调用完成（无异常）')
+      } catch (e) {
+        console.error(prefix, 'jump() 调用异常！', e)
+        // 异常时降级到 router.push
+        console.log(prefix, '降级 → router.push')
+        router.push({ path, query })
+      }
       return
     }
+
+    console.warn(prefix, 'wujie 环境但 jump 不可用，降级 router.push')
+  } else {
+    console.warn(prefix, '非 wujie 环境，降级 router.push')
   }
 
   // 降级兜底
