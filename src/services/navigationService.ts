@@ -66,12 +66,11 @@ export function navigateTo(
       | undefined
 
     if (jump) {
-      const segment = getFirstSegment(path)
       const jumpArgs = {
         aepPath: AEP_CONFIG.tabPath,
         config: {
           appName: AEP_CONFIG.appName,
-          path: `/${segment}`,
+          path: path,
           appId: AEP_CONFIG.appId,
         },
         params: query ?? {},
