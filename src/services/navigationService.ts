@@ -9,6 +9,13 @@ const AEP_CONFIG = {
   appId: Number(import.meta.env.VITE_AEP_APP_ID) || 1081,
 }
 
+/** 将 query 对象拼接到 path 上：'/return-orders' + { status: 'submitted' } → '/return-orders?status=submitted' */
+function buildPathWithQuery(path: string, query?: Record<string, string>): string {
+  if (!query || Object.keys(query).length === 0) return path
+  const search = new URLSearchParams(query).toString()
+  return `${path}?${search}`
+}
+
 /** 提取一级路由段：'/return-orders/123/edit' → 'return-orders' */
 function getFirstSegment(path: string): string {
   return path.replace(/^\//, '').split('/')[0] || 'dashboard'
@@ -66,11 +73,13 @@ export function navigateTo(
       | undefined
 
     if (jump) {
+      // 将 query 拼到 path 中，确保子应用加载时能收到路由参数
+      const fullPath = buildPathWithQuery(path, query)
       const jumpArgs = {
         aepPath: AEP_CONFIG.tabPath,
         config: {
           appName: AEP_CONFIG.appName,
-          path: path,
+          path: fullPath,
           appId: AEP_CONFIG.appId,
         },
         params: query ?? {},
