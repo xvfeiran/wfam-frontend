@@ -140,6 +140,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { navigateTo } from '@/services/navigationService'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import { LinkOutlined } from '@ant-design/icons-vue'
@@ -353,13 +354,13 @@ const handleAnalysisSuccess = async () => {
 }
 
 const handleViewApproval = (partNumber: string) => {
-  router.push({ path: '/approval', query: { tab: 'myApplications', openPartNumber: partNumber } })
+  navigateTo('/approval', { tab: 'myApplications', openPartNumber: partNumber })
 }
 
 const goToOrder = (e?: Event) => {
   e?.preventDefault()
   if (part.value?.orderId) {
-    router.push(`/return-orders/${part.value.orderId}`)
+    navigateTo(`/return-orders/${part.value.orderId}`)
   }
 }
 

@@ -97,7 +97,6 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, h } from 'vue'
-import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import { PART_STATUS_MAP, PartStatus } from '@/types'
@@ -105,6 +104,7 @@ import type { Part } from '@/types'
 import { returnOrderApi } from '@/services/returnOrderApi'
 import { lookupApi } from '@/services/lookupApi'
 import { useStatusLabels } from '@/composables/useStatusLabels'
+import { navigateTo } from '@/services/navigationService'
 
 const props = defineProps<{
   orderId: string
@@ -115,7 +115,6 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
-const router = useRouter()
 const { getStatusLabel } = useStatusLabels()
 
 const loading = ref(false)
@@ -202,7 +201,7 @@ const baseColumns = computed(() => [
           const query: Record<string, string> = {}
           if (props.analysisOrderStatus) query.analysisOrderStatus = props.analysisOrderStatus
           if (props.fromOrderDetail) query.fromOrderDetail = 'true'
-          router.push({ path: `/return-parts/${record.id}`, query })
+          navigateTo(`/return-parts/${record.id}`, Object.keys(query).length > 0 ? query : undefined)
         }
       }, record.partNumber)
     }
@@ -285,7 +284,7 @@ const customRow = (record: Part) => ({
     const query: Record<string, string> = {}
     if (props.analysisOrderStatus) query.analysisOrderStatus = props.analysisOrderStatus
     if (props.fromOrderDetail) query.fromOrderDetail = 'true'
-    router.push({ path: `/return-parts/${record.id}`, query })
+    navigateTo(`/return-parts/${record.id}`, Object.keys(query).length > 0 ? query : undefined)
   },
   style: { cursor: 'pointer' },
 })

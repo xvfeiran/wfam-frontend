@@ -68,6 +68,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { navigateTo } from '@/services/navigationService'
 import { useI18n } from 'vue-i18n'
 import { message, Modal } from 'ant-design-vue'
 import dayjs from 'dayjs'
@@ -324,7 +325,7 @@ const handleSave = () => saveDebounce.execute(async () => {
     message.success(t('message.saveSuccess'))
 
     if (fromOrderDetail.value && form.orderId) {
-      router.push(`/return-orders/${form.orderId}`)
+      navigateTo(`/return-orders/${form.orderId}`)
     } else {
       router.push('/return-parts')
     }
@@ -376,7 +377,7 @@ const handleSubmit = () => submitDebounce.execute(async () => {
 
     // 如果是从退货单详情页进入，返回到退货单详情页
     if (fromOrderDetail.value && form.orderId) {
-      router.push(`/return-orders/${form.orderId}`)
+      navigateTo(`/return-orders/${form.orderId}`)
     } else {
       router.push('/return-parts')
     }

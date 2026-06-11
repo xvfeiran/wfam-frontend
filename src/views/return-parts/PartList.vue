@@ -47,6 +47,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message, Modal } from 'ant-design-vue'
 import dayjs from 'dayjs'
+import { navigateTo } from '@/services/navigationService'
 import { partApi } from '@/services/partApi'
 import { lookupApi } from '@/services/lookupApi'
 import { userApi } from '@/services/userApi'
@@ -260,7 +261,7 @@ const handleBatchDeleteWrapper = async () => {
 }
 
 const goToOrder = (orderId: string) => {
-  router.push(`/return-orders/${orderId}`)
+  navigateTo(`/return-orders/${orderId}`)
 }
 
 function applyTaskFiltersFromQuery() {

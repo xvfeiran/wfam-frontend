@@ -7,6 +7,8 @@ interface ImportMetaEnv {
   readonly VITE_IQIS_URL?: string
   readonly VITE_SAP_URL?: string
   readonly VITE_REPORT_API_URL?: string
+  readonly VITE_AEP_APP_NAME: string
+  readonly VITE_AEP_APP_ID: string
 }
 
 interface ImportMeta {
@@ -20,6 +22,11 @@ interface WujieProps {
   }
   locale?: string
   token?: string
+  jump?: (aepPath: string, config: {
+    appName: string
+    path: string
+    appId: number
+  }, params?: Record<string, string>) => void
   [key: string]: unknown
 }
 

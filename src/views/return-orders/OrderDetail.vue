@@ -83,6 +83,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { navigateTo } from '@/services/navigationService'
 import { useI18n } from 'vue-i18n'
 import { message, Modal } from 'ant-design-vue'
 import { PlusOutlined } from '@ant-design/icons-vue'
@@ -271,10 +272,7 @@ const handleEndEntry = async () => {
 }
 
 const handleAddPart = () => {
-  router.push({
-    path: '/return-parts/new',
-    query: { orderId: orderId.value, fromOrderDetail: 'true' }
-  })
+  navigateTo('/return-parts/new', { orderId: orderId.value, fromOrderDetail: 'true' })
 }
 </script>
 

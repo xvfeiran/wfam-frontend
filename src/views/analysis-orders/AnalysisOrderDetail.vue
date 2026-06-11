@@ -46,7 +46,7 @@
         <a-card :title="t('orderDetail.basicInfo')" class="info-card">
           <a-descriptions :column="2" bordered>
             <a-descriptions-item :label="t('returnOrder.orderNumber')">
-              <a v-if="order?.orderId" style="color: #1677ff" @click="router.push(`/return-orders/${order.orderId}`)">{{ returnOrder?.orderNumber || order?.orderNumber || '-' }}</a>
+              <a v-if="order?.orderId" style="color: #1677ff" @click="navigateTo(`/return-orders/${order.orderId}`)">{{ returnOrder?.orderNumber || order?.orderNumber || '-' }}</a>
               <span v-else>{{ returnOrder?.orderNumber || order?.orderNumber || '-' }}</span>
             </a-descriptions-item>
             <a-descriptions-item :label="t('returnOrder.customer')">{{ returnOrder?.customer || '-' }}</a-descriptions-item>
@@ -129,6 +129,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { navigateTo } from '@/services/navigationService'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import { analysisOrderApi } from '@/services/analysisOrderApi'
