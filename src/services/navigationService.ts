@@ -3,6 +3,8 @@ import { useDevMode } from '@/composables/useDevMode'
 
 /** AEP 注册信息（通过环境变量区分测试/生产环境） */
 const AEP_CONFIG = {
+  /** AEP 中加载微应用的路由（如 /microApp） */
+  tabPath: import.meta.env.VITE_AEP_TAB_PATH || '/microApp',
   appName: import.meta.env.VITE_AEP_APP_NAME || 'RBCC_WFAM',
   appId: Number(import.meta.env.VITE_AEP_APP_ID) || 1081,
 }
@@ -66,7 +68,7 @@ export function navigateTo(
     if (jump) {
       const segment = getFirstSegment(path)
       const jumpArgs = {
-        aepPath: `/${segment}`,
+        aepPath: AEP_CONFIG.tabPath,
         config: {
           appName: AEP_CONFIG.appName,
           path: `/${segment}`,
@@ -81,7 +83,6 @@ export function navigateTo(
         console.log(prefix, 'jump() 调用完成（无异常）')
       } catch (e) {
         console.error(prefix, 'jump() 调用异常！', e)
-        // 异常时降级到 router.push
         console.log(prefix, '降级 → router.push')
         router.push({ path, query })
       }

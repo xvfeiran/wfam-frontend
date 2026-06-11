@@ -9,6 +9,7 @@ interface ImportMetaEnv {
   readonly VITE_REPORT_API_URL?: string
   readonly VITE_AEP_APP_NAME: string
   readonly VITE_AEP_APP_ID: string
+  readonly VITE_AEP_TAB_PATH: string
 }
 
 interface ImportMeta {
