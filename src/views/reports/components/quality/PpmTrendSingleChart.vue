@@ -145,6 +145,7 @@ function handleFilterSearch(values: any) {
         :platform-options="optionsStore.platformOptions"
         :fault-mode-options="optionsStore.faultModeOptions"
         :part-no-options="optionsStore.partNoOptions"
+        :bcso-options="optionsStore.bcsoOptions"
         :initial-values="{
           customer: localFilters.customer,
           bcso: localFilters.bcso,
