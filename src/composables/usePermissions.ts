@@ -7,7 +7,12 @@ import type { UserRole } from '@/stores/devUser'
 const EDIT_SUBMITTED_ROLE: UserRole = 'W_RBCC_AEP_WFAM_QMC_Leader'
 
 function hasRole(roleNames: string, role: string): boolean {
-  return roleNames.includes(role)
+  const result = roleNames.includes(role)
+  // [WFAM-PERM Boundary E] 单次匹配结果
+  console.log(
+    `[WFAM-PERM E] hasRole("${roleNames}", "${role}") => ${result}`,
+  )
+  return result
 }
 
 export function usePermissions() {
@@ -17,10 +22,20 @@ export function usePermissions() {
 
   // dev 模式：单角色字符串；wujie 模式：逗号分隔的多角色字符串
   const roleNames = computed(() => {
+    let src: 'dev' | 'userInfo'
+    let val: string
     if (isDevMode.value) {
-      return devUserStore.currentUser.role
+      src = 'dev'
+      val = devUserStore.currentUser.role
+    } else {
+      src = 'userInfo'
+      val = userInfoStore.roleNames
     }
-    return userInfoStore.roleNames
+    // [WFAM-PERM Boundary D] roleNames 来源与值
+    console.log(
+      `[WFAM-PERM D] roleNames src=${src} | val="${val}" | devUser.role="${devUserStore.currentUser.role}" | userInfo.roleNames="${userInfoStore.roleNames}"`,
+    )
+    return val
   })
 
   const currentUserUsername = computed(() => {
