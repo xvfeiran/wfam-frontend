@@ -4,17 +4,11 @@ const DEV_MODE_KEY = 'wfam_dev_mode'
 
 const initDevMode = (): boolean => {
   const urlParams = new URLSearchParams(window.location.search)
-  const fromUrl = urlParams.get('dev') === '1'
-  const fromStorage = sessionStorage.getItem(DEV_MODE_KEY) === '1'
-  if (fromUrl) {
+  if (urlParams.get('dev') === '1') {
     sessionStorage.setItem(DEV_MODE_KEY, '1')
+    return true
   }
-  const result = fromUrl || fromStorage
-  // [WFAM-PERM Boundary A] dev 模式判定来源
-  console.log(
-    `[WFAM-PERM A] isDevMode=${result} | fromUrl(?dev=1)=${fromUrl} | fromStorage=${fromStorage} | wujie=${!!window.__POWERED_BY_WUJIE__} | href=${window.location.href}`,
-  )
-  return result
+  return sessionStorage.getItem(DEV_MODE_KEY) === '1'
 }
 
 const isDevMode = ref(initDevMode())

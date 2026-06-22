@@ -33,17 +33,11 @@ const applyLocale = (parentLocale: string) => {
 }
 
 onMounted(() => {
-  // [WFAM-PERM Boundary B] wujie 注入检测
-  const powered = !!window.__POWERED_BY_WUJIE__
-  const props = window.$wujie?.props
-  const token = props?.userProfile?.accessToken
-  console.log(
-    `[WFAM-PERM B] onMounted | powered=${powered} | hasProps=${!!props} | hasUserProfile=${!!props?.userProfile} | tokenLen=${token?.length || 0}`,
-  )
-  if (powered) {
+  if (window.__POWERED_BY_WUJIE__) {
+    const props = window.$wujie?.props
     if (props) {
-      if (token) {
-        userInfoStore.setUserProfileFromToken(token)
+      if (props.userProfile?.accessToken) {
+        userInfoStore.setUserProfileFromToken(props.userProfile.accessToken)
       }
       // 初始语言同步（挂载时读取 props.locale）
       if (props.locale) {
