@@ -135,7 +135,7 @@ const fromOrderDetail = computed(() => {
   return !!route.query.fromOrderDetail
 })
 
-const form = reactive({
+const getInitialForm = () => ({
   partNumber: '',
   orderId: undefined as string | undefined,
   partCode: '',
@@ -158,6 +158,11 @@ const form = reactive({
   customerDescription: '',
   otherDescription: '',
 })
+
+const form = reactive(getInitialForm())
+
+// 重置表单为初始值（防御性：即便组件被复用也保证新建模式干净）
+const resetForm = () => Object.assign(form, getInitialForm())
 
 const imagePaths = ref<string[]>([])
 
@@ -184,8 +189,12 @@ onMounted(async () => {
     if (part) {
       populateForm(part)
     }
-  } else if (route.query.orderId && route.query.orderId !== 'new') {
-    form.orderId = route.query.orderId as string
+  } else {
+    // 新建模式：清空表单，避免组件复用/wujie keep-alive 残留上次数据
+    resetForm()
+    if (route.query.orderId && route.query.orderId !== 'new') {
+      form.orderId = route.query.orderId as string
+    }
   }
 })
 
@@ -270,7 +279,8 @@ const handlePreviewConfirm = (previewForm: Record<string, any>) => {
 }
 
 const handleBack = () => {
-  router.back()
+  // 返回逻辑父级页面（售后件列表），不依赖浏览器历史栈
+  router.push('/return-parts')
 }
 
 const validatePartNumberUnique = async (): Promise<boolean> => {

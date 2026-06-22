@@ -91,9 +91,9 @@
         </div>
       </a-layout-header>
 
-      <!-- 主内容区 -->
+      <!-- 主内容区：:key 强制 new↔edit 等"同组件不同路由"重新挂载，避免表单状态残留 -->
       <a-layout-content class="content">
-        <router-view />
+        <router-view :key="$route.fullPath" />
       </a-layout-content>
     </a-layout>
   </a-layout>

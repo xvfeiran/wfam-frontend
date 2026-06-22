@@ -330,7 +330,8 @@ onMounted(async () => {
 })
 
 const handleBack = () => {
-  router.back()
+  // 返回逻辑父级页面（售后件列表），不依赖浏览器历史栈
+  router.push('/return-parts')
 }
 
 const handleEdit = () => {
