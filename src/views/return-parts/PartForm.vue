@@ -335,6 +335,9 @@ const handleSave = () => saveDebounce.execute(async () => {
     message.success(t('message.saveSuccess'))
 
     if (fromOrderDetail.value && form.orderId) {
+      // 先把本 tab 移出"新建售后件"页，再跳回退货单详情。
+      // 否则 AEP 会复用本 tab 且 fullPath 不变 → wujie keep-alive 冻结的旧表单被原样恢复。
+      router.push('/return-parts').catch(() => {})
       navigateTo(`/return-orders/${form.orderId}`)
     } else {
       router.push('/return-parts')
@@ -387,6 +390,9 @@ const handleSubmit = () => submitDebounce.execute(async () => {
 
     // 如果是从退货单详情页进入，返回到退货单详情页
     if (fromOrderDetail.value && form.orderId) {
+      // 先把本 tab 移出"新建售后件"页，再跳回退货单详情。
+      // 否则 AEP 会复用本 tab 且 fullPath 不变 → wujie keep-alive 冻结的旧表单被原样恢复。
+      router.push('/return-parts').catch(() => {})
       navigateTo(`/return-orders/${form.orderId}`)
     } else {
       router.push('/return-parts')

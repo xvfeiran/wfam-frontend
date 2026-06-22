@@ -273,7 +273,13 @@ const handleEndEntry = async () => {
 }
 
 const handleAddPart = () => {
-  navigateTo('/return-parts/new', { orderId: orderId.value, fromOrderDetail: 'true' })
+  // 带 _t 时间戳：AEP 复用同一售后件 tab 时，若 fullPath 与上次完全相同，
+  // wujie/vue-router 会去重导致不重新挂载 → 残留旧表单。每次唯一 path 强制刷新。
+  navigateTo('/return-parts/new', {
+    orderId: orderId.value,
+    fromOrderDetail: 'true',
+    _t: String(Date.now()),
+  })
 }
 </script>
 
