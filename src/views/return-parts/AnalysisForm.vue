@@ -247,7 +247,8 @@ onMounted(async () => {
 })
 
 const handleBack = () => {
-  router.back()
+  // 返回逻辑父级页面（该零件的详情页），不依赖浏览器历史栈
+  router.push(`/return-parts/${partId.value}`)
 }
 
 const handleSaveDraft = () => saveDraftDebounce.execute(async () => {

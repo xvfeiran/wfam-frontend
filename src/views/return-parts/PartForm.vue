@@ -135,7 +135,7 @@ const fromOrderDetail = computed(() => {
   return !!route.query.fromOrderDetail
 })
 
-const form = reactive({
+const getInitialForm = () => ({
   partNumber: '',
   orderId: undefined as string | undefined,
   partCode: '',
@@ -158,6 +158,11 @@ const form = reactive({
   customerDescription: '',
   otherDescription: '',
 })
+
+const form = reactive(getInitialForm())
+
+// 重置表单为初始值（防御性：即便组件被复用也保证新建模式干净）
+const resetForm = () => Object.assign(form, getInitialForm())
 
 const imagePaths = ref<string[]>([])
 
@@ -184,8 +189,12 @@ onMounted(async () => {
     if (part) {
       populateForm(part)
     }
-  } else if (route.query.orderId && route.query.orderId !== 'new') {
-    form.orderId = route.query.orderId as string
+  } else {
+    // 新建模式：清空表单，避免组件复用/wujie keep-alive 残留上次数据
+    resetForm()
+    if (route.query.orderId && route.query.orderId !== 'new') {
+      form.orderId = route.query.orderId as string
+    }
   }
 })
 
@@ -270,7 +279,8 @@ const handlePreviewConfirm = (previewForm: Record<string, any>) => {
 }
 
 const handleBack = () => {
-  router.back()
+  // 返回逻辑父级页面（售后件列表），不依赖浏览器历史栈
+  router.push('/return-parts')
 }
 
 const validatePartNumberUnique = async (): Promise<boolean> => {
@@ -325,6 +335,9 @@ const handleSave = () => saveDebounce.execute(async () => {
     message.success(t('message.saveSuccess'))
 
     if (fromOrderDetail.value && form.orderId) {
+      // 先把本 tab 移出"新建售后件"页，再跳回退货单详情。
+      // 否则 AEP 会复用本 tab 且 fullPath 不变 → wujie keep-alive 冻结的旧表单被原样恢复。
+      router.push('/return-parts').catch(() => {})
       navigateTo(`/return-orders/${form.orderId}`)
     } else {
       router.push('/return-parts')
@@ -377,6 +390,9 @@ const handleSubmit = () => submitDebounce.execute(async () => {
 
     // 如果是从退货单详情页进入，返回到退货单详情页
     if (fromOrderDetail.value && form.orderId) {
+      // 先把本 tab 移出"新建售后件"页，再跳回退货单详情。
+      // 否则 AEP 会复用本 tab 且 fullPath 不变 → wujie keep-alive 冻结的旧表单被原样恢复。
+      router.push('/return-parts').catch(() => {})
       navigateTo(`/return-orders/${form.orderId}`)
     } else {
       router.push('/return-parts')

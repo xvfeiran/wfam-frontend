@@ -295,7 +295,8 @@ const handleScrap = () => {
 const handleScrapSuccess = () => loadData()
 
 const handleBack = () => {
-  router.back()
+  // 返回逻辑父级页面（分析单列表），不依赖浏览器历史栈
+  router.push('/analysis-orders')
 }
 
 onMounted(loadData)

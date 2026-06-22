@@ -202,7 +202,7 @@ const complaintTypes = ref([
   { code: 'BA79', description: 'Logistics sample complaint' },
 ])
 
-const form = reactive({
+const getInitialForm = () => ({
   orderNumber: '',
   customerId: undefined as string | undefined,
   customer: undefined as string | undefined, // 用于显示
@@ -214,6 +214,11 @@ const form = reactive({
   complaintType: undefined as string | undefined, // 投诉类型（BA代码），必填
   otherInfo: '',
 })
+
+const form = reactive(getInitialForm())
+
+// 重置表单为初始值（防御性：即便组件被复用也保证新建模式干净）
+const resetForm = () => Object.assign(form, getInitialForm())
 
 // Watch returnMethod changes - clear trackingNumber when switching from express to pickup
 watch(() => form.returnMethod, (newValue, oldValue) => {
@@ -258,6 +263,11 @@ onMounted(async () => {
   // 加载客户列表
   customers.value = await customerApi.list()
 
+  // 新建模式：清空表单，避免组件复用/wujie keep-alive 残留上次数据
+  if (!isEdit.value) {
+    resetForm()
+  }
+
   if (isEdit.value) {
     // 加载退货单数据
     const order = await returnOrderApi.getById(orderId.value)
@@ -285,7 +295,8 @@ onMounted(async () => {
 })
 
 const handleBack = () => {
-  router.back()
+  // 返回逻辑父级页面（退货单列表），不依赖浏览器历史栈
+  router.push('/return-orders')
 }
 
 const buildPayload = () => {
