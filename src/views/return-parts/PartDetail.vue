@@ -113,12 +113,14 @@
                 {{ getReportStatusLabel(report.status) }}
               </a-tag>
             </a-descriptions-item>
-            <a-descriptions-item :label="t('partDetail.summary')">{{ report.summary || '-' }}</a-descriptions-item>
+            <a-descriptions-item v-if="report.status === 'rejected' && report.rejectReason" :label="t('partDetail.rejectReason')">
+              <span style="color: #ff4d4f">{{ report.rejectReason }}</span>
+            </a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.submittedTime')">{{ report.submittedAt || '-' }}</a-descriptions-item>
           </a-descriptions>
           <div class="report-actions">
             <a-button type="link" @click="handleViewReport">{{ t('partDetail.viewDetails') }}</a-button>
-            <a-button type="link" @click="handleExportReport">{{ t('partDetail.exportReport') }}</a-button>
+            <a-button type="link" :disabled="exportDebounce.isDebouncing.value" :loading="exportDebounce.isDebouncing.value" @click="handleExportReport">{{ t('partDetail.exportReport') }}</a-button>
           </div>
         </a-card>
       </a-col>
@@ -138,17 +140,18 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { navigateTo } from '@/services/navigationService'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import { LinkOutlined } from '@ant-design/icons-vue'
 import { partApi } from '@/services/partApi'
 import { reportsApi } from '@/services/reportsApi'
 import { fileApi } from '@/services/fileApi'
-import { PART_STATUS_MAP, PartStatus } from '@/types'
+import { PartStatus } from '@/types'
 import type { Part, AnalysisReport, ReportTemplate } from '@/types'
 import { usePermissions } from '@/composables/usePermissions'
-import { useStatusLabels } from '@/composables/useStatusLabels'
 import { useUserNameMap } from '@/composables/useUserNameMap'
+import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import AnalysisReportModal from './components/AnalysisReportModal.vue'
 
 const getFileUrl = (relativePath: string) => {
@@ -162,15 +165,15 @@ const router = useRouter()
 const { canEditSubmittedForm, isQMCLeader } = usePermissions()
 const { displayName: userDisplayName, load: loadUserNameMap } = useUserNameMap()
 const partId = computed(() => route.params.id as string)
-const analysisOrderStatus = computed(() => typeof route.query.analysisOrderStatus === 'string' ? route.query.analysisOrderStatus : undefined)
 
 const part = ref<Part | null>(null)
 const report = ref<AnalysisReport | null>(null)
 const templates = ref<ReportTemplate[]>([])
 const analysisVisible = ref(false)
+const exportDebounce = useDebouncedClick({ delay: 1000 })
 const qcNoInput = ref('')
 
-const QC_VISIBLE_STATUSES = [PartStatus.PENDING_APPROVAL, PartStatus.ANALYSIS_COMPLETED, PartStatus.SCRAP_IN_PROGRESS, PartStatus.SCRAPPED]
+const QC_VISIBLE_STATUSES = [PartStatus.PENDING_APPROVAL, PartStatus.ANALYSIS_COMPLETED, PartStatus.ANALYSIS_SKIPPED, PartStatus.SCRAP_IN_PROGRESS, PartStatus.SCRAPPED]
 const isQcVisible = computed(() => part.value ? QC_VISIBLE_STATUSES.includes(part.value.status) : false)
 
 /**
@@ -186,17 +189,36 @@ const canEditPart = computed(() => {
   if (!part.value) return false
   // 未提交的单据所有人都可以编辑
   if (!part.value.partNumber) return true
+  // 信息录入/进行中状态的退件所有人都可以编辑
+  if (part.value.status === 'in_initial_analysis') return true
   // 已提交的单据需要检查权限
   return canEditSubmittedForm.value
 })
 
 /**
- * 精分析按钮权限：需要分析单已完成抽样（非 pending_sampling 状态）
- * 如果没有分析单状态信息（如从退货单列表进入），默认允许
+ * 精分析按钮权限：
+ * - 已抽样 + 精分析进行中 → 可点击进行精分析
+ * - 精分析已提交/已完成/审批中/报废中/已报废 → 可点击查看报告
+ * - 其他状态（信息录入中/已完成/已跳过精分析等）→ 禁用
  */
 const canAnalysis = computed(() => {
-  if (!analysisOrderStatus.value) return true // 无状态信息时默认允许
-  return analysisOrderStatus.value !== 'pending_sampling'
+  if (!part.value) return false
+  const { status } = part.value
+
+  // 精分析进行中：必须是已抽样的零件才能进行精分析
+  if (status === PartStatus.IN_DETAILED_ANALYSIS) {
+    return part.value.isSample === 1
+  }
+
+  // 精分析已完成或后续状态：可以查看报告
+  const viewOnlyStatuses: PartStatus[] = [
+    PartStatus.ANALYSIS_REPORT_SUBMITTED,
+    PartStatus.PENDING_APPROVAL,
+    PartStatus.ANALYSIS_COMPLETED,
+    PartStatus.SCRAP_IN_PROGRESS,
+    PartStatus.SCRAPPED,
+  ]
+  return viewOnlyStatuses.includes(status as PartStatus)
 })
 
 /**
@@ -248,6 +270,7 @@ const getStepDescription = (step: number) => {
     const status = part.value?.status
     if (status === PartStatus.ANALYSIS_SKIPPED) return t('partDetail.subSkipped')
     if (status === PartStatus.IN_DETAILED_ANALYSIS) return t('partDetail.subInProgress')
+    if (status === PartStatus.ANALYSIS_REPORT_SUBMITTED) return t('partDetail.subSubmitted')
     if (status === PartStatus.PENDING_APPROVAL) return t('partDetail.subInApproval')
     if (currentStep.value > 1 || status === PartStatus.ANALYSIS_COMPLETED) return t('partDetail.completed')
     return t('partDetail.inProgress')
@@ -277,6 +300,7 @@ const getReportStatusColor = (status: string) => {
     submitted: 'processing',
     approved: 'success',
     rejected: 'error',
+    withdrawn: 'default',
   }
   return colorMap[status] || 'default'
 }
@@ -287,12 +311,11 @@ const getReportStatusLabel = (status: string) => {
     submitted: t('partDetail.reportPending'),
     approved: t('partDetail.reportApproved'),
     rejected: t('partDetail.reportRejected'),
+    withdrawn: t('partDetail.reportWithdrawn'),
   }
   return labelMap[status] || status
 }
 
-const { getPartLabel } = useStatusLabels()
-const getStatusLabel = (status?: string) => status ? getPartLabel(status) : '-'
 
 onMounted(async () => {
   part.value = await partApi.getById(partId.value)
@@ -331,13 +354,13 @@ const handleAnalysisSuccess = async () => {
 }
 
 const handleViewApproval = (partNumber: string) => {
-  router.push({ path: '/approval', query: { tab: 'myApplications', openPartNumber: partNumber } })
+  navigateTo('/approval', { tab: 'myApplications', openPartNumber: partNumber })
 }
 
 const goToOrder = (e?: Event) => {
   e?.preventDefault()
   if (part.value?.orderId) {
-    router.push(`/return-orders/${part.value.orderId}`)
+    navigateTo(`/return-orders/${part.value.orderId}`)
   }
 }
 
@@ -345,23 +368,25 @@ const handleViewReport = () => {
   analysisVisible.value = true
 }
 
-const handleExportReport = async () => {
-  if (!report.value?.id) {
-    message.warning(t('analysisForm.pleaseSaveFirst'))
-    return
-  }
-  try {
-    const blob = await reportsApi.exportReport(report.value.id)
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `report_${part.value?.partNumber}_${Date.now()}.xlsx`
-    a.click()
-    window.URL.revokeObjectURL(url)
-    message.success(t('message.downloadSuccess'))
-  } catch {
-    message.error(t('message.exportFailed'))
-  }
+const handleExportReport = () => {
+  exportDebounce.execute(async () => {
+    if (!report.value?.id) {
+      message.warning(t('analysisForm.pleaseSaveFirst'))
+      return
+    }
+    try {
+      const blob = await reportsApi.exportReport(report.value.id)
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `report_${part.value?.partNumber}_${Date.now()}.xlsx`
+      a.click()
+      window.URL.revokeObjectURL(url)
+      message.success(t('message.downloadSuccess'))
+    } catch {
+      message.error(t('message.exportFailed'))
+    }
+  })
 }
 </script>
 

@@ -68,6 +68,22 @@ request.interceptors.response.use(
 
     const errMsg = data?.message || error.message || 'Network Error'
     console.error('[API Error]', errMsg)
+
+    // SMB 相关错误（503）
+    if (error.response?.status === 503) {
+      const smbMsg = data?.message
+      if (smbMsg === 'SMB_NOT_CONFIGURED') {
+        message.error(t('settings.smbNotConfigured'))
+      } else if (smbMsg === 'SMB_AUTH_FAILURE') {
+        message.error(t('settings.smbAuthFailure'))
+      } else if (smbMsg === 'SMB_CONNECTION_ERROR') {
+        message.error(t('settings.smbConnectionError'))
+      } else {
+        message.error(t('settings.smbNotConfigured'))
+      }
+      return Promise.reject(error)
+    }
+
     return Promise.reject(error)
   },
 )

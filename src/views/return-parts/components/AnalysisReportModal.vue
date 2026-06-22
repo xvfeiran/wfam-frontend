@@ -6,7 +6,7 @@
     @cancel="handleCancel"
     @ok="handleSubmit"
   >
-    <!-- ── 待审批只读卡片（复用 PartDetail report-card 样式） ─────────── -->
+    <!-- ── 待审批只读卡片 ─── -->
     <template v-if="isPendingApproval">
       <a-descriptions :column="1" size="small" bordered>
         <a-descriptions-item :label="t('partDetail.template')">
@@ -19,9 +19,6 @@
           <a-tag v-if="form.responsibility">{{ form.responsibility }}</a-tag>
           <span v-else>-</span>
         </a-descriptions-item>
-        <a-descriptions-item :label="t('partDetail.summary')">
-          {{ form.summary || '-' }}
-        </a-descriptions-item>
         <a-descriptions-item :label="t('partDetail.submittedTime')">
           {{ reportSubmittedAt || '-' }}
         </a-descriptions-item>
@@ -31,8 +28,17 @@
     <!-- ── 完整编辑表单（非待审批状态） ─────────────────────────────── -->
     <template v-else>
 
-    <!-- 顶部匹配条件 -->
-    <div class="match-conditions-card">
+    <!-- 驳回原因提示（仅当前报告状态为 rejected 时显示，重新提交后不再展示） -->
+    <a-alert
+      v-if="reportRejectReason && reportStatus === 'rejected'"
+      :message="t('partDetail.rejectReason') + '：' + reportRejectReason"
+      type="error"
+      show-icon
+      style="margin-bottom: 16px"
+    />
+
+    <!-- 顶部匹配条件（外部只读或已提交时隐藏） -->
+    <div v-if="!props.readonly && !isReportSubmitted" class="match-conditions-card">
       <div class="match-conditions-header">
         <span class="conditions-icon">⚙</span>
         <span class="conditions-title">{{ t('reportForm.matchConditions') }}</span>
@@ -44,7 +50,7 @@
             style="width: 160px"
             @change="handleMatchConditionsChange"
             allow-clear
-            :disabled="isApproved"
+            :disabled="isFormDisabled"
             show-search
             :filter-option="filterOption"
           >
@@ -59,7 +65,7 @@
             style="width: 160px"
             @change="handleMatchConditionsChange"
             allow-clear
-            :disabled="isApproved"
+            :disabled="isFormDisabled"
           >
             <a-select-option v-for="ft in failureTypeOptions" :key="ft" :value="ft">
               {{ t('returnPart.failureTypeLabels.' + ft) }}
@@ -85,7 +91,7 @@
             {{ t('reportForm.responsibility') }}
             <span class="required-star">*</span>
           </span>
-          <a-radio-group v-model:value="form.responsibility" :disabled="isApproved" size="large">
+          <a-radio-group v-model:value="form.responsibility" :disabled="isFormDisabled" size="large">
             <a-radio-button value="B">
               <span class="resp-code">B</span> Bosch
             </a-radio-button>
@@ -114,23 +120,35 @@
                 <span v-if="field.required" class="required-star">* </span>{{ field.label }}
               </div>
               <div class="photo-upload-wrap">
-                <a-upload
-                  :file-list="photoFileLists[field.name] || []"
-                  list-type="picture-card"
-                  accept="image/*"
-                  v-bind="field.type === 'photo' ? { maxCount: 1 } : {}"
-                  :custom-request="(opts: any) => handlePhotoUpload(field.name, opts)"
-                  :disabled="isApproved"
-                  :on-remove="(f: any) => handlePhotoRemove(field.name, f)"
-                  @update:file-list="(list: any[]) => { photoFileLists[field.name] = list }"
-                >
-                  <!-- photo: max-count=1 时 AntDV 自动隐藏按钮，无需 v-if -->
-                  <!-- photolist: 始终显示按钮 -->
-                  <div class="photo-trigger">
-                    <PlusOutlined />
-                    <div>{{ t('common.upload') }}</div>
+                <!-- Upload + Camera action buttons -->
+                <div v-if="!isFormDisabled && canUploadMore(field)" class="photo-action-buttons">
+                  <div class="photo-action-btn" @click="triggerPhotoUpload(field.name, field.type)">
+                    <UploadOutlined />
+                    <span>{{ t('ocr.uploadPhoto') }}</span>
                   </div>
-                </a-upload>
+                  <div class="photo-action-divider" />
+                  <div class="photo-action-btn" @click="openCameraFor(field.name)">
+                    <CameraOutlined />
+                    <span>{{ t('ocr.takePhoto') }}</span>
+                  </div>
+                </div>
+                <!-- 图片预览（支持缩放、旋转、关闭） -->
+                <template v-if="(photoFileLists[field.name] || []).length > 0">
+                  <a-image-preview-group>
+                    <a-space :size="8" wrap>
+                      <div v-for="(photo, idx) in (photoFileLists[field.name] || [])" :key="photo.uid || idx" class="photo-thumb-wrapper">
+                        <a-image
+                          :src="photo.url"
+                          :width="104"
+                          :height="104"
+                          style="object-fit: cover; border-radius: 4px;"
+                        />
+                        <span v-if="!isFormDisabled" class="photo-thumb-remove" @click="handlePhotoRemove(field.name, photo)">✕</span>
+                      </div>
+                    </a-space>
+                  </a-image-preview-group>
+                </template>
+                <span v-else class="photo-empty-tip">{{ t('partDetail.noPhotos') }}</span>
                 <span v-if="field.required" class="photo-required-tip">
                   <span class="required-star">*</span> {{ t('reportForm.photoRequired') }}
                 </span>
@@ -148,13 +166,13 @@
               : []"
           >
             <template v-if="field.type === 'text'">
-              <a-input v-model:value="form.content[field.name]" :placeholder="t('reportForm.inputField', { field: field.label })" :disabled="isApproved" />
+              <a-input v-model:value="form.content[field.name]" :placeholder="t('reportForm.inputField', { field: field.label })" :disabled="isFormDisabled" />
             </template>
             <template v-else-if="field.type === 'textarea'">
-              <a-textarea v-model:value="form.content[field.name]" :placeholder="t('reportForm.inputField', { field: field.label })" :rows="3" :disabled="isApproved" />
+              <a-textarea v-model:value="form.content[field.name]" :placeholder="t('reportForm.inputField', { field: field.label })" :rows="3" :disabled="isFormDisabled" />
             </template>
             <template v-else-if="field.type === 'select'">
-              <a-select v-model:value="form.content[field.name]" :placeholder="t('reportForm.selectField', { field: field.label })" :disabled="isApproved">
+              <a-select v-model:value="form.content[field.name]" :placeholder="t('reportForm.selectField', { field: field.label })" :disabled="isFormDisabled">
                 <a-select-option v-for="opt in field.options" :key="opt" :value="opt">
                   {{ opt }}
                 </a-select-option>
@@ -165,33 +183,63 @@
               <a-date-picker
                 :value="form.content[field.name] != null ? dayjs(form.content[field.name]) : null"
                 style="width: 100%"
-                :disabled="isApproved"
+                :disabled="isFormDisabled"
                 @update:value="(val: any) => { form.content[field.name] = val }"
               />
             </template>
             <template v-else-if="field.type === 'number'">
-              <a-input-number v-model:value="form.content[field.name]" style="width: 100%" :disabled="isApproved" />
+              <a-input-number v-model:value="form.content[field.name]" style="width: 100%" :disabled="isFormDisabled" />
             </template>
           </a-form-item>
         </template>
-
-        <a-divider>{{ t('reportForm.reportSummary') }}</a-divider>
-
-        <a-form-item :label="t('reportForm.reportSummary')" name="summary">
-          <a-textarea v-model:value="form.summary" :placeholder="t('reportForm.inputReportSummary')" :rows="2" show-count :maxlength="200" :disabled="isApproved" />
-        </a-form-item>
       </template>
 
       <a-empty v-else :description="t('reportForm.noTemplateMatched')" />
     </a-form>
 
+    <!-- Hidden file input for photo upload -->
+    <input
+      ref="photoInputRef"
+      type="file"
+      accept="image/*"
+      multiple
+      style="display: none"
+      @change="onPhotoInputChange"
+    />
+    <!-- Camera capture modal -->
+    <CameraCapture
+      v-model:open="cameraOpen"
+      @captured="onCameraCaptured"
+    />
+
     </template><!-- end v-else (完整表单) -->
 
     <template #footer>
-      <!-- 待审批：简洁卡片的操作按钮 -->
-      <template v-if="isPendingApproval">
+      <!-- 外部只读模式（审批页面等）：仅取消 + 下载 -->
+      <template v-if="props.readonly">
         <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
-        <a-button :disabled="!reportId" @click="handleDownload">
+        <a-button :disabled="!selectedTemplate || downloadDebounce.isDebouncing.value" :loading="downloadDebounce.isDebouncing.value" @click="handleDownload">
+          <DownloadOutlined /> {{ t('analysisForm.downloadReport') }}
+        </a-button>
+      </template>
+
+      <!-- 已提交（等待所有抽样件提交后进入审批）：只读 + 撤回 -->
+      <template v-else-if="isReportSubmitted">
+        <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
+        <a-button :disabled="!reportId || downloadDebounce.isDebouncing.value" :loading="downloadDebounce.isDebouncing.value" @click="handleDownload">
+          <DownloadOutlined /> {{ t('analysisForm.downloadReport') }}
+        </a-button>
+        <a-popconfirm v-if="isAssignedAnalyst" :title="t('approval.confirmWithdrawApplication')" @confirm="handleWithdraw">
+          <a-button type="primary" danger :disabled="!reportId || withdrawDebounce.isDebouncing.value" :loading="withdrawDebounce.isDebouncing.value">
+            {{ t('common.withdraw') }}
+          </a-button>
+        </a-popconfirm>
+      </template>
+
+      <!-- 待审批：简洁卡片的操作按钮 -->
+      <template v-else-if="isPendingApproval">
+        <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
+        <a-button :disabled="!reportId || downloadDebounce.isDebouncing.value" :loading="downloadDebounce.isDebouncing.value" @click="handleDownload">
           <DownloadOutlined /> {{ t('analysisForm.downloadReport') }}
         </a-button>
         <a-button type="primary" @click="handleViewApproval">
@@ -202,19 +250,19 @@
       <!-- 已审批通过：只读 -->
       <template v-else-if="isApproved">
         <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
-        <a-button :disabled="!selectedTemplate" @click="handleDownload">
+        <a-button :disabled="!selectedTemplate || downloadDebounce.isDebouncing.value" :loading="downloadDebounce.isDebouncing.value" @click="handleDownload">
           <DownloadOutlined /> {{ t('analysisForm.downloadReport') }}
         </a-button>
       </template>
 
-      <!-- 编辑态 -->
+      <!-- 编辑态（非分析师只读查看） -->
       <template v-else>
         <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
-        <a-button @click="handleDownload" :disabled="!selectedTemplate">
+        <a-button :disabled="!selectedTemplate || downloadDebounce.isDebouncing.value" :loading="downloadDebounce.isDebouncing.value" @click="handleDownload">
           <DownloadOutlined /> {{ t('analysisForm.downloadReport') }}
         </a-button>
-        <a-button :disabled="!selectedTemplate || saveDraftDebounce.isDebouncing.value" :loading="saveDraftDebounce.isDebouncing.value" @click="handleSaveDraft">{{ t('common.save') }}</a-button>
-        <a-button type="primary" :disabled="!selectedTemplate || submitDebounce.isDebouncing.value" :loading="submitDebounce.isDebouncing.value" @click="handleSubmit">{{ t('analysisForm.submitApproval') }}</a-button>
+        <a-button v-if="isAssignedAnalyst" :disabled="!selectedTemplate || saveDraftDebounce.isDebouncing.value" :loading="saveDraftDebounce.isDebouncing.value" @click="handleSaveDraft">{{ t('common.save') }}</a-button>
+        <a-button v-if="isAssignedAnalyst" type="primary" :disabled="!selectedTemplate || submitDebounce.isDebouncing.value" :loading="submitDebounce.isDebouncing.value" @click="handleSubmit">{{ t('analysisForm.submitApproval') }}</a-button>
       </template>
     </template>
   </a-modal>
@@ -224,20 +272,24 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
-import { PlusOutlined, DownloadOutlined } from '@ant-design/icons-vue'
+import { DownloadOutlined, CameraOutlined, UploadOutlined } from '@ant-design/icons-vue'
 import { reportsApi } from '@/services/reportsApi'
 import { lookupApi } from '@/services/lookupApi'
 import { analysisAttachmentApi, fileApi } from '@/services/fileApi'
 import { PartStatus } from '@/types'
 import type { Part, ReportTemplate } from '@/types'
 import { useDebouncedClick } from '@/composables/useDebouncedClick'
+import { usePermissions } from '@/composables/usePermissions'
 import dayjs from 'dayjs'
+import CameraCapture from '@/components/CameraCapture.vue'
 
 const { t } = useI18n()
+const { currentUserUsername } = usePermissions()
 
 const props = defineProps<{
   visible: boolean
   part: Part | null
+  readonly?: boolean
 }>()
 
 const emit = defineEmits(['update:visible', 'success', 'view-approval'])
@@ -248,10 +300,19 @@ const reportId = ref<string>()
 // 报告只读摘要（待审批/已审批时展示卡片用）
 const reportStatus = ref<string>()
 const reportSubmittedAt = ref<string>()
+const reportRejectReason = ref<string>()
 
 // 防抖处理（替代现有的 loading ref）
 const saveDraftDebounce = useDebouncedClick({ delay: 1000 })
 const submitDebounce = useDebouncedClick({ delay: 1000 })
+const downloadDebounce = useDebouncedClick({ delay: 1000 })
+const withdrawDebounce = useDebouncedClick({ delay: 1000 })
+
+// Camera & manual upload state
+const cameraOpen = ref(false)
+const cameraFieldName = ref('')
+const currentUploadField = reactive({ name: '', type: '' })
+const photoInputRef = ref<HTMLInputElement | null>(null)
 
 // 匹配条件状态
 const matchConditions = reactive({
@@ -267,8 +328,13 @@ const failureTypeOptions = ref<string[]>([])
 const form = reactive({
   templateId: undefined as string | undefined,
   content: {} as Record<string, any>,
-  summary: '',
   responsibility: undefined as string | undefined,
+})
+
+// 仅当前用户是该零件的分析师时才允许编辑/暂存/提交
+const isAssignedAnalyst = computed(() => {
+  if (!props.part?.analyst) return true // 未指定分析师时允许操作（向后兼容）
+  return currentUserUsername.value === props.part.analyst
 })
 
 // ── 照片字段管理 ──────────────────────────────────────────────────────────
@@ -317,7 +383,6 @@ const ensureReportSaved = async (): Promise<string | null> => {
       partId: props.part.id,
       templateId: selectedTemplate.value.id,
       content: form.content,
-      summary: form.summary,
       responsibility: form.responsibility,
       status: 'draft',
     })
@@ -329,21 +394,31 @@ const ensureReportSaved = async (): Promise<string | null> => {
   }
 }
 
-/** 照片/照片列表字段的上传处理（customRequest）
- *  上传成功后立即更新 form.content 并异步持久化到 DB，
- *  确保照片路径在重新打开弹窗时仍可见。
- */
-const handlePhotoUpload = async (fieldName: string, { file, onSuccess, onError }: any) => {
-  const rid = await ensureReportSaved()
-  if (!rid) {
-    onError(new Error('Report not saved'))
-    return
+const canUploadMore = (field: any) => {
+  if (field.type === 'photo') {
+    const list = photoFileLists[field.name] || []
+    return list.filter((f: any) => f.status === 'done').length < 1
   }
-  try {
-    const result = await analysisAttachmentApi.upload(rid, file as File)
-    onSuccess(result)
+  return true
+}
 
-    // 立即更新 form.content 中的路径
+/** Unified photo file upload (used by both file input and camera capture) */
+const uploadPhotoFile = async (fieldName: string, file: File) => {
+  const rid = await ensureReportSaved()
+  if (!rid) return
+
+  try {
+    const result = await analysisAttachmentApi.upload(rid, file)
+    const uid = `up-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const currentList = photoFileLists[fieldName] || []
+    photoFileLists[fieldName] = [...currentList, {
+      uid,
+      name: file.name,
+      status: 'done',
+      url: fileApi.getFileUrl(result.relativePath),
+      response: result,
+    }]
+
     const field = selectedTemplate.value?.fields.find(f => f.name === fieldName)
     if (field?.type === 'photolist') {
       const existing = Array.isArray(form.content[fieldName]) ? form.content[fieldName] : []
@@ -352,25 +427,52 @@ const handlePhotoUpload = async (fieldName: string, { file, onSuccess, onError }
       form.content[fieldName] = result.relativePath
     }
 
-    // 异步持久化到 DB（fire-and-forget）
     reportsApi.saveReport({
       partId: props.part!.id,
       templateId: selectedTemplate.value!.id,
       content: form.content,
-      summary: form.summary,
       responsibility: form.responsibility,
       status: 'draft',
-    }).catch(() => { /* 后台保存失败忽略，不影响上传体验 */ })
-  } catch (e) {
-    onError(e)
+    }).catch(() => {})
+  } catch {
     message.error(t('message.uploadFailed'))
   }
 }
 
-/** 删除照片附件（返回 false 时 ant-design 会阻止从列表移除）
- *  删除成功后立即更新 form.content 并异步持久化到 DB。
- */
-const handlePhotoRemove = async (fieldName: string, file: any): Promise<boolean> => {
+const triggerPhotoUpload = (fieldName: string, fieldType: string) => {
+  currentUploadField.name = fieldName
+  currentUploadField.type = fieldType
+  photoInputRef.value?.click()
+}
+
+const onPhotoInputChange = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const files = input.files
+  if (!files || files.length === 0) return
+
+  const fieldName = currentUploadField.name
+  const maxCount = currentUploadField.type === 'photo' ? 1 : Infinity
+
+  for (let i = 0; i < files.length; i++) {
+    const list = photoFileLists[fieldName] || []
+    if (list.length >= maxCount) break
+    await uploadPhotoFile(fieldName, files[i])
+  }
+
+  input.value = ''
+}
+
+const openCameraFor = (fieldName: string) => {
+  cameraFieldName.value = fieldName
+  cameraOpen.value = true
+}
+
+const onCameraCaptured = async (file: File) => {
+  await uploadPhotoFile(cameraFieldName.value, file)
+}
+
+/** 照片删除 */
+const handlePhotoRemove = async (fieldName: string, file: any) => {
   const relativePath = file.response?.relativePath
   if (relativePath && reportId.value) {
     try {
@@ -386,21 +488,24 @@ const handlePhotoRemove = async (fieldName: string, file: any): Promise<boolean>
         form.content[fieldName] = undefined
       }
 
+      // 从 photoFileLists 中移除
+      photoFileLists[fieldName] = (photoFileLists[fieldName] || []).filter(f => f.uid !== file.uid)
+
       // 异步持久化到 DB（fire-and-forget）
       reportsApi.saveReport({
         partId: props.part!.id,
         templateId: selectedTemplate.value!.id,
         content: form.content,
-        summary: form.summary,
         responsibility: form.responsibility,
         status: 'draft',
       }).catch(() => { /* 后台保存失败忽略 */ })
     } catch {
       message.error(t('message.deleteFailed'))
-      return false
     }
+  } else if (file.url) {
+    // 无 relativePath 时仅从列表中移除（如预加载的历史图片）
+    photoFileLists[fieldName] = (photoFileLists[fieldName] || []).filter(f => f.uid !== file.uid)
   }
-  return true
 }
 
 // 根据选中的模板ID获取当前模板
@@ -414,6 +519,7 @@ const REPORT_STATUS_COLOR: Record<string, string> = {
   submitted: 'processing',
   approved: 'success',
   rejected: 'error',
+  withdrawn: 'default',
 }
 const reportStatusColor = computed(() => REPORT_STATUS_COLOR[reportStatus.value || ''] || 'default')
 const reportStatusLabel = computed(() => {
@@ -422,6 +528,7 @@ const reportStatusLabel = computed(() => {
     submitted: t('partDetail.reportPending'),
     approved: t('partDetail.reportApproved'),
     rejected: t('partDetail.reportRejected'),
+    withdrawn: t('partDetail.reportWithdrawn'),
   }
   return map[reportStatus.value || ''] || (reportStatus.value || '-')
 })
@@ -431,10 +538,18 @@ const isPendingApproval = computed(() => {
   return props.part?.status === PartStatus.PENDING_APPROVAL
 })
 
+// 是否处于已提交状态（报告已提交，等待所有抽样件提交后进入审批）
+const isReportSubmitted = computed(() => {
+  return props.part?.status === PartStatus.ANALYSIS_REPORT_SUBMITTED
+})
+
 // 是否已审批通过（只读，不可再编辑）
 const isApproved = computed(() => {
   return props.part?.status === PartStatus.ANALYSIS_COMPLETED
 })
+
+// 表单是否只读（外部只读 或 已提交 或 已审批通过 或 非指定分析师）
+const isFormDisabled = computed(() => props.readonly || isReportSubmitted.value || isApproved.value || !isAssignedAnalyst.value)
 
 // 匹配模板函数
 const matchTemplates = async () => {
@@ -522,7 +637,6 @@ watch(() => props.visible, async (val) => {
 
       // 加载现有报告，并从报告对应的模板反查匹配条件
       let existingReportContent: Record<string, any> | null = null
-      let existingReportSummary = ''
       if (props.part.id) {
         try {
           const existingReport = await reportsApi.getLatestReportByPart(props.part.id)
@@ -530,10 +644,10 @@ watch(() => props.visible, async (val) => {
             reportId.value = existingReport.id
             form.templateId = existingReport.templateId          // 保留上次用的模板
             existingReportContent = existingReport.content || {}
-            existingReportSummary = existingReport.summary || ''
             form.responsibility = existingReport.responsibility || undefined
             reportStatus.value = existingReport.status
             reportSubmittedAt.value = existingReport.submittedAt
+            reportRejectReason.value = existingReport.rejectReason || undefined
 
             // 从模板元数据反查上次使用的匹配条件，确保 matchTemplates() 能找到同一模板
             const savedTemplate = templates.value.find(t => t.id === existingReport.templateId)
@@ -561,13 +675,11 @@ watch(() => props.visible, async (val) => {
 
       // 用已有报告的内容填充最新模板的字段（字段名相同的自动对应，新增字段留空）
       if (existingReportContent && Object.keys(existingReportContent).length > 0) {
-        form.summary = existingReportSummary
         const currentTemplate = matchedTemplates.value.find(t => t.id === form.templateId) || null
         form.content = convertDatesToDayjs(existingReportContent, currentTemplate)
         initPhotoFileLists(form.content, currentTemplate)
       } else {
         form.content = {}
-        form.summary = ''
         form.responsibility = undefined
         Object.keys(photoFileLists).forEach(k => { delete photoFileLists[k] })
       }
@@ -607,12 +719,26 @@ const handleCancel = () => {
   Object.keys(photoFileLists).forEach(k => { delete photoFileLists[k] })
   reportStatus.value = undefined
   reportSubmittedAt.value = undefined
+  reportRejectReason.value = undefined
   emit('update:visible', false)
 }
 
 const handleViewApproval = () => {
   emit('update:visible', false)
   emit('view-approval', props.part?.partNumber)
+}
+
+const handleWithdraw = () => {
+  withdrawDebounce.execute(async () => {
+    if (!reportId.value) return
+    try {
+      await reportsApi.withdrawReport(reportId.value)
+      emit('update:visible', false)
+      emit('success')
+    } catch {
+      message.error(t('message.operationFailed'))
+    }
+  })
 }
 
 const handleSaveDraft = async () => {
@@ -639,7 +765,6 @@ const handleSaveDraft = async () => {
         partId: props.part!.id,
         templateId: selectedTemplate.value!.id,
         content: formattedContent,
-        summary: form.summary,
         responsibility: form.responsibility,
         status: 'draft',
       })
@@ -651,23 +776,27 @@ const handleSaveDraft = async () => {
   })
 }
 
-const handleDownload = async () => {
-  if (!reportId.value) {
-    message.warning(t('analysisForm.pleaseSaveFirst'))
-    return
-  }
-  try {
-    const blob = await reportsApi.exportReport(reportId.value)
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `report_${props.part?.partNumber}_${Date.now()}.xlsx`
-    a.click()
-    window.URL.revokeObjectURL(url)
-    message.success(t('message.downloadSuccess'))
-  } catch {
-    message.error(t('message.exportFailed'))
-  }
+const handleDownload = () => {
+  downloadDebounce.execute(async () => {
+    if (!reportId.value) {
+      message.warning(t('analysisForm.pleaseSaveFirst'))
+      return
+    }
+    try {
+      const blob = await reportsApi.exportReport(reportId.value)
+      console.log(`[Download] reportId=${reportId.value}, blobSize=${blob.size}, blobType=${blob.type}`)
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `report_${props.part?.partNumber}_${Date.now()}.xlsx`
+      a.click()
+      window.URL.revokeObjectURL(url)
+      message.success(t('message.downloadSuccess'))
+    } catch (e) {
+      console.error('[Download] Failed:', e)
+      message.error(t('message.exportFailed'))
+    }
+  })
 }
 
 const handleSubmit = async () => {
@@ -692,15 +821,18 @@ const handleSubmit = async () => {
         }
       }
 
+      // Step 1: 保存报告数据（draft）
       const report = await reportsApi.saveReport({
         partId: props.part!.id,
         templateId: selectedTemplate.value!.id,
         content: formattedContent,
-        summary: form.summary,
         responsibility: form.responsibility,
-        status: 'submitted',
+        status: 'draft',
       })
       reportId.value = report.id
+
+      // Step 2: 调用专用提交端点，触发 Part → analysis_report_submitted 联动
+      await reportsApi.submitReport(report.id)
       emit('success')
     } catch {
       message.error(t('validation.formError'))
@@ -829,34 +961,88 @@ const handleSubmit = async () => {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
 
-  // 保证 picture-card 模式下不溢出表单
-  :deep(.ant-upload-list-picture-card) {
+// ── 照片缩略图 + 删除按钮 ─────────────────────────────────────────────────
+.photo-thumb-wrapper {
+  position: relative;
+  display: inline-block;
+
+  .photo-thumb-remove {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 18px;
+    height: 18px;
+    background: #ff4d4f;
+    color: #fff;
+    border-radius: 50%;
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    cursor: pointer;
+    z-index: 1;
+    line-height: 1;
+    transition: background 0.2s;
 
-  :deep(.ant-upload.ant-upload-select) {
-    width: 86px;
-    height: 86px;
+    &:hover {
+      background: #ff7875;
+    }
   }
 }
 
-.photo-trigger {
+.photo-action-buttons {
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  gap: 4px;
-  font-size: 12px;
-  color: #595959;
-  height: 100%;
+  margin-bottom: 12px;
 
-  .anticon {
-    font-size: 20px;
-    color: #8c8c8c;
+  .photo-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 36px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #595959;
+    transition: background 0.2s, color 0.2s;
+    user-select: none;
+    background: #fafafa;
+
+    &:first-child {
+      border-radius: 8px 0 0 8px;
+    }
+    &:last-child {
+      border-radius: 0 8px 8px 0;
+    }
+    &:hover {
+      background: #e6f4ff;
+      color: #1677ff;
+    }
+    &:active {
+      background: #bae0ff;
+    }
+
+    .anticon {
+      font-size: 24px;
+      color: #8c8c8c;
+    }
+    &:hover .anticon {
+      color: #1677ff;
+    }
   }
+
+  .photo-action-divider {
+    width: 1px;
+    background: #e8e8e8;
+    flex-shrink: 0;
+  }
+
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .photo-required-tip {
@@ -868,5 +1054,13 @@ const handleSubmit = async () => {
     color: #ff4d4f;
     margin-right: 2px;
   }
+}
+
+.photo-empty-tip {
+  font-size: 13px;
+  color: #bfbfbf;
+  padding: 24px 0;
+  display: block;
+  text-align: center;
 }
 </style>

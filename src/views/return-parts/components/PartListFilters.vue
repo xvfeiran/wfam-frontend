@@ -1,6 +1,7 @@
 <template>
   <a-card class="filter-card">
     <a-form :model="localFilters">
+      <!-- 标识信息 -->
       <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('returnOrder.orderNumber')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
@@ -13,6 +14,7 @@
           </a-form-item>
         </a-col>
       </a-row>
+      <!-- 产品分类 -->
       <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('returnPart.businessUnit')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
@@ -29,6 +31,7 @@
           </a-form-item>
         </a-col>
       </a-row>
+      <!-- 流程管理 -->
       <a-row :gutter="24">
         <a-col :span="12">
           <a-form-item :label="t('common.status')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
@@ -40,6 +43,16 @@
           </a-form-item>
         </a-col>
         <a-col :span="12">
+          <a-form-item :label="t('partDetail.analyst')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+            <a-select v-model:value="localFilters.analyst" :placeholder="t('validation.pleaseSelect')" allowClear showSearch>
+              <a-select-option v-for="u in analysts" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
+            </a-select>
+          </a-form-item>
+        </a-col>
+      </a-row>
+      <!-- 流程辅助筛选 -->
+      <a-row :gutter="24">
+        <a-col :span="12">
           <a-form-item :label="t('returnPart.qcCreated')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
             <a-select v-model:value="localFilters.qcCreated" :placeholder="t('validation.pleaseSelect')" allowClear>
               <a-select-option value="yes">{{ t('returnPart.qcCreatedYes') }}</a-select-option>
@@ -47,13 +60,47 @@
             </a-select>
           </a-form-item>
         </a-col>
+        <a-col :span="12">
+          <a-form-item :label="t('returnPart.partProductionDateRange')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+            <a-range-picker v-model:value="localFilters.partProductionDateRange" style="width: 100%" />
+          </a-form-item>
+        </a-col>
       </a-row>
+      <!-- 物理属性（区间筛选） -->
       <a-row :gutter="24">
         <a-col :span="12">
-          <a-form-item :label="t('partDetail.analyst')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-            <a-select v-model:value="localFilters.analyst" :placeholder="t('validation.pleaseSelect')" allowClear showSearch>
-              <a-select-option v-for="u in analysts" :key="u.loginName" :value="u.loginName">{{ u.displayName }}</a-select-option>
-            </a-select>
+          <a-form-item :label="t('returnPart.vehicleMileageRange')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+            <div class="mileage-range">
+              <div class="mileage-inputs">
+                <a-input-number
+                  v-model:value="localFilters.vehicleMileageMin"
+                  :min="0"
+                  :step="1000"
+                  :placeholder="t('returnPart.mileageNoLimit')"
+                  :formatter="formatMileage"
+                  :parser="parseMileage"
+                />
+                <span class="mileage-separator">~</span>
+                <a-input-number
+                  v-model:value="localFilters.vehicleMileageMax"
+                  :min="0"
+                  :step="1000"
+                  :placeholder="t('returnPart.mileageNoLimit')"
+                  :formatter="formatMileage"
+                  :parser="parseMileage"
+                />
+                <span class="mileage-unit">km</span>
+              </div>
+              <a-slider
+                :value="sliderPositions"
+                @change="onSliderChange"
+                range
+                :min="0"
+                :max="100"
+                :marks="sliderMarks"
+                :tip-formatter="formatSliderTip"
+              />
+            </div>
           </a-form-item>
         </a-col>
       </a-row>
@@ -77,8 +124,11 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons-vue'
+import dayjs from 'dayjs'
 import { PartStatus } from '@/types'
 import { useStatusLabels } from '@/composables/useStatusLabels'
+
+const MAX_MILEAGE = 300000
 
 interface Filters {
   orderNumber: string
@@ -88,6 +138,9 @@ interface Filters {
   status?: string
   qcCreated?: string
   analyst?: string
+  partProductionDateRange?: [dayjs.Dayjs, dayjs.Dayjs]
+  vehicleMileageMin?: number
+  vehicleMileageMax?: number
 }
 
 interface Props {
@@ -113,6 +166,43 @@ const localFilters = computed({
   get: () => props.filters,
   set: (value) => emit('update:filters', value)
 })
+
+// Quadratic mapping: gives ~58% of slider to 0-100k km range
+const toSliderPos = (km: number) => Math.round(Math.sqrt(km / MAX_MILEAGE) * 100)
+const toKm = (pos: number) => Math.round(Math.pow(pos / 100, 2) * MAX_MILEAGE)
+
+const sliderPositions = computed<[number, number]>(() => [
+  toSliderPos(props.filters.vehicleMileageMin ?? 0),
+  toSliderPos(Math.min(props.filters.vehicleMileageMax ?? MAX_MILEAGE, MAX_MILEAGE)),
+])
+
+const onSliderChange = ([from, to]: number[]) => {
+  emit('update:filters', {
+    ...props.filters,
+    vehicleMileageMin: from > 0 ? toKm(from) : undefined,
+    vehicleMileageMax: to < 100 ? toKm(to) : undefined,
+  })
+}
+
+const sliderMarks: Record<number, string> = {
+  0: '0',
+  41: '5万',
+  58: '10万',
+  82: '20万',
+  100: '30万',
+}
+
+const formatSliderTip = (val: number | undefined) => {
+  if (val == null) return ''
+  return toKm(val).toLocaleString() + ' km'
+}
+
+const formatMileage = (v: string | number | undefined) => {
+  if (v == null || v === '') return ''
+  return `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
+const parseMileage = (v: string) => v.replace(/,/g, '')
 </script>
 
 <style lang="less" scoped>
@@ -124,6 +214,28 @@ const localFilters = computed({
     display: flex;
     align-items: center;
     justify-content: flex-end;
+  }
+
+  .mileage-range {
+    .mileage-inputs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+
+      .ant-input-number {
+        flex: 1;
+      }
+
+      .mileage-separator {
+        color: #999;
+      }
+
+      .mileage-unit {
+        color: #666;
+        white-space: nowrap;
+      }
+    }
   }
 }
 </style>

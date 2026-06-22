@@ -8,6 +8,9 @@ export const approvalApi = {
   getPendingApprovals(): Promise<AnalysisApplication[]> {
     return request.get('/approvals/pending/analysis') as unknown as Promise<AnalysisApplication[]>
   },
+  getMyApprovals(): Promise<AnalysisApplication[]> {
+    return request.get('/approvals/my-approvals/analysis') as unknown as Promise<AnalysisApplication[]>
+  },
   approve(id: string): Promise<void> {
     return request.post(`/approvals/${id}/approve`) as unknown as Promise<void>
   },

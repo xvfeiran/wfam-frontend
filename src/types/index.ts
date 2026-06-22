@@ -1,8 +1,9 @@
-// 退货单状态枚举（v3.1 添加已报废状态）
+// 退货单状态枚举
 export enum OrderStatus {
   DRAFT = 'draft',
   SUBMITTED = 'submitted',
-  SCRAPPED = 'scrapped',  // 新增：已报废
+  REGISTERED = 'registered',
+  SCRAPPED = 'scrapped',
 }
 
 // 售后件状态枚举（9个状态）
@@ -43,6 +44,7 @@ export interface ReturnOrder {
   scrappedQuantity: number
   qcCreatedQuantity: number
   qcNotCreatedQuantity: number
+  draftPartsCount?: number
   status: OrderStatus
   createdBy: string
   createdAt: string
@@ -99,6 +101,7 @@ export interface AnalysisReport {
   submittedAt?: string
   approvedBy?: string
   approvedAt?: string
+  rejectReason?: string
   createdBy: string
   createdAt: string
 }
@@ -164,6 +167,7 @@ export interface AnalysisApplication {
   id: string
   reportNumber: string
   partNumber: string
+  partId: string
   productPlatform: string
   failureType: string
   submitter?: string
@@ -172,7 +176,9 @@ export interface AnalysisApplication {
   approveTime?: string
   status: ApprovalStatus
   summary: string
-  content: Record<string, string>
+  rejectReason?: string
+  templateId?: string
+  content: Record<string, any>
 }
 
 // 精分析报告字段标签映射
@@ -201,6 +207,8 @@ export interface AnalysisOrder {
   orderNumber?: string
   analyst: string
   status: AnalysisOrderStatus
+  workonScrapNo?: string
+  scrapStartedAt?: string
   statusChangedAt?: string
   parts?: Part[]
   createdBy: string
@@ -213,6 +221,7 @@ export interface AnalysisOrder {
 export const ORDER_STATUS_MAP: Record<OrderStatus, { color: string }> = {
   [OrderStatus.DRAFT]: { color: 'default' },
   [OrderStatus.SUBMITTED]: { color: 'processing' },
+  [OrderStatus.REGISTERED]: { color: 'success' },
   [OrderStatus.SCRAPPED]: { color: 'error' },
 }
 

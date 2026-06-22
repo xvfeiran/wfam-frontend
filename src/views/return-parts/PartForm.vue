@@ -68,6 +68,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { navigateTo } from '@/services/navigationService'
 import { useI18n } from 'vue-i18n'
 import { message, Modal } from 'ant-design-vue'
 import dayjs from 'dayjs'
@@ -99,7 +100,8 @@ const partId = computed(() => route.params.id as string)
 
 // 是否已提交到后端（仅编辑模式下根据后端返回的 partNumber 判断）
 const originallySubmitted = ref(false)
-const isSubmitted = computed(() => isEdit.value && originallySubmitted.value)
+const partStatus = ref('')
+const isSubmitted = computed(() => isEdit.value && originallySubmitted.value && partStatus.value !== 'in_initial_analysis')
 
 const canEditSubmittedPart = computed(() => {
   if (!isSubmitted.value) return true // 未提交都可以编辑
@@ -159,14 +161,14 @@ const form = reactive({
 
 const imagePaths = ref<string[]>([])
 
-const { zoneState, previewUrl, ocrResults, ocrTaskId, elapsedSeconds, handleOCRUpload, retryOCR, stopOCR, retake } = useOCR(form, partId.value || undefined)
+const { zoneState, previewUrl, ocrResults, ocrTaskId, elapsedSeconds, handleOCRUpload, retryOCR, stopOCR, retake } = useOCR(form)
 
 const isOcrProcessing = computed(() => zoneState.value === 'uploading' || zoneState.value === 'processing')
 
 onMounted(async () => {
   const [lookups, ordersData, analystsData, cqesData] = await Promise.all([
     lookupApi.getAll(),
-    returnOrderApi.list({ statuses: ['draft', 'submitted'], pageSize: 100 }),
+    returnOrderApi.list({ statuses: ['submitted'], pageSize: 100 }),
     userApi.listAnalysts(),
     userApi.listCQEs(),
   ])
@@ -189,6 +191,7 @@ onMounted(async () => {
 
 function populateForm(part: any) {
   originallySubmitted.value = !!part.partNumber
+  partStatus.value = part.status || ''
   form.partNumber = part.partNumber
   form.orderId = part.orderId
   form.partCode = part.partCode
@@ -210,6 +213,7 @@ function populateForm(part: any) {
   form.vehicleMileage = part.vehicleMileage
   form.customerDescription = part.customerDescription || ''
   form.otherDescription = part.otherDescription || ''
+  imagePaths.value = part.images || []
 }
 
 // 监听订单选择变化，获取订单详情以判断是否为0km
@@ -321,7 +325,7 @@ const handleSave = () => saveDebounce.execute(async () => {
     message.success(t('message.saveSuccess'))
 
     if (fromOrderDetail.value && form.orderId) {
-      router.push(`/return-orders/${form.orderId}`)
+      navigateTo(`/return-orders/${form.orderId}`)
     } else {
       router.push('/return-parts')
     }
@@ -373,7 +377,7 @@ const handleSubmit = () => submitDebounce.execute(async () => {
 
     // 如果是从退货单详情页进入，返回到退货单详情页
     if (fromOrderDetail.value && form.orderId) {
-      router.push(`/return-orders/${form.orderId}`)
+      navigateTo(`/return-orders/${form.orderId}`)
     } else {
       router.push('/return-parts')
     }

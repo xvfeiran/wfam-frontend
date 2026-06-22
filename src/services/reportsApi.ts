@@ -60,11 +60,14 @@ export const reportsApi = {
       params: { productPlatform, failureType }
     }) as unknown as Promise<ReportTemplate[]>
   },
-  submitReport(data: Partial<AnalysisReport>): Promise<AnalysisReport> {
-    return request.post('/analysis-reports', data) as unknown as Promise<AnalysisReport>
+  submitReport(reportId: string): Promise<AnalysisReport> {
+    return request.post(`/analysis-reports/${reportId}/submit`) as unknown as Promise<AnalysisReport>
   },
   saveReport(data: Partial<AnalysisReport>): Promise<AnalysisReport> {
     return request.post('/analysis-reports', data) as unknown as Promise<AnalysisReport>
+  },
+  withdrawReport(reportId: string): Promise<void> {
+    return request.delete(`/approvals/${reportId}`) as unknown as Promise<void>
   },
   getReport(id: string): Promise<AnalysisReport> {
     return request.get(`/analysis-reports/${id}`) as unknown as Promise<AnalysisReport>
@@ -77,7 +80,9 @@ export const reportsApi = {
   },
   exportReport(reportId: string): Promise<Blob> {
     return request.get(`/analysis-reports/${reportId}/export`, {
-      responseType: 'blob'
+      responseType: 'blob',
+      timeout: 120000,
+      params: { _t: Date.now() }
     }) as unknown as Promise<Blob>
   },
 }

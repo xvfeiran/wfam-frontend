@@ -230,22 +230,29 @@ const handleExport = async () => {
     URL.revokeObjectURL(link.href)
     message.success(t('message.exportSuccess'))
   } catch (e: any) {
-    // axios blob 响应时，错误体需从 blob 中读取
-    let errMsg = t('message.exportFailed')
+    // 尝试从错误响应中提取后端消息
+    let errMsg = ''
     try {
       const raw = e?.response?.data
-      if (raw instanceof Blob) {
+      if (raw && typeof raw.text === 'function') {
+        // responseType:'blob' 时错误体也是 Blob
         const text = await raw.text()
         const body = JSON.parse(text)
-        if (body?.message) errMsg = body.message
+        errMsg = body?.message || ''
       } else if (raw?.message) {
         errMsg = raw.message
       }
     } catch { /* 解析失败，使用默认提示 */ }
-    Modal.warning({
-      title: t('returnOrder.exportLimitTitle') || '导出数量超限',
-      content: errMsg,
-    })
+
+    // 400 = 导出超限，使用专门的提示；其他错误用通用提示
+    if (e?.response?.status === 400) {
+      Modal.warning({
+        title: t('returnOrder.exportLimitTitle'),
+        content: errMsg || t('returnOrder.exportLimitContent'),
+      })
+    } else {
+      message.error(t('message.exportFailed'))
+    }
   } finally {
     exportLoading.value = false
   }

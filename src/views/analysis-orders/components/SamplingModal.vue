@@ -174,26 +174,53 @@
         <!-- 搜索筛选 -->
         <div class="manual-search">
           <a-row :gutter="12" align="middle">
-            <a-col :span="8">
-              <a-input
-                v-model:value="manualSearch.keyword"
-                :placeholder="t('message.manualSamplingPlaceholder')"
+            <a-col :span="5">
+              <a-select
+                v-model:value="manualSearch.partCode"
+                :placeholder="t('returnPart.partCode')"
                 allow-clear
-              />
+                show-search
+                :filter-option="filterOption"
+                style="width: 100%"
+                @change="onPartCodeChange"
+              >
+                <a-select-option v-for="pc in partCodeOptions" :key="pc" :value="pc">
+                  {{ pc }}
+                </a-select-option>
+              </a-select>
             </a-col>
-            <a-col :span="6">
+            <a-col :span="4">
               <a-select
                 v-model:value="manualSearch.businessUnit"
                 :placeholder="t('returnPart.businessUnit')"
                 allow-clear
                 style="width: 100%"
               >
-                <a-select-option v-for="bu in businessUnitOptions" :key="bu" :value="bu">
+                <a-select-option v-for="bu in masterBusinessUnits" :key="bu" :value="bu">
                   {{ bu }}
                 </a-select-option>
               </a-select>
             </a-col>
+            <a-col :span="4">
+              <a-select
+                v-model:value="manualSearch.failureType"
+                :placeholder="t('returnPart.failureType')"
+                allow-clear
+                style="width: 100%"
+              >
+                <a-select-option v-for="ft in failureTypeOptions" :key="ft" :value="ft">
+                  {{ t(`returnPart.failureTypeLabels.${ft}`) }}
+                </a-select-option>
+              </a-select>
+            </a-col>
             <a-col :span="6">
+              <a-range-picker
+                v-model:value="manualSearch.partProductionDateRange"
+                :placeholder="[t('returnPart.partProductionDateRange'), t('returnPart.partProductionDateRange')]"
+                style="width: 100%"
+              />
+            </a-col>
+            <a-col :span="5">
               <a-space>
                 <a-button type="primary" @click="applyManualFilter">
                   {{ t('common.search') }}
@@ -202,6 +229,44 @@
                   {{ t('common.reset') }}
                 </a-button>
               </a-space>
+            </a-col>
+          </a-row>
+          <a-row :gutter="12" align="middle" style="margin-top: 8px">
+            <a-col :span="2">
+              <span class="range-label">{{ t('returnPart.vehicleMileageRange') }}</span>
+            </a-col>
+            <a-col :span="22">
+              <div class="mileage-range">
+                <div class="mileage-inputs">
+                  <a-input-number
+                    v-model:value="manualSearch.vehicleMileageMin"
+                    :min="0"
+                    :step="1000"
+                    :placeholder="t('returnPart.mileageNoLimit')"
+                    :formatter="formatMileage"
+                    :parser="parseMileage"
+                  />
+                  <span class="mileage-separator">~</span>
+                  <a-input-number
+                    v-model:value="manualSearch.vehicleMileageMax"
+                    :min="0"
+                    :step="1000"
+                    :placeholder="t('returnPart.mileageNoLimit')"
+                    :formatter="formatMileage"
+                    :parser="parseMileage"
+                  />
+                  <span class="mileage-unit">km</span>
+                </div>
+                <a-slider
+                  v-model:value="sliderPositions"
+                  @change="onSliderChange"
+                  range
+                  :min="0"
+                  :max="100"
+                  :marks="sliderMarks"
+                  :tip-formatter="formatSliderTip"
+                />
+              </div>
             </a-col>
           </a-row>
         </div>
@@ -256,34 +321,68 @@
   <a-modal
     v-model:open="detailVisible"
     :title="t('partDetail.titleNew')"
-    width="640px"
+    width="720px"
     :footer="null"
   >
-    <a-descriptions :column="2" bordered size="small" v-if="detailPart">
-      <a-descriptions-item :label="t('returnPart.partNumber')">{{ detailPart.partNumber || '-' }}</a-descriptions-item>
-      <a-descriptions-item :label="t('returnPart.partCode')">{{ detailPart.partCode || '-' }}</a-descriptions-item>
-      <a-descriptions-item :label="t('returnPart.businessUnit')">{{ detailPart.businessUnit || '-' }}</a-descriptions-item>
-      <a-descriptions-item :label="t('returnPart.productPlatform')">{{ detailPart.productPlatform || '-' }}</a-descriptions-item>
-      <a-descriptions-item :label="t('partDetail.productionShift')">{{ detailPart.productionShift || '-' }}</a-descriptions-item>
-      <a-descriptions-item :label="t('partDetail.customerFailureType')">{{ detailPart.failureType ? t('returnPart.failureTypeLabels.' + detailPart.failureType) : '-' }}</a-descriptions-item>
-      <a-descriptions-item :label="t('partDetail.boschFailureType')">{{ detailPart.boschFailureType || '-' }}</a-descriptions-item>
-      <a-descriptions-item :label="t('partDetail.responsibleEngineer')">{{ userDisplayName(detailPart.responsibleEngineer) }}</a-descriptions-item>
-      <a-descriptions-item :label="t('partDetail.analyst')">{{ userDisplayName(detailPart.analyst) }}</a-descriptions-item>
-      <a-descriptions-item :label="t('common.status')" :span="2">
-        <a-tag :color="PART_STATUS_MAP[detailPart.status]?.color || 'default'">
-          {{ getPartStatusLabel(detailPart.status) }}
-        </a-tag>
-      </a-descriptions-item>
-    </a-descriptions>
+    <template v-if="detailPart">
+      <!-- 基本信息 -->
+      <a-descriptions :column="2" bordered size="small" :title="t('partDetail.basicInfo')" style="margin-bottom: 16px">
+        <a-descriptions-item :label="t('returnPart.partNumber')">{{ detailPart.partNumber || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('returnPart.partCode')">{{ detailPart.partCode || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('returnPart.businessUnit')">{{ detailPart.businessUnit || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('returnPart.productPlatform')">{{ detailPart.productPlatform || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.partProductionDate')">{{ detailPart.partProductionDate || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.productionShift')">{{ detailPart.productionShift || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.customerFailureType')">{{ detailPart.failureType ? t('returnPart.failureTypeLabels.' + detailPart.failureType) : '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.boschFailureType')">{{ detailPart.boschFailureType || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.responsibleEngineer')">{{ userDisplayName(detailPart.responsibleEngineer) }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.analyst')">{{ userDisplayName(detailPart.analyst) }}</a-descriptions-item>
+        <a-descriptions-item :label="t('common.status')">
+          <a-tag :color="PART_STATUS_MAP[detailPart.status]?.color || 'default'">
+            {{ getPartStatusLabel(detailPart.status) }}
+          </a-tag>
+        </a-descriptions-item>
+        <a-descriptions-item :label="t('returnPart.otherInfo')">{{ detailPart.otherInfo || '-' }}</a-descriptions-item>
+      </a-descriptions>
+
+      <!-- 客诉信息 -->
+      <a-descriptions :column="2" bordered size="small" :title="t('partDetail.complaintInfo')" style="margin-bottom: 16px">
+        <a-descriptions-item :label="t('partDetail.repairStation')">{{ detailPart.repairStation || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.complaintLocation')">{{ detailPart.complaintLocation || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.vehicleProductionDate')">{{ detailPart.vehicleProductionDate || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.vehiclePurchaseDate')">{{ detailPart.vehiclePurchaseDate || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.vehicleFailureDate')">{{ detailPart.vehicleFailureDate || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.vehicleVIN')">{{ detailPart.vehicleVIN || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('partDetail.vehicleMileage')">{{ detailPart.vehicleMileage != null ? `${detailPart.vehicleMileage} km` : '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('returnPart.customerDescription')">{{ detailPart.customerDescription || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('returnPart.otherDescription')" :span="2">{{ detailPart.otherDescription || '-' }}</a-descriptions-item>
+      </a-descriptions>
+
+      <!-- 照片信息 -->
+      <div class="detail-section-title">{{ t('partDetail.photoInfo') }}</div>
+      <div v-if="detailPart.images && detailPart.images.length > 0" class="detail-images">
+        <a-image
+          v-for="(img, idx) in detailPart.images"
+          :key="idx"
+          :src="img"
+          :width="100"
+          :height="100"
+          style="object-fit: cover; border-radius: 4px; margin: 4px"
+        />
+      </div>
+      <a-empty v-else :description="t('partDetail.noPhotos')" :image-style="{ height: '40px' }" />
+    </template>
   </a-modal>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { message } from 'ant-design-vue'
+import dayjs from 'dayjs'
 import { useI18n } from 'vue-i18n'
 import { StopOutlined, FilterOutlined, ThunderboltOutlined, ClearOutlined } from '@ant-design/icons-vue'
 import { analysisOrderApi } from '@/services/analysisOrderApi'
+import { lookupApi } from '@/services/lookupApi'
 import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import { AnalysisOrderStatus, PART_STATUS_MAP } from '@/types'
 import type { AnalysisOrder, Part } from '@/types'
@@ -326,19 +425,69 @@ const detailPart = ref<Part | null>(null)
 
 // 手动抽样搜索状态
 const manualSearch = ref({
-  keyword: '',
+  partCode: undefined as string | undefined,
   businessUnit: undefined as string | undefined,
+  failureType: undefined as string | undefined,
+  partProductionDateRange: undefined as [dayjs.Dayjs, dayjs.Dayjs] | undefined,
+  vehicleMileageMin: undefined as number | undefined,
+  vehicleMileageMax: undefined as number | undefined,
 })
 const manualFilterApplied = ref({
-  keyword: '',
+  partCode: undefined as string | undefined,
   businessUnit: undefined as string | undefined,
+  failureType: undefined as string | undefined,
+  partProductionDateRange: undefined as [dayjs.Dayjs, dayjs.Dayjs] | undefined,
+  vehicleMileageMin: undefined as number | undefined,
+  vehicleMileageMax: undefined as number | undefined,
 })
 
-// BU 去重选项
-const businessUnitOptions = computed(() => {
-  const bus = new Set(availableParts.value.map(p => p.businessUnit).filter(Boolean))
-  return Array.from(bus).sort()
+// 零件号下拉选项（从当前可用零件去重）
+const partCodeOptions = computed(() => {
+  const codes = new Set(availableParts.value.map(p => p.partCode).filter(Boolean))
+  return Array.from(codes).sort()
 })
+
+// 业务单元下拉选项（从主数据）
+const masterBusinessUnits = ref<string[]>([])
+
+// 客户失效类型选项（NVH/外观/功能）
+const failureTypeOptions = ['NVH', 'APPEARANCE', 'FUNCTION']
+
+// 公里数范围：固定上限 300,000 km，使用二次映射提供更精确的控制
+const MAX_MILEAGE = 300000
+
+const toSliderPos = (km: number) => Math.round(Math.sqrt(km / MAX_MILEAGE) * 100)
+const toKm = (pos: number) => Math.round(Math.pow(pos / 100, 2) * MAX_MILEAGE)
+
+const sliderPositions = computed<[number, number]>(() => [
+  toSliderPos(manualSearch.value.vehicleMileageMin ?? 0),
+  toSliderPos(Math.min(manualSearch.value.vehicleMileageMax ?? MAX_MILEAGE, MAX_MILEAGE)),
+])
+
+const onSliderChange = ([from, to]: number[]) => {
+  manualSearch.value.vehicleMileageMin = from > 0 ? toKm(from) : undefined
+  manualSearch.value.vehicleMileageMax = to < 100 ? toKm(to) : undefined
+}
+
+const sliderMarks: Record<number, string> = {
+  0: '0',
+  41: '5万',
+  58: '10万',
+  82: '20万',
+  100: '30万',
+}
+
+const formatSliderTip = (val: number | undefined) => {
+  if (val == null) return ''
+  return toKm(val).toLocaleString() + ' km'
+}
+
+const formatMileage = (v: string | number | undefined) => {
+  if (v == null || v === '') return ''
+  return `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
+const parseMileage = (v: string) => v.replace(/,/g, '')
 
 // 是否已完成抽样
 const isSampled = computed(() => {
@@ -379,22 +528,36 @@ const transferDataSource = computed(() =>
 
 // 手动抽样过滤后的数据源（已选中的始终可见）
 const manualFilteredSource = computed(() => {
-  const { keyword, businessUnit } = manualFilterApplied.value
-  if (!keyword && !businessUnit) return transferDataSource.value
+  const { partCode, businessUnit, failureType, partProductionDateRange, vehicleMileageMin, vehicleMileageMax } = manualFilterApplied.value
+  const hasNoFilter = !partCode && !businessUnit && !failureType && !partProductionDateRange && vehicleMileageMin == null && vehicleMileageMax == null
+  if (hasNoFilter) return transferDataSource.value
 
   return transferDataSource.value.filter(item => {
-    // 已选中的项始终可见
     if (selectedPartIds.value.includes(item.key)) return true
 
+    const part = availableParts.value.find(p => p.id === item.key)
+    if (!part) return false
+
     let match = true
-    if (keyword) {
-      const kw = keyword.toLowerCase()
-      const pn = (item.partNumber || '').toLowerCase()
-      const pc = (item.title || '').toLowerCase()
-      match = match && (pn.includes(kw) || pc.includes(kw))
+    if (partCode) {
+      match = match && part.partCode === partCode
     }
     if (businessUnit) {
-      match = match && item.description?.startsWith(businessUnit)
+      match = match && part.businessUnit === businessUnit
+    }
+    if (failureType) {
+      match = match && part.failureType === failureType
+    }
+    if (partProductionDateRange) {
+      const [start, end] = partProductionDateRange
+      const partDate = part.partProductionDate ? dayjs(part.partProductionDate) : null
+      match = match && partDate != null && partDate.isAfter(start.subtract(1, 'day')) && partDate.isBefore(end.add(1, 'day'))
+    }
+    if (vehicleMileageMin != null) {
+      match = match && part.vehicleMileage != null && part.vehicleMileage >= vehicleMileageMin
+    }
+    if (vehicleMileageMax != null) {
+      match = match && part.vehicleMileage != null && part.vehicleMileage <= vehicleMileageMax
     }
     return match
   })
@@ -406,6 +569,21 @@ const showPartDetail = (partId: string) => {
   detailVisible.value = true
 }
 
+// 零件号选择时自动填充业务单元
+const onPartCodeChange = (partCode: string | undefined) => {
+  if (partCode) {
+    const matchingPart = availableParts.value.find(p => p.partCode === partCode)
+    if (matchingPart?.businessUnit) {
+      manualSearch.value.businessUnit = matchingPart.businessUnit
+    }
+  }
+}
+
+// Select 下拉搜索过滤
+const filterOption = (input: string, option: any) => {
+  return (option.key as string)?.toLowerCase().includes(input.toLowerCase())
+}
+
 // 手动抽样：应用筛选
 const applyManualFilter = () => {
   manualFilterApplied.value = { ...manualSearch.value }
@@ -413,15 +591,35 @@ const applyManualFilter = () => {
 
 // 手动抽样：重置筛选
 const resetManualFilter = () => {
-  manualSearch.value = { keyword: '', businessUnit: undefined }
-  manualFilterApplied.value = { keyword: '', businessUnit: undefined }
+  manualSearch.value = {
+    partCode: undefined,
+    businessUnit: undefined,
+    failureType: undefined,
+    partProductionDateRange: undefined,
+    vehicleMileageMin: undefined,
+    vehicleMileageMax: undefined,
+  }
+  manualFilterApplied.value = {
+    partCode: undefined,
+    businessUnit: undefined,
+    failureType: undefined,
+    partProductionDateRange: undefined,
+    vehicleMileageMin: undefined,
+    vehicleMileageMax: undefined,
+  }
 }
 
 // 当 visible 或 order 变化时加载数据并重置状态
 watch(
   () => [props.visible, props.order] as const,
-  ([visible, order]) => {
+  async ([visible, order]) => {
     if (!visible || !order) return
+
+    // 加载主数据业务单元选项（仅首次）
+    if (masterBusinessUnits.value.length === 0) {
+      const lookups = await lookupApi.getAll()
+      masterBusinessUnits.value = lookups.businessUnits
+    }
     internalReadOnly.value = props.readOnly ?? false
 
     samplingChoice.value = 'random'
@@ -574,6 +772,34 @@ const handleConfirmSampling = () => confirmDebounce.execute(async () => {
 
 .manual-search {
   margin-bottom: 16px;
+
+  .range-label {
+    font-size: 13px;
+    color: #555;
+    white-space: nowrap;
+  }
+
+  .mileage-range {
+    .mileage-inputs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+
+      :deep(.ant-input-number) {
+        flex: 1;
+      }
+
+      .mileage-separator {
+        color: #999;
+      }
+
+      .mileage-unit {
+        color: #666;
+        white-space: nowrap;
+      }
+    }
+  }
 }
 
 .modal-footer {
@@ -605,5 +831,18 @@ const handleConfirmSampling = () => confirmDebounce.execute(async () => {
     height: auto;
     line-height: 1;
   }
+}
+
+.detail-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.detail-images {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 </style>

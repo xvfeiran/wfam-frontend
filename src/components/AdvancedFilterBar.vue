@@ -160,7 +160,7 @@ onMounted(() => {
     resizeObserver = new ResizeObserver(() => {
       updateContainerWidth()
     })
-    resizeObserver.observe(filterBarRef.value)
+    resizeObserver.observe(filterBarRef.value as unknown as Element)
   }
 })
 

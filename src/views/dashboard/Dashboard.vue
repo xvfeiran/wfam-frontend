@@ -121,9 +121,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
+import { navigateTo } from '@/services/navigationService'
 import VChart from 'vue-echarts'
 import {
   FileTextOutlined,
@@ -143,7 +143,6 @@ import type { DashboardStats } from '@/services/dashboardApi'
 import type { Task } from '@/types'
 
 const { t } = useI18n()
-const router = useRouter()
 const timeRange = ref('month')
 const statsLoading = ref(false)
 const tasksLoading = ref(false)
@@ -305,30 +304,30 @@ const getTaskCountStyle = (priority: string) => {
 
 const handleTaskClick = (task: Task) => {
   if (task.type === 'initial_analysis') {
-    router.push({ path: '/return-orders', query: { status: 'submitted', fromTask: task.type } })
+    navigateTo('/return-parts', { status: 'in_initial_analysis', fromTask: task.type })
     return
   }
   if (task.type === 'detailed_analysis') {
-    router.push({ path: '/return-parts', query: { status: 'in_detailed_analysis', fromTask: task.type } })
+    navigateTo('/return-parts', { status: 'in_detailed_analysis', fromTask: task.type })
     return
   }
   if (task.type === 'warning') {
-    router.push({ path: '/return-parts', query: { status: 'in_detailed_analysis', alert: 'warning', fromTask: task.type } })
+    navigateTo('/return-parts', { status: 'in_detailed_analysis', alert: 'warning', fromTask: task.type })
     return
   }
   if (task.type === 'overdue') {
-    router.push({ path: '/return-parts', query: { status: 'in_detailed_analysis', alert: 'overdue', fromTask: task.type } })
+    navigateTo('/return-parts', { status: 'in_detailed_analysis', alert: 'overdue', fromTask: task.type })
     return
   }
   if (task.type === 'approval') {
-    router.push({ path: '/approval', query: { tab: 'pendingApproval', fromTask: task.type } })
+    navigateTo('/approval', { tab: 'myApproval', fromTask: task.type })
     return
   }
   if (task.type === 'scrap_confirm') {
-    router.push({ path: '/analysis-orders', query: { status: 'workon_scrap_in_progress', fromTask: task.type } })
+    navigateTo('/analysis-orders', { status: 'workon_scrap_in_progress', fromTask: task.type })
     return
   }
-  router.push('/dashboard')
+  navigateTo('/dashboard')
 }
 
 const handleQuickLink = (link: { path?: string; url?: string; external: boolean; i18nKey?: string; key?: string }) => {
@@ -338,13 +337,13 @@ const handleQuickLink = (link: { path?: string; url?: string; external: boolean;
     const name = t(`dashboard.${link.i18nKey || link.key || ''}`)
     message.warning(t('dashboard.linkNotConfigured', { name }))
   } else if (link.path) {
-    router.push(link.path)
+    navigateTo(link.path)
   }
 }
 
-const goToOrders = () => router.push('/return-orders')
-const goToParts = () => router.push('/return-parts')
-const goToReports = () => router.push('/reports')
+const goToOrders = () => navigateTo('/return-orders')
+const goToParts = () => navigateTo('/return-parts')
+const goToReports = () => navigateTo('/reports')
 </script>
 
 <style lang="less" scoped>

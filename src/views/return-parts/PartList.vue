@@ -17,7 +17,9 @@
       :selected-count="selectedRowKeys.length"
       :can-edit="canEditSelectedPart"
       :can-delete="canDeleteSelectedPart"
+      :export-loading="exportLoading"
       @create="handleCreate"
+      @export="handleExport"
       @edit="handleEdit"
       @delete="handleBatchDeleteWrapper"
     />
@@ -43,7 +45,9 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
+import dayjs from 'dayjs'
+import { navigateTo } from '@/services/navigationService'
 import { partApi } from '@/services/partApi'
 import { lookupApi } from '@/services/lookupApi'
 import { userApi } from '@/services/userApi'
@@ -76,6 +80,9 @@ const filters = ref({
   qcCreated: undefined as string | undefined,
   // 分析师用户默认选择自己
   analyst: isAnalyst.value ? currentUserUsername.value : undefined as string | undefined,
+  partProductionDateRange: undefined as [dayjs.Dayjs, dayjs.Dayjs] | undefined,
+  vehicleMileageMin: undefined as number | undefined,
+  vehicleMileageMax: undefined as number | undefined,
 })
 
 const {
@@ -106,6 +113,12 @@ const {
   if (filters.value.alertType) params.alertType = filters.value.alertType
   if (filters.value.qcCreated) params.qcCreated = filters.value.qcCreated
   if (filters.value.analyst) params.analyst = filters.value.analyst
+  if (filters.value.partProductionDateRange) {
+    params.partProductionDateFrom = filters.value.partProductionDateRange[0].format('YYYY-MM-DD')
+    params.partProductionDateTo = filters.value.partProductionDateRange[1].format('YYYY-MM-DD')
+  }
+  if (filters.value.vehicleMileageMin != null) params.vehicleMileageFrom = filters.value.vehicleMileageMin
+  if (filters.value.vehicleMileageMax != null) params.vehicleMileageTo = filters.value.vehicleMileageMax
 
   const result = await partApi.list(params)
   return { data: result.data, total: result.total }
@@ -121,6 +134,8 @@ const canEditSelectedPart = computed(() => {
   if (!selectedPart) return false
   // 未提交的售后件都可以编辑
   if (!selectedPart.partNumber) return true
+  // 信息录入/进行中状态的退件所有人都可以编辑
+  if (selectedPart.status === 'in_initial_analysis') return true
   // 已提交的售后件需要 QMC Leader 权限
   return canEditSubmittedForm.value
 })
@@ -168,9 +183,63 @@ const handleReset = async () => {
     qcCreated: undefined,
     // 分析师重置时仍然选择自己，其他角色重置为未选择
     analyst: isAnalyst.value ? currentUserUsername.value : undefined,
+    partProductionDateRange: undefined,
+    vehicleMileageMin: undefined,
+    vehicleMileageMax: undefined,
   }
   sortState.value = {}
   await loadData()
+}
+
+const exportLoading = ref(false)
+
+const handleExport = async () => {
+  if (exportLoading.value) return
+  exportLoading.value = true
+  try {
+    const params: Record<string, string> = {}
+    if (filters.value.orderNumber) params.orderNumber = filters.value.orderNumber
+    if (filters.value.partCode) params.partCode = filters.value.partCode
+    if (filters.value.businessUnit) params.businessUnit = filters.value.businessUnit
+    if (filters.value.productPlatform) params.productPlatform = filters.value.productPlatform
+    if (filters.value.status) params.status = filters.value.status
+    if (filters.value.qcCreated) params.qcCreated = filters.value.qcCreated
+    if (filters.value.analyst) params.analyst = filters.value.analyst
+    if (filters.value.partProductionDateRange) {
+      params.partProductionDateFrom = filters.value.partProductionDateRange[0].format('YYYY-MM-DD')
+      params.partProductionDateTo = filters.value.partProductionDateRange[1].format('YYYY-MM-DD')
+    }
+    if (filters.value.vehicleMileageMin != null) params.vehicleMileageFrom = String(filters.value.vehicleMileageMin)
+    if (filters.value.vehicleMileageMax != null) params.vehicleMileageTo = String(filters.value.vehicleMileageMax)
+
+    const blob = await partApi.exportExcel(params)
+
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    link.download = `售后件明细_${today}.xlsx`
+    link.click()
+    URL.revokeObjectURL(link.href)
+    message.success(t('message.exportSuccess'))
+  } catch (e: any) {
+    let errMsg = t('message.exportFailed')
+    try {
+      const raw = e?.response?.data
+      if (raw instanceof Blob) {
+        const text = await raw.text()
+        const body = JSON.parse(text)
+        if (body?.message) errMsg = body.message
+      } else if (raw?.message) {
+        errMsg = raw.message
+      }
+    } catch { /* use default message */ }
+    Modal.warning({
+      title: t('returnOrder.exportLimitTitle') || '导出数量超限',
+      content: errMsg,
+    })
+  } finally {
+    exportLoading.value = false
+  }
 }
 
 const handleCreate = () => {
@@ -192,7 +261,7 @@ const handleBatchDeleteWrapper = async () => {
 }
 
 const goToOrder = (orderId: string) => {
-  router.push(`/return-orders/${orderId}`)
+  navigateTo(`/return-orders/${orderId}`)
 }
 
 function applyTaskFiltersFromQuery() {

@@ -61,4 +61,11 @@ export const partApi = {
   getNextSequence(orderId: string): Promise<{ nextSequence: number }> {
     return request.get('/parts/next-sequence', { params: { orderId } }) as unknown as Promise<{ nextSequence: number }>
   },
+  exportExcel(params?: Omit<PartListParams, 'sortBy' | 'sortOrder' | 'page' | 'size'>): Promise<Blob> {
+    return request.get('/parts/export', {
+      params,
+      responseType: 'blob',
+      timeout: 120000,
+    }) as unknown as Promise<Blob>
+  },
 }

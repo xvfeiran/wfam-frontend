@@ -1,4 +1,4 @@
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
@@ -28,7 +28,7 @@ type OcrField = (typeof OCR_FIELDS)[number]
 /** 图片区域的展示状态 */
 export type OcrZoneState = 'idle' | 'uploading' | 'processing' | 'success' | 'failed'
 
-export function useOCR(form: Record<string, any>, partId?: string) {
+export function useOCR(form: Record<string, any>) {
   const { t } = useI18n()
 
   const zoneState = ref<OcrZoneState>('idle')
@@ -47,12 +47,6 @@ export function useOCR(form: Record<string, any>, partId?: string) {
   let pollTimer: ReturnType<typeof setInterval> | null = null
   let elapsedTimer: ReturnType<typeof setInterval> | null = null
 
-  onMounted(() => {
-    if (partId) {
-      loadLatestOcrForPart(partId)
-    }
-  })
-
   const handleOCRUpload = async (file: File) => {
     previewUrl.value = URL.createObjectURL(file)
     zoneState.value = 'uploading'
@@ -61,7 +55,7 @@ export function useOCR(form: Record<string, any>, partId?: string) {
     startElapsed()
 
     try {
-      const task = await ocrApi.createTask(file, partId)
+      const task = await ocrApi.createTask(file)
       ocrTaskId.value = task.taskId
       zoneState.value = 'processing'
       startPolling(task.taskId)
@@ -136,44 +130,6 @@ export function useOCR(form: Record<string, any>, partId?: string) {
     previewUrl.value = ''
     resetResults()
     zoneState.value = 'idle'
-  }
-
-  const loadLatestOcrForPart = async (currentPartId: string) => {
-    try {
-      const task = await ocrApi.getLatestTaskByPartId(currentPartId)
-      if (!task?.taskId) return
-      ocrTaskId.value = task.taskId
-
-      try {
-        const imageBlob = await ocrApi.getTaskImage(task.taskId)
-        previewUrl.value = URL.createObjectURL(imageBlob)
-      } catch {
-        previewUrl.value = ''
-      }
-
-      if (task.status === 'SUCCESS') {
-        if (task.result) {
-          writeResultsToForm(task.result, false)
-        } else {
-          setAllError()
-        }
-        zoneState.value = 'success'
-        return
-      }
-
-      if (task.status === 'FAILED') {
-        setAllError()
-        zoneState.value = 'failed'
-        return
-      }
-
-      if (task.status === 'PROCESSING' || task.status === 'CREATED') {
-        zoneState.value = 'processing'
-        startPolling(task.taskId)
-      }
-    } catch {
-      // 无历史 OCR 图片时静默处理，保持 idle
-    }
   }
 
   const retryOCR = async () => {

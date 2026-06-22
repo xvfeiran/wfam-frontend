@@ -81,7 +81,7 @@ const columns = computed(() => [
     dataIndex: 'customer',
     key: 'customer',
     sorter: true,
-    filters: props.customers.map(c => ({ text: c.name, value: c.name })),
+    filters: props.customers.map(c => ({ text: c.code || c.name, value: c.code || c.name })),
   },
   { title: t('returnOrder.receiveDate'), dataIndex: 'receiveDate', key: 'receiveDate', sorter: true },
   { title: t('returnOrder.complaintDate'), dataIndex: 'complaintDate', key: 'complaintDate', sorter: true },

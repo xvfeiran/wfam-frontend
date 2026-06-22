@@ -42,12 +42,25 @@
         </a-card>
       </a-tab-pane>
 
-      <!-- 待我审批 - 别人提交的申请待我审批（仅 QMC Leader 可见） -->
-      <a-tab-pane v-if="isQMCLeader" key="pendingApproval" :tab="t('approval.pendingApproval')">
+      <!-- 我的审批 - 我审批过的和待我审批的（仅 QMC Leader 可见） -->
+      <a-tab-pane v-if="isQMCLeader" key="myApproval" :tab="t('approval.myApproval')">
         <a-card>
+          <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <span style="white-space: nowrap;">{{ t('common.status') }}：</span>
+            <a-select
+              v-model:value="approvalStatusFilter"
+              style="width: 160px"
+              allow-clear
+            >
+              <a-select-option value="all">{{ t('common.all') }}</a-select-option>
+              <a-select-option v-for="status in approvalStatusOptions" :key="status" :value="status">
+                {{ getStatusLabel(status) }}
+              </a-select-option>
+            </a-select>
+          </div>
           <a-table
             :columns="approvalAnalysisColumns"
-            :data-source="pendingAnalysisApprovals"
+            :data-source="filteredMyApprovals"
             :pagination="tablePagination"
             row-key="id"
             size="middle"
@@ -112,36 +125,18 @@
       </a-form>
     </a-modal>
 
-    <!-- 精分析报告查看弹窗 -->
-    <a-modal
-      v-model:open="reportModalVisible"
-      :title="t('approval.reportDetail')"
-      width="800px"
-      :footer="null"
-    >
-      <template v-if="currentReport">
-        <a-descriptions :column="2" bordered>
-          <a-descriptions-item :label="t('approval.reportNumber')">{{ currentReport.reportNumber }}</a-descriptions-item>
-          <a-descriptions-item :label="t('returnPart.partNumber')">{{ currentReport.partNumber }}</a-descriptions-item>
-          <a-descriptions-item :label="t('returnPart.productPlatform')">{{ currentReport.productPlatform }}</a-descriptions-item>
-          <a-descriptions-item :label="t('returnPart.failureType')">{{ currentReport.failureType ? t('returnPart.failureTypeLabels.' + currentReport.failureType) : '-' }}</a-descriptions-item>
-          <a-descriptions-item :label="t('approval.submitter')">{{ currentReport.submitter }}</a-descriptions-item>
-          <a-descriptions-item :label="t('approval.submitTime')">{{ currentReport.submitTime }}</a-descriptions-item>
-          <a-descriptions-item :label="t('approval.reportSummary')" :span="2">{{ currentReport.summary }}</a-descriptions-item>
-        </a-descriptions>
-        <a-divider>{{ t('approval.reportContent') }}</a-divider>
-        <a-descriptions :column="1" bordered size="small">
-          <a-descriptions-item v-for="(value, key) in currentReport.content" :key="key" :label="getFieldLabel(key)">
-            {{ value }}
-          </a-descriptions-item>
-        </a-descriptions>
-      </template>
-    </a-modal>
+    <!-- 精分析报告查看弹窗（复用 AnalysisReportModal） -->
+    <AnalysisReportModal
+      v-model:visible="reportModalVisible"
+      :part="selectedPart"
+      :readonly="true"
+      @success="handleReportModalSuccess"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
@@ -149,14 +144,16 @@ import { CheckOutlined, CloseOutlined, EyeOutlined, DownOutlined } from '@ant-de
 import {
   ApprovalStatus,
   APPROVAL_STATUS_MAP,
-  ANALYSIS_FIELD_LABELS,
   type AnalysisApplication,
 } from '@/types'
+import type { Part } from '@/types'
 import { useStatusLabels } from '@/composables/useStatusLabels'
 import { usePermissions } from '@/composables/usePermissions'
 import { approvalApi } from '@/services/approvalApi'
+import { partApi } from '@/services/partApi'
 import { useApprovalColumns } from '@/composables/useApprovalColumns'
 import { useDebouncedClick } from '@/composables/useDebouncedClick'
+import AnalysisReportModal from '@/views/return-parts/components/AnalysisReportModal.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -170,7 +167,7 @@ const rejectModalVisible = ref(false)
 const reportModalVisible = ref(false)
 const rejectReason = ref('')
 const currentRejectRecord = ref<AnalysisApplication | null>(null)
-const currentReport = ref<AnalysisApplication | null>(null)
+const selectedPart = ref<Part | null>(null)
 
 // 防抖处理
 const rejectDebounce = useDebouncedClick({ delay: 1000 })
@@ -185,18 +182,30 @@ const tablePagination = {
 // 我的精分析申请（我提交的）
 const myAnalysisApplications = ref<AnalysisApplication[]>([])
 
-// 待我审批的精分析报告（别人提交的）
-const pendingAnalysisApprovals = ref<AnalysisApplication[]>([])
+// 我的审批记录（待审批 + 已审批/已驳回）
+const myApprovalRecords = ref<AnalysisApplication[]>([])
+
+// 状态筛选
+const approvalStatusFilter = ref<string | undefined>('all')
+const approvalStatusOptions = [ApprovalStatus.PENDING, ApprovalStatus.APPROVED, ApprovalStatus.REJECTED]
+
+// 根据筛选条件过滤审批记录
+const filteredMyApprovals = computed(() => {
+  if (!approvalStatusFilter.value || approvalStatusFilter.value === 'all') {
+    return myApprovalRecords.value
+  }
+  return myApprovalRecords.value.filter(r => r.status === approvalStatusFilter.value)
+})
 
 onMounted(async () => {
   myAnalysisApplications.value = await approvalApi.getMyApplications()
 
   if (isQMCLeader.value) {
-    pendingAnalysisApprovals.value = await approvalApi.getPendingApprovals()
+    myApprovalRecords.value = await approvalApi.getMyApprovals()
   }
 
-  if (isQMCLeader.value && route.query.tab === 'pendingApproval') {
-    mainTab.value = 'pendingApproval'
+  if (isQMCLeader.value && (route.query.tab === 'myApproval' || route.query.tab === 'pendingApproval')) {
+    mainTab.value = 'myApproval'
   }
 
   // 处理从精分析弹窗跳转过来的路由参数
@@ -217,8 +226,8 @@ watch(
   (tab) => {
     if (tab === 'myApplications') {
       mainTab.value = tab
-    } else if (tab === 'pendingApproval' && isQMCLeader.value) {
-      mainTab.value = tab
+    } else if ((tab === 'myApproval' || tab === 'pendingApproval') && isQMCLeader.value) {
+      mainTab.value = 'myApproval'
     }
   },
 )
@@ -235,11 +244,6 @@ const getStatusColor = (status: ApprovalStatus) => {
 // 状态标签映射
 const getStatusLabel = (status: ApprovalStatus) => getApprovalLabel(status)
 
-// 字段标签映射
-const getFieldLabel = (key: string) => {
-  return ANALYSIS_FIELD_LABELS[key] || key
-}
-
 // 撤回申请
 const handleCancelApplication = (record: AnalysisApplication) => {
   Modal.confirm({
@@ -254,10 +258,19 @@ const handleCancelApplication = (record: AnalysisApplication) => {
   })
 }
 
-// 查看报告
-const handleViewReport = (record: AnalysisApplication) => {
-  currentReport.value = record
-  reportModalVisible.value = true
+// 查看报告（通过 partId 加载 Part，复用 AnalysisReportModal）
+const handleViewReport = async (record: AnalysisApplication) => {
+  try {
+    selectedPart.value = await partApi.getById(record.partId)
+    reportModalVisible.value = true
+  } catch {
+    message.error(t('message.operationFailed'))
+  }
+}
+
+// 报告弹窗操作成功回调
+const handleReportModalSuccess = async () => {
+  reportModalVisible.value = false
 }
 
 // 审批通过
@@ -267,7 +280,7 @@ const handleApprove = (record: AnalysisApplication) => {
     content: t('approval.confirmApprove').replace('{type}', t('approval.analysisReport')),
     onOk: async () => {
       await approvalApi.approve(record.id)
-      const item = pendingAnalysisApprovals.value.find(a => a.id === record.id)
+      const item = myApprovalRecords.value.find(a => a.id === record.id)
       if (item) item.status = ApprovalStatus.APPROVED
       message.success(t('message.approvalComplete'))
     },
@@ -292,7 +305,7 @@ const handleConfirmReject = () => rejectDebounce.execute(async () => {
 
   await approvalApi.reject(currentRejectRecord.value.id, rejectReason.value)
 
-  const item = pendingAnalysisApprovals.value.find(a => a.id === currentRejectRecord.value!.id)
+  const item = myApprovalRecords.value.find(a => a.id === currentRejectRecord.value!.id)
   if (item) item.status = ApprovalStatus.REJECTED
 
   rejectModalVisible.value = false

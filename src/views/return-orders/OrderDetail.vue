@@ -7,7 +7,9 @@
       <template #extra>
         <a-space>
           <a-button v-if="canShowEditButton && order?.status !== 'scrapped'" @click="handleEdit">{{ t('common.edit') }}</a-button>
-          <a-button v-if="order?.status === 'draft'" type="primary" @click="handleSubmit">{{ t('common.submit') }}</a-button>
+          <a-tooltip v-if="order?.status === 'draft' || order?.status === 'submitted'" :title="endEntryDisabledReason">
+            <a-button type="primary" :disabled="!canEndEntry" @click="handleEndEntry">{{ t('common.endEntry') }}</a-button>
+          </a-tooltip>
         </a-space>
       </template>
     </a-page-header>
@@ -69,6 +71,7 @@
           <a-steps direction="vertical" :current="currentStep" size="small">
             <a-step :title="t('orderDetail.stepDraft')" :description="getStepDescription(0)" />
             <a-step :title="t('orderDetail.stepSubmitted')" :description="getStepDescription(1)" />
+            <a-step :title="t('orderDetail.stepRegistered')" :description="getStepDescription(2)" />
           </a-steps>
         </a-card>
       </a-col>
@@ -80,6 +83,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { navigateTo } from '@/services/navigationService'
 import { useI18n } from 'vue-i18n'
 import { message, Modal } from 'ant-design-vue'
 import { PlusOutlined } from '@ant-design/icons-vue'
@@ -123,17 +127,18 @@ const refreshData = async () => {
   }
 }
 
-// 状态步骤映射（v3.1 添加已报废状态）
+// 状态步骤映射
 const statusStepMap: Record<string, number> = {
   [OrderStatus.DRAFT]: 0,
   [OrderStatus.SUBMITTED]: 1,
-  [OrderStatus.SCRAPPED]: 1,
+  [OrderStatus.REGISTERED]: 2,
+  [OrderStatus.SCRAPPED]: 2,
 }
 
 const currentStep = computed(() => {
   if (!order.value) return 0
-  if (order.value.status === OrderStatus.SUBMITTED) {
-    return 2 // 比最大步骤索引1大1，显示为"已完成"
+  if (order.value.status === OrderStatus.REGISTERED) {
+    return 3
   }
   return statusStepMap[order.value.status] ?? 0
 })
@@ -150,10 +155,26 @@ const canShowEditButton = computed(() => {
 })
 
 // Add part button visibility logic:
-// - Only draft and submitted status can add parts (scrapped orders cannot add parts)
+// - Draft and submitted status can add parts; registered/scrapped cannot
 const canAddPart = computed(() => {
   if (!order.value) return false
   return order.value.status === 'draft' || order.value.status === 'submitted'
+})
+
+// End entry button: enabled only in submitted status with at least one part
+const canEndEntry = computed(() => {
+  if (!order.value) return false
+  return order.value.status === 'submitted'
+    && (order.value.initialAnalysisQuantity ?? 0) > 0
+    && (order.value.draftPartsCount ?? 0) === 0
+})
+
+const endEntryDisabledReason = computed(() => {
+  if (!order.value) return ''
+  if (order.value.status === 'draft') return t('message.endEntryDisabledDraft')
+  if ((order.value.initialAnalysisQuantity ?? 0) === 0) return t('message.endEntryDisabledNoParts')
+  if ((order.value.draftPartsCount ?? 0) > 0) return t('message.endEntryDisabledDraftParts')
+  return ''
 })
 
 const { getOrderLabel } = useStatusLabels()
@@ -225,11 +246,11 @@ const handleEdit = () => {
   router.push(`/return-orders/${orderId.value}/edit`)
 }
 
-const confirmSubmit = () => {
+const confirmEndEntry = () => {
   return new Promise<boolean>((resolve) => {
     Modal.confirm({
       title: t('common.tip'),
-      content: t('message.submitConfirmWarning'),
+      content: t('message.endEntryConfirmWarning'),
       okText: t('common.confirm'),
       cancelText: t('common.cancel'),
       onOk: () => resolve(true),
@@ -238,23 +259,20 @@ const confirmSubmit = () => {
   })
 }
 
-const handleSubmit = async () => {
-  const confirmed = await confirmSubmit()
+const handleEndEntry = async () => {
+  const confirmed = await confirmEndEntry()
   if (!confirmed) return
 
   try {
-    order.value = await returnOrderApi.submit(orderId.value)
-    message.success(t('message.submitSuccess'))
+    order.value = await returnOrderApi.endEntry(orderId.value)
+    message.success(t('message.endEntrySuccess'))
   } catch {
-    message.error(t('message.submitSuccess'))
+    message.error(t('message.submitFailed'))
   }
 }
 
 const handleAddPart = () => {
-  router.push({
-    path: '/return-parts/new',
-    query: { orderId: orderId.value, fromOrderDetail: 'true' }
-  })
+  navigateTo('/return-parts/new', { orderId: orderId.value, fromOrderDetail: 'true' })
 }
 </script>
 

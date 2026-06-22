@@ -101,9 +101,10 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useDevMode } from '@/composables/useDevMode'
+import { navigateTo } from '@/services/navigationService'
 import {
   DashboardOutlined,
   FileTextOutlined,
@@ -122,7 +123,6 @@ import UserSwitcher from '@/components/UserSwitcher.vue'
 const { t } = useI18n()
 const { isDevMode } = useDevMode()
 const route = useRoute()
-const router = useRouter()
 const collapsed = ref(false)
 const selectedKeys = ref<string[]>(['/dashboard'])
 const openKeys = ref<string[]>([])
@@ -209,7 +209,7 @@ watch(
 )
 
 const handleMenuClick = ({ key }: { key: string }) => {
-  router.push(key)
+  navigateTo(key)
 }
 </script>
 
