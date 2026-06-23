@@ -40,7 +40,7 @@ interface ReturnBarParams {
 interface PpmTrendParams {
   bu?: string[] | null
   dateRange: [string, string] | null
-  platform: string[] | null
+  productPlatform: string[] | null
   customer: string[] | null
   faultMode: string[] | null
   partNo: string[] | null

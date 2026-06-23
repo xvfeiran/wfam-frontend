@@ -63,7 +63,7 @@ async function fetchData() {
     const params: PpmTrendParams = {
       bu: [props.bu],
       dateRange: localFilters.value.dateRange,
-      platform: localFilters.value.platform.length ? localFilters.value.platform : null,
+      productPlatform: localFilters.value.platform.length ? localFilters.value.platform : null,
       customer: localFilters.value.customer.length ? localFilters.value.customer : null,
       bcso: localFilters.value.bcso.length ? localFilters.value.bcso : null,
       faultMode: localFilters.value.faultMode.length ? localFilters.value.faultMode : null,
