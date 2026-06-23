@@ -62,7 +62,7 @@ async function fetchData() {
   try {
     const params: PpmTrendParams = {
       bu: [props.bu],
-      dateRange: defaultDateRange,
+      dateRange: localFilters.value.dateRange,
       platform: localFilters.value.platform.length ? localFilters.value.platform : null,
       customer: localFilters.value.customer.length ? localFilters.value.customer : null,
       bcso: localFilters.value.bcso.length ? localFilters.value.bcso : null,
@@ -106,7 +106,7 @@ onUnmounted(() => {
 
 function handleFilterSearch(values: any) {
   localFilters.value = {
-    dateRange: localFilters.value.dateRange,
+    dateRange: values.dateRange ?? defaultDateRange,
     platform: values.platform ?? [],
     customer: values.customer ?? [],
     bcso: values.bcso ?? [],
