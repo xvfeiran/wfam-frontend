@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { Row, Col } from 'ant-design-vue'
+import dayjs from 'dayjs'
 import ReturnQuantityCard from './components/quality/ReturnQuantityCard.vue'
 import ReturnTreemapChart from './components/quality/ReturnTreemapChart.vue'
 import ReturnBarChart from './components/quality/ReturnBarChart.vue'
@@ -24,6 +25,17 @@ onMounted(() => {
   }, 100)
   optionsStore.fetchOptions()
 })
+
+function resetReturnBarFilters() {
+  store.setFilter('returnBarDateRange', [dayjs().startOf('year').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')])
+  store.setFilter('returnBarCustomer', null)
+  store.setFilter('returnBarBu', null)
+  store.setFilter('returnBarBcso', null)
+  store.setFilter('returnBarPlatform', null)
+  store.setFilter('returnBarKilometer', null)
+  store.setFilter('returnBarFaultMode', null)
+  store.setFilter('returnBarPartNo', null)
+}
 </script>
 
 <template>
@@ -151,6 +163,7 @@ onMounted(() => {
                   store.setFilter('returnBarPartNo', val.partNo ?? null)
                 }
               "
+              @reset="resetReturnBarFilters"
             />
           </div>
           <div class="chart-container">
