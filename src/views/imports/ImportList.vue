@@ -61,9 +61,11 @@ import { message } from 'ant-design-vue'
 import { ImportOutlined, LoadingOutlined } from '@ant-design/icons-vue'
 import { importApi } from '@/services/importApi'
 import type { ImportRecord } from '@/types'
+import { useUserNameMap } from '@/composables/useUserNameMap'
 import ImportModal from './components/ImportModal.vue'
 
 const { t } = useI18n()
+const { displayName: userDisplayName } = useUserNameMap()
 const router = useRouter()
 
 const records = ref<ImportRecord[]>([])
@@ -91,7 +93,13 @@ const columns = computed(() => [
     key: 'counts',
     width: 150,
   },
-  { title: t('importModule.createdBy'), key: 'createdBy', dataIndex: 'createdBy', width: 120 },
+  {
+    title: t('importModule.createdBy'),
+    key: 'createdBy',
+    dataIndex: 'createdBy',
+    width: 120,
+    customRender: ({ text }: { text: string }) => userDisplayName(text),
+  },
   { title: t('importModule.createdAt'), key: 'createdAt', dataIndex: 'createdAt', width: 160 },
   { title: t('common.operation'), key: 'action', width: 100 },
 ])

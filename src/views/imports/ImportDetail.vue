@@ -35,7 +35,7 @@
         <a-descriptions-item :label="t('importModule.totalCount')">{{ record.totalCount }}</a-descriptions-item>
         <a-descriptions-item :label="t('importModule.successCount')">{{ record.successCount }}</a-descriptions-item>
         <a-descriptions-item :label="t('importModule.failCount')">{{ record.failCount }}</a-descriptions-item>
-        <a-descriptions-item :label="t('importModule.createdBy')">{{ record.createdBy || '-' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('importModule.createdBy')">{{ userDisplayName(record.createdBy) }}</a-descriptions-item>
         <a-descriptions-item :label="t('importModule.createdAt')">{{ formatDateTime(record.createdAt) }}</a-descriptions-item>
       </a-descriptions>
     </a-card>
@@ -131,10 +131,12 @@ import { Modal, message } from 'ant-design-vue'
 import { LoadingOutlined } from '@ant-design/icons-vue'
 import { importApi, type ImportFileSummary } from '@/services/importApi'
 import type { ImportRecord, ImportLogEntry } from '@/types'
+import { useUserNameMap } from '@/composables/useUserNameMap'
 
 type ViewLogEntry = ImportLogEntry & { _key: string; _fileName: string }
 
 const { t } = useI18n()
+const { displayName: userDisplayName } = useUserNameMap()
 const route = useRoute()
 const router = useRouter()
 

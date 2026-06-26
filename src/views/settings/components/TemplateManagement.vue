@@ -30,6 +30,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PlusOutlined } from '@ant-design/icons-vue'
+import { useUserNameMap } from '@/composables/useUserNameMap'
 
 interface TemplateItem {
   id: string
@@ -54,13 +55,19 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { displayName: userDisplayName } = useUserNameMap()
 
 const columns = computed(() => [
   { title: t('settings.templateName'), dataIndex: 'name', key: 'name' },
   { title: t('settings.productPlatform'), dataIndex: 'productPlatform', key: 'productPlatform' },
   { title: t('settings.failureType'), dataIndex: 'failureType', key: 'failureType' },
   { title: t('settings.uploadTime'), dataIndex: 'uploadTime', key: 'uploadTime' },
-  { title: t('settings.uploadBy'), dataIndex: 'uploadBy', key: 'uploadBy' },
+  {
+    title: t('settings.uploadBy'),
+    dataIndex: 'uploadBy',
+    key: 'uploadBy',
+    customRender: ({ text }: { text: string }) => userDisplayName(text),
+  },
   { title: t('common.operation'), key: 'action', width: 120 },
 ])
 </script>
