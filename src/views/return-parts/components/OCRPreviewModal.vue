@@ -202,6 +202,16 @@ const localForm = reactive<{
 watch(
   () => props.ocrResults,
   (results) => {
+    // 先重置为空，避免上一次识别的值残留（例如重新识别无内容的图片时应清空）
+    localForm.vehicleProductionDate = null
+    localForm.vehiclePurchaseDate = null
+    localForm.vehicleFailureDate = null
+    localForm.vehicleVIN = ''
+    localForm.vehicleMileage = null
+    localForm.repairStation = ''
+    localForm.complaintLocation = ''
+    localForm.customerDescription = ''
+
     if (results.vehicleProductionDate?.status === 'success') {
       localForm.vehicleProductionDate = parseDate(results.vehicleProductionDate.value)
     }

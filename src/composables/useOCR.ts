@@ -186,6 +186,19 @@ export function useOCR(form: Record<string, any>) {
         }
         ocrResults[field] = { value: String(val), status: 'success' }
       } else {
+        // 本次识别该字段无值：清空表单字段，避免残留上一次识别的内容
+        if (applyToForm) {
+          switch (field) {
+            case 'vehicleProductionDate':
+            case 'vehiclePurchaseDate':
+            case 'vehicleFailureDate':
+            case 'vehicleMileage':
+              form[field] = null
+              break
+            default:
+              form[field] = ''
+          }
+        }
         ocrResults[field] = { value: '', status: 'error' }
       }
     })
