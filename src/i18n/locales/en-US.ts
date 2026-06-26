@@ -428,6 +428,7 @@ export default {
     selectAnalyst: 'Please select analyst',
     formError: 'Please check form fields',
     pleaseSelect: 'Please select',
+    pleaseInput: 'Please input',
     autoGenerateOnSave: 'Auto-generated on save',
     partNumberRequired: 'Part number is required (min 1)',
     partNumberDuplicate: 'This part number already exists in the same return order',

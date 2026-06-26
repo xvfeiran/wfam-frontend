@@ -445,6 +445,7 @@ export default {
     selectAnalyst: '请选择分析师',
     formError: '请检查表单填写',
     pleaseSelect: '请选择',
+    pleaseInput: '请输入',
     autoGenerateOnSave: '保存时自动生成',
     partNumberRequired: '请填写退件编号（最小为1）',
     partNumberDuplicate: '该编号在同退货单下已存在',
