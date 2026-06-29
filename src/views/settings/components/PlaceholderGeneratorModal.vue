@@ -120,7 +120,7 @@ const form = reactive({
 const ILLEGAL = /[:\[\]]/
 
 const fieldNameError = computed(() => {
-  if (!form.fieldName) return ''
+  if (!form.fieldName) return t('settings.pgFieldNameRequired')
   if (ILLEGAL.test(form.fieldName)) return t('settings.pgFieldNameIllegal')
   return ''
 })
