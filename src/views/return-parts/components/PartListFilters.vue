@@ -10,7 +10,23 @@
         </a-col>
         <a-col :span="12">
           <a-form-item :label="t('returnPart.partCode')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-            <a-input v-model:value="localFilters.partCode" :placeholder="t('validation.inputPartCode')" allowClear />
+            <a-select
+              v-model:value="localFilters.partCode"
+              :placeholder="t('validation.inputPartCode')"
+              show-search
+              :filter-option="false"
+              :not-found-content="partCodeSearching ? undefined : null"
+              @search="handlePartCodeSearch"
+              @dropdownVisibleChange="handlePartCodeDropdownVisibleChange"
+              allowClear
+            >
+              <template v-if="partCodeSearching" #notFoundContent>
+                <a-spin size="small" />
+              </template>
+              <a-select-option v-for="pc in partCodeOptions" :key="pc.partCode" :value="pc.partCode">
+                {{ pc.partCode }}
+              </a-select-option>
+            </a-select>
           </a-form-item>
         </a-col>
       </a-row>
@@ -121,12 +137,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
 import { PartStatus } from '@/types'
 import { useStatusLabels } from '@/composables/useStatusLabels'
+import { partCodeApi } from '@/services/partCodeApi'
 
 const MAX_MILEAGE = 300000
 
@@ -161,6 +178,47 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { getStatusLabel } = useStatusLabels()
 const statusOptions = Object.values(PartStatus)
+
+// 零件号下拉选项（远程搜索）
+const partCodeOptions = ref<any[]>([])
+const partCodeSearching = ref(false)
+let partCodeSearchTimer: ReturnType<typeof setTimeout> | null = null
+
+const loadPartCodeOptions = async (keyword?: string) => {
+  partCodeSearching.value = true
+  try {
+    const result = await partCodeApi.page({
+      partCode: keyword && keyword.trim() ? keyword.trim() : undefined,
+      pageSize: 50,
+    })
+    partCodeOptions.value = result.data || []
+  } catch (error) {
+    console.error('Failed to search part codes:', error)
+    partCodeOptions.value = []
+  } finally {
+    partCodeSearching.value = false
+  }
+}
+
+const handlePartCodeSearch = (value: string) => {
+  if (partCodeSearchTimer) {
+    clearTimeout(partCodeSearchTimer)
+  }
+  if (!value || value.trim() === '') {
+    partCodeOptions.value = []
+    return
+  }
+  // 防抖：300ms 后执行搜索
+  partCodeSearchTimer = setTimeout(() => {
+    loadPartCodeOptions(value)
+  }, 300)
+}
+
+const handlePartCodeDropdownVisibleChange = (open: boolean) => {
+  if (open && partCodeOptions.value.length === 0) {
+    loadPartCodeOptions()
+  }
+}
 
 const localFilters = computed({
   get: () => props.filters,
