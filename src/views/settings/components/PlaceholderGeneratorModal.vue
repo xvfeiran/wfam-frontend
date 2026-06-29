@@ -23,37 +23,48 @@
         </div>
       </a-form-item>
 
-      <!-- 字段名 -->
-      <a-form-item :label="t('settings.pgFieldName')" required>
-        <a-input
-          v-model:value="form.fieldName"
-          :placeholder="t('settings.pgFieldNamePlaceholder')"
-        />
-        <div v-if="fieldNameError" class="field-error">{{ fieldNameError }}</div>
-      </a-form-item>
+      <!-- 字段名 + 必填（同一行）-->
+      <a-row :gutter="12">
+        <a-col :span="18">
+          <a-form-item :label="t('settings.pgFieldName')" required>
+            <a-input
+              v-model:value="form.fieldName"
+              :placeholder="t('settings.pgFieldNamePlaceholder')"
+            />
+            <div v-if="fieldNameError" class="field-error">{{ fieldNameError }}</div>
+          </a-form-item>
+        </a-col>
+        <a-col :span="6">
+          <a-form-item :label="t('settings.pgRequired')">
+            <a-switch v-model:checked="form.required" />
+          </a-form-item>
+        </a-col>
+      </a-row>
 
-      <!-- 中文标签 -->
-      <a-form-item :label="t('settings.pgLabelZh')">
-        <a-input v-model:value="form.labelZh" />
-      </a-form-item>
+      <!-- 中文 / 英文标签（同一行）-->
+      <a-row :gutter="12">
+        <a-col :span="12">
+          <a-form-item :label="t('settings.pgLabelZh')">
+            <a-input v-model:value="form.labelZh" />
+          </a-form-item>
+        </a-col>
+        <a-col :span="12">
+          <a-form-item :label="t('settings.pgLabelEn')">
+            <a-input v-model:value="form.labelEn" />
+          </a-form-item>
+        </a-col>
+      </a-row>
 
-      <!-- 英文标签 -->
-      <a-form-item :label="t('settings.pgLabelEn')">
-        <a-input v-model:value="form.labelEn" />
-      </a-form-item>
-
-      <!-- 必填 -->
-      <a-form-item :label="t('settings.pgRequired')">
-        <a-switch v-model:checked="form.required" />
-      </a-form-item>
-
-      <!-- 选项：仅 select 显示 -->
+      <!-- 选项：仅 select 显示，标签输入（回车或逗号添加）-->
       <a-form-item v-if="form.type === 'select'" :label="t('settings.pgOptions')">
-        <a-input
+        <a-select
           v-model:value="form.options"
+          mode="tags"
           :placeholder="t('settings.pgOptionsPlaceholder')"
+          :token-separators="[',']"
+          style="width: 100%"
         />
-        <div v-if="!form.options" class="field-warn">{{ t('settings.pgOptionsHint') }}</div>
+        <div v-if="form.options.length === 0" class="field-warn">{{ t('settings.pgOptionsHint') }}</div>
       </a-form-item>
 
       <!-- 预览 -->
@@ -114,7 +125,7 @@ const form = reactive({
   labelZh: '',
   labelEn: '',
   required: false,
-  options: '',
+  options: [] as string[],
 })
 
 const ILLEGAL = /[:\[\]]/
@@ -128,7 +139,7 @@ const fieldNameError = computed(() => {
 const isValid = computed(() => !!form.fieldName && !ILLEGAL.test(form.fieldName))
 
 const placeholder = computed(() => {
-  const opts = form.type === 'select' ? form.options : ''
+  const opts = form.type === 'select' ? form.options.join(',') : ''
   return `[[${form.type}:${form.fieldName}:${form.labelZh}:${form.labelEn}:${form.required}:${opts}]]`
 })
 
@@ -148,11 +159,14 @@ const handleReset = () => {
   form.labelZh = ''
   form.labelEn = ''
   form.required = false
-  form.options = ''
+  form.options = []
 }
 </script>
 
 <style lang="less" scoped>
+:deep(.ant-form-item) {
+  margin-bottom: 12px;
+}
 .type-cards {
   display: flex;
   flex-wrap: wrap;
