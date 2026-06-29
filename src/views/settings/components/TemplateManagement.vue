@@ -2,9 +2,14 @@
   <div class="template-management">
     <a-card :title="t('settings.templateManagement')">
       <template #extra>
-        <a-button type="primary" @click="$emit('add-template')">
-          <PlusOutlined /> {{ t('settings.uploadTemplate') }}
-        </a-button>
+        <a-space>
+          <a-button @click="placeholderGeneratorVisible = true">
+            <ThunderboltOutlined /> {{ t('settings.pgGenerator') }}
+          </a-button>
+          <a-button type="primary" @click="$emit('add-template')">
+            <PlusOutlined /> {{ t('settings.uploadTemplate') }}
+          </a-button>
+        </a-space>
       </template>
       <a-table :columns="columns" :data-source="templates" :pagination="false" row-key="id" size="middle" :bordered="false">
         <template #bodyCell="{ column, record }">
@@ -23,14 +28,20 @@
         </template>
       </a-table>
     </a-card>
+
+    <PlaceholderGeneratorModal
+      :visible="placeholderGeneratorVisible"
+      @cancel="placeholderGeneratorVisible = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { PlusOutlined } from '@ant-design/icons-vue'
+import { PlusOutlined, ThunderboltOutlined } from '@ant-design/icons-vue'
 import { useUserNameMap } from '@/composables/useUserNameMap'
+import PlaceholderGeneratorModal from './PlaceholderGeneratorModal.vue'
 
 interface TemplateItem {
   id: string
@@ -55,6 +66,7 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
+const placeholderGeneratorVisible = ref(false)
 const { displayName: userDisplayName } = useUserNameMap()
 
 const columns = computed(() => [
