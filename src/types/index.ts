@@ -64,7 +64,7 @@ export interface Part {
   partProductionDate?: string
   productionShift?: string
   failureType?: string        // 客户失效类型（NVH/功能/外观）
-  boschFailureType?: string   // 博世失效类型（BA代码）
+  boschFailureType?: string   // 博世失效类型（责任判定 B/C/S/O，由精分析报告自动回写）
   responsibleEngineer?: string
   analyst?: string
   qcNo?: string

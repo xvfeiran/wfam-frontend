@@ -51,18 +51,6 @@
 
         <a-row :gutter="24">
           <a-col :span="12">
-            <a-form-item :label="t('returnPart.boschFailureType')" name="boschFailureType">
-              <a-select v-model:value="form.boschFailureType" :placeholder="t('returnPart.boschFailureType')" allow-clear>
-                <a-select-option v-for="item in COMPLAINT_TYPES" :key="item.value" :value="item.value">
-                  {{ item.label }}
-                </a-select-option>
-              </a-select>
-            </a-form-item>
-          </a-col>
-        </a-row>
-
-        <a-row :gutter="24">
-          <a-col :span="12">
             <a-form-item :label="t('analysisForm.failureMode')" name="failureMode" :rules="[{ required: true, message: t('analysisForm.pleaseSelectFailureMode') }]">
               <a-select v-model:value="form.failureMode" :placeholder="t('analysisForm.pleaseSelectFailureMode')">
                 <a-select-option value="电气故障">{{ t('analysisForm.failureElectrical') }}</a-select-option>
@@ -178,7 +166,6 @@ import { message } from 'ant-design-vue'
 import { DownloadOutlined, PlusOutlined, CameraOutlined } from '@ant-design/icons-vue'
 import { partApi } from '@/services/partApi'
 
-import { COMPLAINT_TYPES } from '@/constants/complaintTypes'
 import { useDebouncedClick } from '@/composables/useDebouncedClick'
 import CameraCapture from '@/components/CameraCapture.vue'
 import type { Part } from '@/types'
@@ -196,7 +183,6 @@ const partId = computed(() => route.params.id as string)
 const part = ref<Part | null>(null)
 
 const form = reactive({
-  boschFailureType: undefined as string | undefined,
   failureMode: undefined as string | undefined,
   rootCause: undefined as string | undefined,
   failureDescription: '',
