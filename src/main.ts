@@ -1,3 +1,4 @@
+import '@/utils/dayjs' // 全局注册 dayjs 时区（上海），必须先于业务代码执行
 import { createApp, type App as VueApp } from 'vue'
 import { createPinia } from 'pinia'
 import Antd from 'ant-design-vue'

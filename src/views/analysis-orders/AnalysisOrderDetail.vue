@@ -141,6 +141,7 @@ import ScrapModal from './components/ScrapModal.vue'
 import PartsListCard from '@/components/PartsListCard.vue'
 import { isAftermarket } from '@/constants/complaintTypes'
 import { useStatusLabels } from '@/composables/useStatusLabels'
+import { formatShanghai } from '@/utils/dayjs'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -195,15 +196,7 @@ const isScrapped = computed(() => {
 
 const formatDateTime = (dateStr?: string) => {
   if (!dateStr) return '-'
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return dateStr
-  return d.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  return formatShanghai(dateStr, 'YYYY-MM-DD HH:mm')
 }
 
 const canScrap = computed(() => {

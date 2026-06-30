@@ -27,7 +27,7 @@ onMounted(() => {
 })
 
 function resetReturnBarFilters() {
-  store.setFilter('returnBarDateRange', [dayjs().startOf('year').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')])
+  store.setFilter('returnBarDateRange', [dayjs.tz().startOf('year').format('YYYY-MM-DD'), dayjs.tz().format('YYYY-MM-DD')])
   store.setFilter('returnBarCustomer', null)
   store.setFilter('returnBarBu', null)
   store.setFilter('returnBarBcso', null)

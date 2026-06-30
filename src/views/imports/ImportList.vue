@@ -62,6 +62,7 @@ import { ImportOutlined, LoadingOutlined } from '@ant-design/icons-vue'
 import { importApi } from '@/services/importApi'
 import type { ImportRecord } from '@/types'
 import { useUserNameMap } from '@/composables/useUserNameMap'
+import { formatShanghai } from '@/utils/dayjs'
 import ImportModal from './components/ImportModal.vue'
 
 const { t } = useI18n()
@@ -105,14 +106,7 @@ const columns = computed(() => [
 ])
 
 function formatDateTime(raw: string | undefined): string {
-  if (!raw) return '—'
-  try {
-    const d = new Date(raw)
-    const pad = (n: number) => String(n).padStart(2, '0')
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
-  } catch {
-    return raw
-  }
+  return formatShanghai(raw)
 }
 
 function statusColor(status: string): string {

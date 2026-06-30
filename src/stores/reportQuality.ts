@@ -28,7 +28,7 @@ export const useQualityStore = defineStore('quality', () => {
   // 筛选状态
   const filters = ref<QualityFilters>({
     // 售后件柱状图（默认 YTD 时间范围）
-    returnBarDateRange: [dayjs().startOf('year').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')],
+    returnBarDateRange: [dayjs.tz().startOf('year').format('YYYY-MM-DD'), dayjs.tz().format('YYYY-MM-DD')],
     returnBarCustomer: null,
     returnBarBu: null,
     returnBarPlatform: null,
@@ -38,7 +38,7 @@ export const useQualityStore = defineStore('quality', () => {
     returnBarKilometer: null,
 
     // PPM/IPB 折线图（默认 YTD 时间范围）
-    ppmDateRange: [dayjs().startOf('year').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')],
+    ppmDateRange: [dayjs.tz().startOf('year').format('YYYY-MM-DD'), dayjs.tz().format('YYYY-MM-DD')],
     ppmPlatform: null,
     ppmCustomer: null,
     ppmFaultMode: null,
@@ -56,7 +56,7 @@ export const useQualityStore = defineStore('quality', () => {
   // 重置筛选条件
   function resetFilters() {
     filters.value = {
-      returnBarDateRange: [dayjs().startOf('year').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')],
+      returnBarDateRange: [dayjs.tz().startOf('year').format('YYYY-MM-DD'), dayjs.tz().format('YYYY-MM-DD')],
       returnBarCustomer: null,
       returnBarBu: null,
       returnBarPlatform: null,
@@ -64,7 +64,7 @@ export const useQualityStore = defineStore('quality', () => {
       returnBarPartNo: null,
       returnBarBcso: null,
       returnBarKilometer: null,
-      ppmDateRange: [dayjs().startOf('year').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')],
+      ppmDateRange: [dayjs.tz().startOf('year').format('YYYY-MM-DD'), dayjs.tz().format('YYYY-MM-DD')],
       ppmPlatform: null,
       ppmCustomer: null,
       ppmFaultMode: null,

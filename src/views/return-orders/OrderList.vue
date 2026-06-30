@@ -224,7 +224,7 @@ const handleExport = async () => {
 
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
-    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    const today = dayjs.tz().format('YYYYMMDD')
     link.download = `退件明细_${today}.xlsx`
     link.click()
     URL.revokeObjectURL(link.href)

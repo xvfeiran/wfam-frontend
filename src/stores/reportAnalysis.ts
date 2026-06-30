@@ -20,9 +20,9 @@ export interface AnalysisFilters {
 export const useAnalysisStore = defineStore('analysis', () => {
   // 筛选状态
   const filters = ref<AnalysisFilters>({
-    analysisDurationYearRange: [dayjs().year()],
-    samplingRatioYear: dayjs().year(),
-    returnOrderDateRange: [dayjs().startOf('year').format('YYYY-MM'), dayjs().format('YYYY-MM')],
+    analysisDurationYearRange: [dayjs.tz().year()],
+    samplingRatioYear: dayjs.tz().year(),
+    returnOrderDateRange: [dayjs.tz().startOf('year').format('YYYY-MM'), dayjs.tz().format('YYYY-MM')],
     returnOrderCustomer: null,
     returnOrderBu: null,
     returnOrderPlatform: null,
@@ -34,14 +34,14 @@ export const useAnalysisStore = defineStore('analysis', () => {
   // 计算属性：当前年份范围（基于分析时长图选择的首个年份，用于售后件柱状图）
   const currentYearRange = computed<[string, string]>(() => {
     const dateRange = filters.value.returnOrderDateRange
-    const year = dateRange?.[0] ? dayjs(dateRange[0]).year() : dayjs().year()
+    const year = dateRange?.[0] ? dayjs(dateRange[0]).year() : dayjs.tz().year()
     return [`${year}-01`, `${year}-12`]
   })
 
   // 计算属性：去年年份范围（用于 YoY）
   const previousYearRange = computed<[string, string]>(() => {
     const dateRange = filters.value.returnOrderDateRange
-    const year = dateRange?.[0] ? dayjs(dateRange[0]).year() - 1 : dayjs().year() - 1
+    const year = dateRange?.[0] ? dayjs(dateRange[0]).year() - 1 : dayjs.tz().year() - 1
     return [`${year}-01`, `${year}-12`]
   })
 
@@ -53,8 +53,8 @@ export const useAnalysisStore = defineStore('analysis', () => {
   // 重置筛选条件
   function resetFilters() {
     filters.value = {
-      analysisDurationYearRange: [dayjs().year()],
-      samplingRatioYear: dayjs().year(),
+      analysisDurationYearRange: [dayjs.tz().year()],
+      samplingRatioYear: dayjs.tz().year(),
       returnOrderDateRange: null,
       returnOrderCustomer: null,
       returnOrderBu: null,

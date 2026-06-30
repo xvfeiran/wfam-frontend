@@ -132,6 +132,7 @@ import { LoadingOutlined } from '@ant-design/icons-vue'
 import { importApi, type ImportFileSummary } from '@/services/importApi'
 import type { ImportRecord, ImportLogEntry } from '@/types'
 import { useUserNameMap } from '@/composables/useUserNameMap'
+import { formatShanghai } from '@/utils/dayjs'
 
 type ViewLogEntry = ImportLogEntry & { _key: string; _fileName: string }
 
@@ -253,10 +254,7 @@ function canDelete(status: string): boolean {
 
 function formatDateTime(raw: string | undefined): string {
   if (!raw) return '-'
-  const d = new Date(raw)
-  if (Number.isNaN(d.getTime())) return raw
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  return formatShanghai(raw)
 }
 
 function sleep(ms: number): Promise<void> {

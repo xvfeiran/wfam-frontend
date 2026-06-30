@@ -15,6 +15,7 @@ import { Radio } from 'ant-design-vue'
 import { qualityApi } from '@/services/reportQuality'
 import { transformPpmTrendSingle } from '@/utils/transforms/quality/ppmTrendSingle'
 import { useReportOptionsStore } from '@/stores/reportOptions'
+import { nowShanghai } from '@/utils/dayjs'
 import AdvancedFilterBar from '@/components/AdvancedFilterBar.vue'
 
 use([CanvasRenderer, LineChart, TitleComponent, TooltipComponent, LegendComponent, GridComponent])
@@ -26,9 +27,9 @@ interface Props {
 const props = defineProps<Props>()
 const optionsStore = useReportOptionsStore()
 
-// 默认时间范围：当年1月到当前月份
-const currentYear = new Date().getFullYear()
-const currentMonth = new Date().getMonth() + 1
+// 默认时间范围：当年1月到当前月份（按上海时区）
+const currentYear = nowShanghai().year()
+const currentMonth = nowShanghai().month() + 1
 const defaultDateRange: [string, string] = [
   `${currentYear}-01`,
   `${currentYear}-${String(currentMonth).padStart(2, '0')}`,

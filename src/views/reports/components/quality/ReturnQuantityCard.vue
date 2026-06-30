@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { qualityApi } from '@/services/reportQuality'
+import { nowShanghai } from '@/utils/dayjs'
 
 const loading = ref(true)
 const displayedCount = ref(0)
@@ -27,7 +28,7 @@ function animateCount(target: number) {
 async function fetchData() {
   loading.value = true
   try {
-    const currentYear = String(new Date().getFullYear())
+    const currentYear = String(nowShanghai().year())
     const count = await qualityApi.getReturnQuantity(currentYear)
     animateCount(count)
   } finally {

@@ -66,7 +66,7 @@ async function fetchData() {
 
     const selectedYear = filters.value.returnOrderDateRange?.[0]
       ? dayjs(filters.value.returnOrderDateRange[0]).year()
-      : new Date().getFullYear()
+      : dayjs.tz().year()
 
     // 存储转换后的数据，供 chartOption computed 使用
     rawData.value = transformReturnOrder(currentRes, previousRes, selectedYear)

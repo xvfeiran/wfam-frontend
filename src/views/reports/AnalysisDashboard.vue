@@ -26,7 +26,7 @@ const samplingYear = computed({
 })
 
 function disabledSamplingYear(current: dayjs.Dayjs): boolean {
-  return current.year() > dayjs().year()
+  return current.year() > dayjs.tz().year()
 }
 
 // 页面加载动画状态
@@ -41,7 +41,7 @@ onMounted(() => {
 
 // 分析时长图年份筛选（多选，当前年及前5年）
 const analysisDurationYearOptions = Array.from({ length: 6 }, (_, i) => {
-  const year = dayjs().year() - i
+  const year = dayjs.tz().year() - i
   return { label: String(year), value: year }
 })
 
@@ -49,7 +49,7 @@ const pendingAnalysisDurationYears = ref<number[]>([...filters.value.analysisDur
 
 // 售后件柱状图默认时间范围：当前年1月 ~ 当前月
 const returnOrderInitialValues = ref<Partial<FilterValues>>({
-  dateRange: [dayjs().startOf('year').format('YYYY-MM'), dayjs().format('YYYY-MM')],
+  dateRange: [dayjs.tz().startOf('year').format('YYYY-MM'), dayjs.tz().format('YYYY-MM')],
 })
 
 
