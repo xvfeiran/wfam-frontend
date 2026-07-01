@@ -7,6 +7,13 @@
     @cancel="$emit('cancel')"
   >
     <a-form layout="vertical" :model="form">
+      <!-- 系统回写字段入口 -->
+      <div class="preset-entry-row">
+        <a-button type="link" size="small" @click="presetDrawerVisible = true">
+          <InfoCircleOutlined /> {{ t('settings.pgPresetEntry') }}
+        </a-button>
+      </div>
+
       <!-- 字段类型：可点击卡片 -->
       <a-form-item :label="t('settings.pgFieldType')">
         <div class="type-cards">
@@ -82,11 +89,18 @@
         </a-button>
       </div>
     </a-form>
+
+    <!-- 系统回写字段抽屉 -->
+    <PresetFieldsDrawer
+      :visible="presetDrawerVisible"
+      @cancel="presetDrawerVisible = false"
+      @select="applyPreset"
+    />
   </a-modal>
 </template>
 
 <script setup lang="ts">
-import { reactive, computed } from 'vue'
+import { reactive, computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import {
@@ -97,7 +111,10 @@ import {
   NumberOutlined,
   PictureOutlined,
   FileImageOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons-vue'
+import PresetFieldsDrawer from './PresetFieldsDrawer.vue'
+import type { PresetField } from './presetFields'
 
 type FieldType = 'text' | 'textarea' | 'select' | 'date' | 'number' | 'photo' | 'photolist'
 
@@ -108,6 +125,8 @@ const props = defineProps<Props>()
 defineEmits<{ (e: 'cancel'): void }>()
 
 const { t } = useI18n()
+
+const presetDrawerVisible = ref(false)
 
 const fieldTypes: { value: FieldType; icon: any; labelKey: string }[] = [
   { value: 'text', icon: EditOutlined, labelKey: 'settings.pgTypeText' },
@@ -153,6 +172,16 @@ const handleCopy = async () => {
   }
 }
 
+const applyPreset = (p: PresetField) => {
+  form.type = p.type
+  form.fieldName = p.fieldName
+  form.labelZh = p.labelZh
+  form.labelEn = p.labelEn
+  form.required = p.required
+  form.options = [...p.options]
+  presetDrawerVisible.value = false
+}
+
 const handleReset = () => {
   form.type = 'text'
   form.fieldName = ''
@@ -166,6 +195,11 @@ const handleReset = () => {
 <style lang="less" scoped>
 :deep(.ant-form-item) {
   margin-bottom: 12px;
+}
+.preset-entry-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
 }
 .type-cards {
   display: flex;
