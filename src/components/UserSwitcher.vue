@@ -41,6 +41,7 @@ import { computed } from 'vue'
 import { message } from 'ant-design-vue'
 import { UserOutlined, CopyOutlined } from '@ant-design/icons-vue'
 import { useDevUserStore, MOCK_USERS, ROLE_LABELS, type DevUser, type UserRole } from '@/stores/devUser'
+import { copyText } from '@/utils/clipboard'
 
 interface Props {
   compact?: boolean
@@ -101,14 +102,15 @@ const handleSwitchUser = (user: DevUser) => {
 }
 
 // 复制认证信息（用于调试）
-const handleCopyAuthHeader = () => {
+const handleCopyAuthHeader = async () => {
   const header = devUserStore.authHeader
   const text = `x-authentication-header:\n${header}`
-  navigator.clipboard.writeText(text).then(() => {
+  const ok = await copyText(text)
+  if (ok) {
     message.success('认证信息已复制到剪贴板')
-  }).catch(() => {
+  } else {
     message.error('复制失败')
-  })
+  }
 }
 </script>
 
