@@ -115,6 +115,7 @@ import {
 } from '@ant-design/icons-vue'
 import PresetFieldsDrawer from './PresetFieldsDrawer.vue'
 import type { PresetField } from './presetFields'
+import { copyText } from '@/utils/clipboard'
 
 type FieldType = 'text' | 'textarea' | 'select' | 'date' | 'number' | 'photo' | 'photolist'
 
@@ -164,10 +165,10 @@ const placeholder = computed(() => {
 
 const handleCopy = async () => {
   if (!isValid.value) return
-  try {
-    await navigator.clipboard.writeText(placeholder.value)
+  const ok = await copyText(placeholder.value)
+  if (ok) {
     message.success(t('settings.pgCopySuccess'))
-  } catch {
+  } else {
     message.error(t('settings.pgCopyFailed'))
   }
 }
