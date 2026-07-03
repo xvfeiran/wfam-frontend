@@ -22,7 +22,7 @@
         <button class="camera-close-btn" @click="handleClose">
           <CloseOutlined />
         </button>
-        <button class="camera-shutter-btn" :disabled="!streamReady" @click="capture">
+        <button class="camera-shutter-btn" :disabled="!streamReady || capturing" @click="capture">
           <span class="camera-shutter-inner" />
         </button>
         <div class="camera-spacer" />
@@ -50,6 +50,9 @@ const { t } = useI18n()
 const videoRef = ref<HTMLVideoElement | null>(null)
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const streamReady = ref(false)
+// 拍照进行中标志：canvas.toBlob 是异步的，连点快门会触发两次 capture()，
+// 导致两次 captured emit → 上传两张照片。该标志在 toBlob 完成前阻塞重入。
+const capturing = ref(false)
 let mediaStream: MediaStream | null = null
 
 watch(() => props.open, async (val) => {
@@ -82,6 +85,7 @@ const stopStream = () => {
     videoRef.value.srcObject = null
   }
   streamReady.value = false
+  capturing.value = false
 }
 
 const handleClose = () => {
@@ -90,17 +94,23 @@ const handleClose = () => {
 }
 
 const capture = () => {
+  // 防重入：toBlob 异步期间再次点击直接忽略，避免连点上传两张照片
+  if (capturing.value) return
   const video = videoRef.value
   const canvas = canvasRef.value
   if (!video || !canvas) return
 
+  capturing.value = true
   canvas.width = video.videoWidth
   canvas.height = video.videoHeight
   const ctx = canvas.getContext('2d')!
   ctx.drawImage(video as CanvasImageSource, 0, 0)
 
   canvas.toBlob((blob) => {
-    if (!blob) return
+    if (!blob) {
+      capturing.value = false
+      return
+    }
     const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' })
     emit('captured', file)
     handleClose()

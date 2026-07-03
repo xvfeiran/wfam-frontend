@@ -402,7 +402,22 @@ const canUploadMore = (field: any) => {
   return true
 }
 
-/** Unified photo file upload (used by both file input and camera capture) */
+/**
+ * Unified photo file upload (used by both file input and camera capture)
+ *
+ * ⚠️ 并发安全：uploadPhotoFile 会读写共享状态（photoFileLists / form.content / reportId）。
+ * 若两次调用并发执行（例如连点快门、或拍照与文件上传同时触发），会因 ensureReportSaved
+ * 创建两份 draft 报告、列表读改写错乱，导致上传后的照片无法删除。
+ * 因此所有调用必须经过 serializedUpload 串行化。
+ */
+let uploadChain: Promise<unknown> = Promise.resolve()
+const serializedUpload = (fieldName: string, file: File): Promise<void> => {
+  const run = uploadChain.then(() => uploadPhotoFile(fieldName, file))
+  // 单次失败不得阻塞后续上传，也不得让异常漂入下一次 then
+  uploadChain = run.catch(() => {})
+  return run
+}
+
 const uploadPhotoFile = async (fieldName: string, file: File) => {
   const rid = await ensureReportSaved()
   if (!rid) return
@@ -456,7 +471,7 @@ const onPhotoInputChange = async (event: Event) => {
   for (let i = 0; i < files.length; i++) {
     const list = photoFileLists[fieldName] || []
     if (list.length >= maxCount) break
-    await uploadPhotoFile(fieldName, files[i])
+    await serializedUpload(fieldName, files[i])
   }
 
   input.value = ''
@@ -468,7 +483,7 @@ const openCameraFor = (fieldName: string) => {
 }
 
 const onCameraCaptured = async (file: File) => {
-  await uploadPhotoFile(cameraFieldName.value, file)
+  await serializedUpload(cameraFieldName.value, file)
 }
 
 /** 照片删除 */
