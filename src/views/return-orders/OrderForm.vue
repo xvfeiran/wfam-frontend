@@ -25,7 +25,12 @@
           </a-col>
           <a-col :span="12">
             <a-form-item :label="t('returnOrder.customer')" name="customerId">
-              <a-select v-model:value="form.customerId" :placeholder="t('validation.selectCustomer')">
+              <a-select
+                v-model:value="form.customerId"
+                :placeholder="t('validation.selectCustomer')"
+                show-search
+                :filter-option="filterCustomerOption"
+              >
                 <a-select-option v-for="c in customers" :key="c.id" :value="c.id">
                   {{ c.name }}
                 </a-select-option>
@@ -179,6 +184,15 @@ const canEditSubmittedOrder = computed(() => {
 })
 
 const customers = ref<Customer[]>([])
+
+// 客户下拉模糊匹配：输入关键字时按名称做大小写不敏感的子串匹配
+const filterCustomerOption = (input: string, option: any) => {
+  const customer = customers.value.find(c => c.id === option.value)
+  if (!customer) return false
+  const keyword = (input || '').trim().toLowerCase()
+  const name = (customer.name || '').toLowerCase()
+  return name.includes(keyword)
+}
 
 // 投诉类型列表（BA代码）
 const complaintTypes = ref([
