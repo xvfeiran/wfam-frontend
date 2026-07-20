@@ -145,8 +145,18 @@ const onFileInputChange = (event: Event) => {
   const input = event.target as HTMLInputElement
   const files = input.files
   if (!files) return
+  let rejected = 0
   for (let i = 0; i < files.length && fileList.value.length < 20; i++) {
-    addFile(files[i])
+    const file = files[i]
+    // accept 只是浏览器提示，用户可选「所有文件」绕过，这里强制校验 MIME 类型
+    if (!file.type.startsWith('image/')) {
+      rejected++
+      continue
+    }
+    addFile(file)
+  }
+  if (rejected > 0) {
+    message.error(t('message.fileTypeNotSupported'))
   }
   input.value = ''
 }

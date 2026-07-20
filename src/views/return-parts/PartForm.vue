@@ -297,9 +297,14 @@ const validatePartNumberUnique = async (): Promise<boolean> => {
   return true
 }
 
+// 提交前兜底：把 partNumber 末尾的序号段补齐为 4 位（如 "1" → "0001"），
+// 覆盖失焦补零未触发的边缘场景（如按 Enter 直接提交）
+const padPartNumberSuffix = (pn: string): string =>
+  pn.replace(/\d+$/, (m) => m.padStart(4, '0'))
+
 const buildPartPayload = () => ({
   orderId: form.orderId,
-  partNumber: form.partNumber || undefined,
+  partNumber: form.partNumber ? padPartNumberSuffix(form.partNumber) : undefined,
   partCode: form.partCode,
   businessUnit: form.businessUnit,
   productPlatform: form.productPlatform,

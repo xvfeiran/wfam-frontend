@@ -172,6 +172,11 @@ const importLogColumns = computed(() => {
 })
 
 function handleBeforeUpload(file: File) {
+  // accept 只是浏览器提示，这里强制校验扩展名是否为 .zip
+  if (!/\.zip$/i.test(file.name)) {
+    message.error(t('message.zipTypeNotSupported'))
+    return false
+  }
   selectedFile.value = file
   return false
 }

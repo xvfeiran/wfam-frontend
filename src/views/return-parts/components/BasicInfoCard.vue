@@ -263,7 +263,11 @@ const suffixModel = computed({
 })
 
 const onSuffixBlur = () => {
-  // nothing extra needed, v-model already synced
+  // 失焦时把序号补齐为 4 位（如 "1" → "0001"），与导入路径后端的 %04d 格式保持一致
+  const current = suffixModel.value
+  if (current) {
+    suffixModel.value = current.padStart(4, '0')
+  }
 }
 
 // BU/Platform 变化时重新拼接 partNumber

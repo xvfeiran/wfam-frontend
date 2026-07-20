@@ -23,7 +23,7 @@
       <a-form-item :label="t('settings.templateFile')">
         <a-upload
           v-model:file-list="form.fileList"
-          :before-upload="() => false"
+          :before-upload="handleBeforeUpload"
           :max-count="1"
           accept=".xlsx,.xls"
         >
@@ -39,6 +39,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { message, Upload } from 'ant-design-vue'
 import { UploadOutlined } from '@ant-design/icons-vue'
 
 interface TemplateForm {
@@ -64,6 +65,15 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+// accept 只是浏览器提示，这里强制校验是否为 Excel 文件；非法文件不入 fileList
+const handleBeforeUpload = (file: File) => {
+  if (!/\.(xlsx|xls)$/i.test(file.name)) {
+    message.error(t('message.excelTypeNotSupported'))
+    return Upload.LIST_IGNORE
+  }
+  return false
+}
 </script>
 
 <style lang="less" scoped>

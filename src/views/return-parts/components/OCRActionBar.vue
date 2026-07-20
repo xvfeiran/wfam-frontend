@@ -152,6 +152,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { message } from 'ant-design-vue'
 import {
   CameraOutlined,
   UploadOutlined,
@@ -206,6 +207,12 @@ const onFileChange = (event: Event) => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (file) {
+    // accept 只是浏览器提示，用户可选「所有文件」绕过，这里强制校验 MIME 类型
+    if (!file.type.startsWith('image/')) {
+      message.error(t('message.fileTypeNotSupported'))
+      input.value = ''
+      return
+    }
     emit('handleOCRUpload', file)
     input.value = ''
   }

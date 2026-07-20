@@ -308,7 +308,8 @@ const handleBatchDeleteWrapper = async () => {
   if (ordersWithParts.length === 0) {
     showSimpleDeleteConfirm(idsToDelete)
   } else {
-    showCascadeDeleteConfirm(idsToDelete, ordersWithParts)
+    // 含退件信息的退货单不允许删除，仅弹出警告框（只有「取消」按钮）
+    showCannotDeleteWarning(ordersWithParts)
   }
 }
 
@@ -325,8 +326,7 @@ const showSimpleDeleteConfirm = (ids: string[]) => {
   })
 }
 
-const showCascadeDeleteConfirm = (
-  ids: string[],
+const showCannotDeleteWarning = (
   ordersWithParts: Array<{ orderId: string; orderNumber: string; partsCount: number }>,
 ) => {
   const totalParts = ordersWithParts.reduce((sum, item) => sum + item.partsCount, 0)
@@ -345,17 +345,13 @@ const showCascadeDeleteConfirm = (
     content += t('returnOrder.totalPartsCount', { count: totalParts })
   }
 
-  Modal.confirm({
+  // 含退件信息的退货单被拦截：使用 Modal.warning 只显示单个「取消」按钮，不执行任何删除
+  Modal.warning({
     title: t('returnOrder.confirmDeleteWithParts'),
     content,
-    okText: t('common.confirm'),
-    okType: 'danger',
-    cancelText: t('common.cancel'),
+    okText: t('common.cancel'),
     icon: () => h(ExclamationCircleOutlined),
     width: 500,
-    onOk: async () => {
-      await executeDelete(ids, true)
-    },
   })
 }
 

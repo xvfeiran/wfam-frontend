@@ -56,7 +56,7 @@
             <a-descriptions-item :label="t('partDetail.boschFailureType')">{{ part?.boschFailureType || '-' }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.responsibleEngineer')">{{ userDisplayName(part?.responsibleEngineer) }}</a-descriptions-item>
             <a-descriptions-item :label="t('partDetail.analyst')">{{ userDisplayName(part?.analyst) }}</a-descriptions-item>
-            <a-descriptions-item v-if="part?.otherInfo" :label="t('partDetail.otherInfo')" :span="2">{{ part.otherInfo }}</a-descriptions-item>
+            <a-descriptions-item :label="t('partDetail.otherInfo')" :span="2">{{ part?.otherInfo || '-' }}</a-descriptions-item>
           </a-descriptions>
         </a-card>
 
