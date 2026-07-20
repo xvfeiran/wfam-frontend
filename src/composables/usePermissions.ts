@@ -72,7 +72,7 @@ export function usePermissions() {
       'W_RBCC_AEP_WFAM_QMC_Manager',
       'W_RBCC_AEP_WFAM_QMC_Leader',
       'W_RBCC_AEP_WFAM_Analyst',
-      'W_RBCC_AEP_WFAM_Customer_Quality',
+      'R_RBCC_AEP_WFAM_Customer_Quality',
       'R_RBCC_AEP_WFAM_Visitor',
     ]
     for (const role of wfamRoles) {

@@ -41,7 +41,7 @@ export const userApi = {
     if (isDevMode.value) {
       return Promise.resolve(
         MOCK_USERS
-          .filter(u => u.role === 'W_RBCC_AEP_WFAM_Customer_Quality')
+          .filter(u => u.role === 'R_RBCC_AEP_WFAM_Customer_Quality')
           .map(mockUserToUserInfo),
       )
     }

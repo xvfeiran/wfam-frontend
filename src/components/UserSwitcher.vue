@@ -68,7 +68,7 @@ const getAvatarColor = () => {
 // 根据角色获取标签颜色
 const getRoleColor = () => {
   const colorMap: Record<UserRole, string> = {
-    W_RBCC_AEP_WFAM_Customer_Quality: 'blue',
+    R_RBCC_AEP_WFAM_Customer_Quality: 'blue',
     W_RBCC_AEP_WFAM_Analyst: 'cyan',
     W_RBCC_AEP_WFAM_QMC_Leader: 'orange',
     W_RBCC_AEP_WFAM_QMC_Manager: 'purple',
@@ -81,7 +81,7 @@ const getRoleColor = () => {
 // 获取角色标签颜色（用于下拉菜单）
 const getRoleTagColor = (role: UserRole) => {
   const colorMap: Record<UserRole, string> = {
-    W_RBCC_AEP_WFAM_Customer_Quality: 'blue',
+    R_RBCC_AEP_WFAM_Customer_Quality: 'blue',
     W_RBCC_AEP_WFAM_Analyst: 'cyan',
     W_RBCC_AEP_WFAM_QMC_Leader: 'orange',
     W_RBCC_AEP_WFAM_QMC_Manager: 'purple',

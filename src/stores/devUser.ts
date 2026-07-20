@@ -3,7 +3,7 @@ import { watchEffect } from 'vue'
 
 // 角色定义（参考设计文档）
 export type UserRole =
-  | 'W_RBCC_AEP_WFAM_Customer_Quality' // 客户质量工程师
+  | 'R_RBCC_AEP_WFAM_Customer_Quality' // 客户质量工程师
   | 'W_RBCC_AEP_WFAM_Analyst' // 分析员
   | 'W_RBCC_AEP_WFAM_QMC_Leader' // 分析主管
   | 'W_RBCC_AEP_WFAM_QMC_Manager' // QMC 经理（数据校订权）
@@ -12,7 +12,7 @@ export type UserRole =
 
 // 角色显示名称映射
 export const ROLE_LABELS: Record<UserRole, string> = {
-  W_RBCC_AEP_WFAM_Customer_Quality: 'Customer Quality Engineer',
+  R_RBCC_AEP_WFAM_Customer_Quality: 'Customer Quality Engineer',
   W_RBCC_AEP_WFAM_Analyst: 'Analyst',
   W_RBCC_AEP_WFAM_QMC_Leader: 'QMC Leader',
   W_RBCC_AEP_WFAM_QMC_Manager: 'QMC Manager',
@@ -63,7 +63,7 @@ export function generateAuthHeader(user: DevUser): string {
 // 角色ID映射（模拟IDM系统返回的角色ID）
 function getRoleIds(role: UserRole): string {
   const roleIdsMap: Record<UserRole, string> = {
-    W_RBCC_AEP_WFAM_Customer_Quality: '100',
+    R_RBCC_AEP_WFAM_Customer_Quality: '100',
     W_RBCC_AEP_WFAM_Analyst: '200',
     W_RBCC_AEP_WFAM_QMC_Leader: '300',
     W_RBCC_AEP_WFAM_QMC_Manager: '400',
@@ -83,7 +83,7 @@ export const MOCK_USERS: DevUser[] = [
     email: 'zhangsan@cn.bosch.com',
     department: 'BD/SWD-FSB1',
     ntAccount: 'zhangsan',
-    role: 'W_RBCC_AEP_WFAM_Customer_Quality',
+    role: 'R_RBCC_AEP_WFAM_Customer_Quality',
   },
   {
     id: '6182',
