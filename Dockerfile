@@ -12,9 +12,10 @@ RUN npm install --loglevel warn
 # 复制源代码
 COPY . .
 
-# 构建模式：test（默认）/ production
-# 对应加载 .env.test / .env.production，再叠加 .env 中的默认值
-# 生产构建：docker build --build-arg BUILD_MODE=production .
+# 构建模式：test（默认）/ prod
+# 对应加载 .env.test / .env.prod，再叠加 .env 中的默认值
+# 注意：BUILD_MODE 必须与 .env.{mode} 文件名一致（test→.env.test，prod→.env.prod）
+# 生产构建：docker build --build-arg BUILD_MODE=prod .
 ARG BUILD_MODE=test
 RUN npm run build -- --mode ${BUILD_MODE}
 
