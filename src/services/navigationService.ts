@@ -6,7 +6,8 @@ const AEP_CONFIG = {
   /** AEP 中加载微应用的路由（如 /microApp） */
   tabPath: import.meta.env.VITE_AEP_TAB_PATH || '/microApp',
   appName: import.meta.env.VITE_AEP_APP_NAME || 'RBCC_WFAM',
-  appId: Number(import.meta.env.VITE_AEP_APP_ID) || 1081,
+  // appId 测试环境为 1081、生产环境为 881，必须由 .env.test / .env.prod 提供，不在代码里写死兜底
+  appId: Number(import.meta.env.VITE_AEP_APP_ID),
 }
 
 /** 将 query 对象拼接到 path 上：'/return-orders' + { status: 'submitted' } → '/return-orders?status=submitted' */
