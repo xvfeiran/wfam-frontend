@@ -37,8 +37,7 @@
               @edit-customer="handleEditCustomer"
               @search="handleCustomerSearch"
               @reset="handleCustomerReset"
-              @page-change="handleCustomerPageChange"
-              @sort-change="handleCustomerSortChange"
+              @table-change="handleCustomerTableChange"
             />
           </a-tab-pane>
           <a-tab-pane key="partCodes" :tab="t('settings.partCodeManagement')">
@@ -52,8 +51,7 @@
               @edit-part-code="handleEditPartCode"
               @search="handlePartCodeSearch"
               @reset="handlePartCodeReset"
-              @page-change="handlePartCodePageChange"
-              @sort-change="handlePartCodeSortChange"
+              @table-change="handlePartCodeTableChange"
             />
           </a-tab-pane>
         </a-tabs>
@@ -358,13 +356,14 @@ const handleCustomerReset = async () => {
   await loadCustomers()
 }
 
-const handleCustomerPageChange = async (page: number, pageSize: number) => {
+const handleCustomerTableChange = async (
+  page: number,
+  pageSize: number,
+  sortBy: string | undefined,
+  sortOrder: 'ascend' | 'descend' | null,
+) => {
   customerCurrentPage.value = page
   customerPageSize.value = pageSize
-  await loadCustomers()
-}
-
-const handleCustomerSortChange = async (sortBy: string, sortOrder: 'ascend' | 'descend' | null) => {
   customerSortBy.value = sortBy
   customerSortOrder.value = sortOrder || undefined
   await loadCustomers()
@@ -445,13 +444,14 @@ const handlePartCodeReset = async () => {
   await loadPartCodes()
 }
 
-const handlePartCodePageChange = async (page: number, pageSize: number) => {
+const handlePartCodeTableChange = async (
+  page: number,
+  pageSize: number,
+  sortBy: string | undefined,
+  sortOrder: 'ascend' | 'descend' | null,
+) => {
   partCodeCurrentPage.value = page
   partCodePageSize.value = pageSize
-  await loadPartCodes()
-}
-
-const handlePartCodeSortChange = async (sortBy: string, sortOrder: 'ascend' | 'descend' | null) => {
   partCodeSortBy.value = sortBy
   partCodeSortOrder.value = sortOrder || undefined
   await loadPartCodes()

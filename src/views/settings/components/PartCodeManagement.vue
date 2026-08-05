@@ -82,8 +82,7 @@ const emit = defineEmits<{
   (e: 'edit-part-code', record: PartCode): void
   (e: 'search', partCode: string, businessUnit: string, productPlatform: string): void
   (e: 'reset'): void
-  (e: 'page-change', page: number, pageSize: number): void
-  (e: 'sort-change', sortBy: string, sortOrder: 'ascend' | 'descend' | null): void
+  (e: 'table-change', page: number, pageSize: number, sortBy: string | undefined, sortOrder: 'ascend' | 'descend' | null): void
 }>()
 
 const { t } = useI18n()
@@ -149,8 +148,8 @@ const handleTableChange = (pagination: any, _filters: any, sorter: any) => {
     field: sorter.field,
     order: sorter.order,
   }
-  emit('sort-change', sorter.field, sorter.order)
-  emit('page-change', pagination.current, pagination.pageSize)
+  // 单一事件携带分页+排序全部信息，避免父级触发两次并发 load 导致数据竞态
+  emit('table-change', pagination.current, pagination.pageSize, sorter.field, sorter.order)
 }
 </script>
 
