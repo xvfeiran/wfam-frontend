@@ -141,6 +141,7 @@ const partCodeCurrentPage = ref(1)
 const partCodePageSize = ref(10)
 const partCodeSearchPartCode = ref('')
 const partCodeSearchBusinessUnit = ref('')
+const partCodeSearchProductPlatform = ref('')
 const partCodeSortBy = ref<string | undefined>(undefined)
 const partCodeSortOrder = ref<'ascend' | 'descend' | undefined>(undefined)
 
@@ -157,6 +158,7 @@ const loadPartCodes = async () => {
     const result = await partCodeApi.page({
       partCode: partCodeSearchPartCode.value,
       businessUnit: partCodeSearchBusinessUnit.value,
+      productPlatform: partCodeSearchProductPlatform.value,
       page: partCodeCurrentPage.value,
       pageSize: partCodePageSize.value,
       sortBy: partCodeSortBy.value,
@@ -425,9 +427,10 @@ const handleEditPartCode = (record: PartCode) => {
   partCodeModalVisible.value = true
 }
 
-const handlePartCodeSearch = async (partCode: string, businessUnit: string) => {
+const handlePartCodeSearch = async (partCode: string, businessUnit: string, productPlatform: string) => {
   partCodeSearchPartCode.value = partCode
   partCodeSearchBusinessUnit.value = businessUnit
+  partCodeSearchProductPlatform.value = productPlatform
   partCodeCurrentPage.value = 1
   await loadPartCodes()
 }
@@ -435,6 +438,7 @@ const handlePartCodeSearch = async (partCode: string, businessUnit: string) => {
 const handlePartCodeReset = async () => {
   partCodeSearchPartCode.value = ''
   partCodeSearchBusinessUnit.value = ''
+  partCodeSearchProductPlatform.value = ''
   partCodeSortBy.value = undefined
   partCodeSortOrder.value = undefined
   partCodeCurrentPage.value = 1

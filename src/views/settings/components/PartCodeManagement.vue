@@ -17,6 +17,13 @@
             style="width: 200px"
             @pressEnter="handleSearch"
           />
+          <a-input
+            v-model:value="searchProductPlatform"
+            :placeholder="t('settings.productPlatform')"
+            allow-clear
+            style="width: 200px"
+            @pressEnter="handleSearch"
+          />
           <a-button type="primary" @click="handleSearch">
             <SearchOutlined /> {{ t('common.search') }}
           </a-button>
@@ -73,7 +80,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   (e: 'add-part-code'): void
   (e: 'edit-part-code', record: PartCode): void
-  (e: 'search', partCode: string, businessUnit: string): void
+  (e: 'search', partCode: string, businessUnit: string, productPlatform: string): void
   (e: 'reset'): void
   (e: 'page-change', page: number, pageSize: number): void
   (e: 'sort-change', sortBy: string, sortOrder: 'ascend' | 'descend' | null): void
@@ -83,6 +90,7 @@ const { t } = useI18n()
 
 const searchPartCode = ref('')
 const searchBusinessUnit = ref('')
+const searchProductPlatform = ref('')
 
 const sortState = ref<{
   field?: string
@@ -125,12 +133,13 @@ const paginationConfig = computed(() => ({
 }))
 
 const handleSearch = () => {
-  emit('search', searchPartCode.value, searchBusinessUnit.value)
+  emit('search', searchPartCode.value, searchBusinessUnit.value, searchProductPlatform.value)
 }
 
 const handleReset = () => {
   searchPartCode.value = ''
   searchBusinessUnit.value = ''
+  searchProductPlatform.value = ''
   sortState.value = { field: undefined, order: null }
   emit('reset')
 }

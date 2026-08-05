@@ -10,6 +10,7 @@ export interface PartCode {
 export interface PartCodePageParams {
   partCode?: string
   businessUnit?: string
+  productPlatform?: string
   page?: number
   pageSize?: number
   sortBy?: string
