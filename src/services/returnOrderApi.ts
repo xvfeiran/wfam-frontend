@@ -6,6 +6,7 @@ export interface OrderListParams {
   customer?: string
   status?: string
   statuses?: string[]
+  returnMethod?: string
   receiveDateStart?: string
   receiveDateEnd?: string
   page?: number

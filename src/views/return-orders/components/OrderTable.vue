@@ -18,7 +18,7 @@
 import { computed, h } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Tag } from 'ant-design-vue'
-import { ORDER_STATUS_MAP, OrderStatus } from '@/types'
+import { ORDER_STATUS_MAP, OrderStatus, ReturnMethod } from '@/types'
 import type { ReturnOrder } from '@/types'
 import type { Customer } from '@/services/customerApi'
 import { useStatusLabels } from '@/composables/useStatusLabels'
@@ -95,6 +95,19 @@ const columns = computed(() => [
       return h(Tag, { color: getOrderStatusColor(record.status) }, () => getStatusLabel(record.status))
     },
   },
+  {
+    title: t('returnOrder.returnMethod'),
+    dataIndex: 'returnMethod',
+    key: 'returnMethod',
+    customRender: ({ record }: { record: ReturnOrder }) => {
+      const m = record.returnMethod
+      if (m === ReturnMethod.EXPRESS) return t('returnOrder.methodExpress')
+      if (m === ReturnMethod.PICKUP) return t('returnOrder.methodPickup')
+      if (m === ReturnMethod.OTHER) return t('returnOrder.methodOther')
+      return m || '-'
+    },
+  },
+  { title: t('returnOrder.complaintType'), dataIndex: 'complaintType', key: 'complaintType' },
 ])
 
 const handleSelectionChange = (keys: string[]) => {

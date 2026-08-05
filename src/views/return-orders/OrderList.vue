@@ -68,6 +68,7 @@ const filters = ref({
   customerId: undefined as string | undefined,
   receiveDate: null as any,
   status: undefined as string | undefined,
+  returnMethod: undefined as string | undefined,
 })
 
 const {
@@ -87,6 +88,7 @@ const {
   if (filters.value.orderNumber) apiParams.orderNumber = filters.value.orderNumber
   if (filters.value.customerId) apiParams.customer = filters.value.customerId
   if (filters.value.status) apiParams.status = filters.value.status
+  if (filters.value.returnMethod) apiParams.returnMethod = filters.value.returnMethod
   // Handle date range - convert array to start/end parameters and format to ISO
   if (filters.value.receiveDate && Array.isArray(filters.value.receiveDate)) {
     apiParams.receiveDateStart = dayjs(filters.value.receiveDate[0]).format('YYYY-MM-DD')
@@ -156,6 +158,7 @@ const handleReset = async () => {
     customerId: undefined,
     receiveDate: null,
     status: undefined,
+    returnMethod: undefined,
   }
   sortState.value = {}
   paginationConfig.current = 1 // Reset to first page

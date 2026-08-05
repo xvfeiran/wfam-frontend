@@ -32,6 +32,17 @@
           </a-form-item>
         </a-col>
       </a-row>
+      <a-row :gutter="24">
+        <a-col :span="12">
+          <a-form-item :label="t('returnOrder.returnMethod')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+            <a-select v-model:value="localFilters.returnMethod" :placeholder="t('validation.selectReturnMethod')" allowClear>
+              <a-select-option value="express">{{ t('returnOrder.methodExpress') }}</a-select-option>
+              <a-select-option value="pickup">{{ t('returnOrder.methodPickup') }}</a-select-option>
+              <a-select-option value="other">{{ t('returnOrder.methodOther') }}</a-select-option>
+            </a-select>
+          </a-form-item>
+        </a-col>
+      </a-row>
       <a-row>
         <a-col :span="24" class="filter-buttons">
           <a-space>
@@ -59,6 +70,7 @@ interface Filters {
   customerId?: string
   receiveDate: any
   status?: string
+  returnMethod?: string
 }
 
 interface Props {
