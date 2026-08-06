@@ -100,6 +100,7 @@ const columns = computed(() => [
     title: t('returnOrder.returnMethod'),
     dataIndex: 'returnMethod',
     key: 'returnMethod',
+    sorter: true,
     customRender: ({ record }: { record: ReturnOrder }) => {
       const m = record.returnMethod
       if (m === ReturnMethod.EXPRESS) return t('returnOrder.methodExpress')
@@ -108,7 +109,7 @@ const columns = computed(() => [
       return m || '-'
     },
   },
-  { title: t('returnOrder.complaintType'), dataIndex: 'complaintType', key: 'complaintType' },
+  { title: t('returnOrder.complaintType'), dataIndex: 'complaintType', key: 'complaintType', sorter: true },
   {
     title: t('common.createdAt'),
     dataIndex: 'createdAt',

@@ -38,7 +38,6 @@
             <a-select v-model:value="localFilters.returnMethod" :placeholder="t('validation.selectReturnMethod')" allowClear>
               <a-select-option value="express">{{ t('returnOrder.methodExpress') }}</a-select-option>
               <a-select-option value="pickup">{{ t('returnOrder.methodPickup') }}</a-select-option>
-              <a-select-option value="other">{{ t('returnOrder.methodOther') }}</a-select-option>
             </a-select>
           </a-form-item>
         </a-col>
