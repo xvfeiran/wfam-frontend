@@ -10,7 +10,7 @@
         <a-col :span="12">
           <a-form-item :label="t('returnOrder.customer')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
             <a-select v-model:value="localFilters.customerId" :placeholder="t('validation.selectCustomer')" allowClear showSearch optionFilterProp="label">
-              <a-select-option v-for="c in customers" :key="c.id" :value="c.code || c.name">{{ c.code || c.name }}</a-select-option>
+              <a-select-option v-for="c in customers" :key="c.id" :value="c.name" :label="c.name">{{ c.name }}</a-select-option>
             </a-select>
           </a-form-item>
         </a-col>
@@ -42,6 +42,11 @@
             </a-select>
           </a-form-item>
         </a-col>
+        <a-col :span="12">
+          <a-form-item :label="t('common.createdAt')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+            <a-range-picker v-model:value="localFilters.createdAt" style="width: 100%" />
+          </a-form-item>
+        </a-col>
       </a-row>
       <a-row>
         <a-col :span="24" class="filter-buttons">
@@ -71,6 +76,7 @@ interface Filters {
   receiveDate: any
   status?: string
   returnMethod?: string
+  createdAt?: any
 }
 
 interface Props {

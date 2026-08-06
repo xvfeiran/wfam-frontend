@@ -1,6 +1,7 @@
 export default {
   common: {
     search: '查询',
+    createdAt: '创建时间',
     back: '返回',
     reset: '重置',
     confirm: '确定',

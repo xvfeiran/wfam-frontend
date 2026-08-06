@@ -69,6 +69,7 @@ const filters = ref({
   receiveDate: null as any,
   status: undefined as string | undefined,
   returnMethod: undefined as string | undefined,
+  createdAt: null as any,
 })
 
 const {
@@ -93,6 +94,10 @@ const {
   if (filters.value.receiveDate && Array.isArray(filters.value.receiveDate)) {
     apiParams.receiveDateStart = dayjs(filters.value.receiveDate[0]).format('YYYY-MM-DD')
     apiParams.receiveDateEnd = dayjs(filters.value.receiveDate[1]).format('YYYY-MM-DD')
+  }
+  if (filters.value.createdAt && Array.isArray(filters.value.createdAt)) {
+    apiParams.createdAtStart = dayjs(filters.value.createdAt[0]).format('YYYY-MM-DD')
+    apiParams.createdAtEnd = dayjs(filters.value.createdAt[1]).format('YYYY-MM-DD')
   }
   return await returnOrderApi.list(apiParams)
 })
@@ -159,6 +164,7 @@ const handleReset = async () => {
     receiveDate: null,
     status: undefined,
     returnMethod: undefined,
+    createdAt: null,
   }
   sortState.value = {}
   paginationConfig.current = 1 // Reset to first page

@@ -85,6 +85,11 @@
       <!-- 物理属性（区间筛选） -->
       <a-row :gutter="24">
         <a-col :span="12">
+          <a-form-item :label="t('common.createdAt')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+            <a-range-picker v-model:value="localFilters.createdAtRange" style="width: 100%" />
+          </a-form-item>
+        </a-col>
+        <a-col :span="12">
           <a-form-item :label="t('returnPart.vehicleMileageRange')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
             <div class="mileage-range">
               <div class="mileage-inputs">
@@ -156,6 +161,7 @@ interface Filters {
   qcCreated?: string
   analyst?: string
   partProductionDateRange?: [dayjs.Dayjs, dayjs.Dayjs]
+  createdAtRange?: [dayjs.Dayjs, dayjs.Dayjs]
   vehicleMileageMin?: number
   vehicleMileageMax?: number
 }

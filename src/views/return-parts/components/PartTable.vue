@@ -17,6 +17,7 @@
 <script setup lang="ts">
 import { computed, h } from 'vue'
 import { useI18n } from 'vue-i18n'
+import dayjs from 'dayjs'
 import { Tag } from 'ant-design-vue'
 import { PART_STATUS_MAP, PartStatus } from '@/types'
 import type { Part } from '@/types'
@@ -107,6 +108,13 @@ const columns = computed(() => [
     customRender: ({ record }: { record: Part }) => {
       return h(Tag, { color: getPartStatusColor(record.status) }, () => getStatusLabel(record.status))
     },
+  },
+  {
+    title: t('common.createdAt'),
+    dataIndex: 'createdAt',
+    key: 'createdAt',
+    sorter: true,
+    customRender: ({ text }: { text: string }) => text ? dayjs(text).format('YYYY-MM-DD HH:mm') : '-',
   },
 ])
 

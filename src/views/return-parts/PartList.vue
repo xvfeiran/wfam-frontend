@@ -81,6 +81,7 @@ const filters = ref({
   // 分析师用户默认选择自己
   analyst: isAnalyst.value ? currentUserUsername.value : undefined as string | undefined,
   partProductionDateRange: undefined as [dayjs.Dayjs, dayjs.Dayjs] | undefined,
+  createdAtRange: undefined as [dayjs.Dayjs, dayjs.Dayjs] | undefined,
   vehicleMileageMin: undefined as number | undefined,
   vehicleMileageMax: undefined as number | undefined,
 })
@@ -116,6 +117,10 @@ const {
   if (filters.value.partProductionDateRange) {
     params.partProductionDateFrom = filters.value.partProductionDateRange[0].format('YYYY-MM-DD')
     params.partProductionDateTo = filters.value.partProductionDateRange[1].format('YYYY-MM-DD')
+  }
+  if (filters.value.createdAtRange) {
+    params.createdAtFrom = filters.value.createdAtRange[0].format('YYYY-MM-DD')
+    params.createdAtTo = filters.value.createdAtRange[1].format('YYYY-MM-DD')
   }
   if (filters.value.vehicleMileageMin != null) params.vehicleMileageFrom = filters.value.vehicleMileageMin
   if (filters.value.vehicleMileageMax != null) params.vehicleMileageTo = filters.value.vehicleMileageMax
@@ -184,6 +189,7 @@ const handleReset = async () => {
     // 分析师重置时仍然选择自己，其他角色重置为未选择
     analyst: isAnalyst.value ? currentUserUsername.value : undefined,
     partProductionDateRange: undefined,
+    createdAtRange: undefined,
     vehicleMileageMin: undefined,
     vehicleMileageMax: undefined,
   }
@@ -208,6 +214,10 @@ const handleExport = async () => {
     if (filters.value.partProductionDateRange) {
       params.partProductionDateFrom = filters.value.partProductionDateRange[0].format('YYYY-MM-DD')
       params.partProductionDateTo = filters.value.partProductionDateRange[1].format('YYYY-MM-DD')
+    }
+    if (filters.value.createdAtRange) {
+      params.createdAtFrom = filters.value.createdAtRange[0].format('YYYY-MM-DD')
+      params.createdAtTo = filters.value.createdAtRange[1].format('YYYY-MM-DD')
     }
     if (filters.value.vehicleMileageMin != null) params.vehicleMileageFrom = String(filters.value.vehicleMileageMin)
     if (filters.value.vehicleMileageMax != null) params.vehicleMileageTo = String(filters.value.vehicleMileageMax)

@@ -17,6 +17,7 @@
 <script setup lang="ts">
 import { computed, h } from 'vue'
 import { useI18n } from 'vue-i18n'
+import dayjs from 'dayjs'
 import { Tag } from 'ant-design-vue'
 import { ORDER_STATUS_MAP, OrderStatus, ReturnMethod } from '@/types'
 import type { ReturnOrder } from '@/types'
@@ -81,7 +82,7 @@ const columns = computed(() => [
     dataIndex: 'customer',
     key: 'customer',
     sorter: true,
-    filters: props.customers.map(c => ({ text: c.code || c.name, value: c.code || c.name })),
+    filters: props.customers.map(c => ({ text: c.name, value: c.name })),
   },
   { title: t('returnOrder.receiveDate'), dataIndex: 'receiveDate', key: 'receiveDate', sorter: true },
   { title: t('returnOrder.complaintDate'), dataIndex: 'complaintDate', key: 'complaintDate', sorter: true },
@@ -108,6 +109,13 @@ const columns = computed(() => [
     },
   },
   { title: t('returnOrder.complaintType'), dataIndex: 'complaintType', key: 'complaintType' },
+  {
+    title: t('common.createdAt'),
+    dataIndex: 'createdAt',
+    key: 'createdAt',
+    sorter: true,
+    customRender: ({ text }: { text: string }) => text ? dayjs(text).format('YYYY-MM-DD HH:mm') : '-',
+  },
 ])
 
 const handleSelectionChange = (keys: string[]) => {

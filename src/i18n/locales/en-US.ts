@@ -1,6 +1,7 @@
 export default {
   common: {
     search: 'Search',
+    createdAt: 'Created At',
     back: 'Back',
     reset: 'Reset',
     confirm: 'Confirm',

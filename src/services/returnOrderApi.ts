@@ -9,6 +9,8 @@ export interface OrderListParams {
   returnMethod?: string
   receiveDateStart?: string
   receiveDateEnd?: string
+  createdAtStart?: string
+  createdAtEnd?: string
   page?: number
   pageSize?: number
   sortBy?: string

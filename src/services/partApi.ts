@@ -9,6 +9,8 @@ export interface PartListParams {
   status?: string
   qcCreated?: string
   analyst?: string
+  createdAtFrom?: string
+  createdAtTo?: string
   sortBy?: string
   sortOrder?: 'ascend' | 'descend'
   page?: number
