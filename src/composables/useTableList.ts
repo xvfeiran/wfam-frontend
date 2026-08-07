@@ -66,27 +66,18 @@ export function useTableList<T extends { id: string }>(
     const sorterField: string | undefined = sorter?.columnKey || sorter?.field
     const sorterOrder: 'ascend' | 'descend' | undefined = sorter?.order
 
-    const prevSortField = sortState.value.field
-    const prevSortOrder = sortState.value.order
-
-    // Only update sort state when sorter carries valid sort data.
-    // When clicking pagination, sorter may be empty/undefined - we must preserve existing sort.
-    if (sorterField && sorterOrder) {
+    // A genuine sort change only happens on an explicit asc/desc click, which always
+    // carries sorter.order. Pagination and filter events arrive with sorter.order === null
+    // (antdv still populates sorter.field with a column in controlled-sort mode), so we must
+    // NOT treat a missing order as a sort change — otherwise paging resets to page 1 and the
+    // active sort is dropped.
+    let sortChanged = false
+    if (sorterOrder && sorterField) {
+      sortChanged = sorterField !== sortState.value.field || sorterOrder !== sortState.value.order
       sortState.value = { field: sorterField, order: sorterOrder }
-    } else if (sorterField && !sorterOrder) {
-      // Sort was cleared (third click on a column header)
-      sortState.value = {}
-    }
-    // else: pagination/filter-only event — keep current sortState unchanged
-
-    // If sort changed, reset to page 1
-    const sortChanged = (sorterField !== prevSortField) || (sorterOrder !== prevSortOrder)
-    if (sortChanged && sorterField) {
-      pagination.current = 1
-    } else {
-      pagination.current = newPagination.current
     }
 
+    pagination.current = sortChanged ? 1 : newPagination.current
     pagination.pageSize = newPagination.pageSize
     loadData() // Trigger data reload on pagination/sort changes
   }

@@ -134,20 +134,17 @@ const handleReset = () => {
 }
 
 const handleTableChange = (pagination: any, _filters: any, sorter: any) => {
-  // Extract sort field (use columnKey as primary, fallback to field)
   const sorterField: string | undefined = sorter?.columnKey || sorter?.field
   const sorterOrder: 'ascend' | 'descend' | null | undefined = sorter?.order
 
-  // Only update sort state when sorter carries valid sort data
-  if (sorterField && sorterOrder) {
+  // 只有显式升/降序点击才算排序变化。翻页/筛选事件 sorter.order 为 null（受控排序下
+  // antdv 仍会填充 sorter.field），若当作排序变化会让父级把页码重置到第 1 页。
+  if (sorterOrder && sorterField) {
     sortState.value = { field: sorterField, order: sorterOrder }
-  } else if (sorterField && !sorterOrder) {
-    sortState.value = { field: undefined, order: null }
   }
-  // else: pagination/filter-only event — keep current sortState unchanged
 
-  // 单一事件携带分页+排序全部信息，避免父级触发两次并发 load 导致数据竞态
-  emit('table-change', pagination.current, pagination.pageSize, sorterField, sorterOrder ?? null)
+  // 上抛「当前生效排序」+ 目标页，父级据此判断是否回到第 1 页
+  emit('table-change', pagination.current, pagination.pageSize, sortState.value.field, sortState.value.order ?? null)
 }
 </script>
 

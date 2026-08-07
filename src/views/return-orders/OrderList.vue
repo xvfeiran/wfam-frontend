@@ -70,6 +70,7 @@ const filters = ref({
   status: undefined as string | undefined,
   returnMethod: undefined as string | undefined,
   createdAt: null as any,
+  complaintDate: null as any,
 })
 
 const {
@@ -98,6 +99,10 @@ const {
   if (filters.value.createdAt && Array.isArray(filters.value.createdAt)) {
     apiParams.createdAtStart = dayjs(filters.value.createdAt[0]).format('YYYY-MM-DD')
     apiParams.createdAtEnd = dayjs(filters.value.createdAt[1]).format('YYYY-MM-DD')
+  }
+  if (filters.value.complaintDate && Array.isArray(filters.value.complaintDate)) {
+    apiParams.complaintDateStart = dayjs(filters.value.complaintDate[0]).format('YYYY-MM-DD')
+    apiParams.complaintDateEnd = dayjs(filters.value.complaintDate[1]).format('YYYY-MM-DD')
   }
   return await returnOrderApi.list(apiParams)
 })
@@ -165,6 +170,7 @@ const handleReset = async () => {
     status: undefined,
     returnMethod: undefined,
     createdAt: null,
+    complaintDate: null,
   }
   sortState.value = {}
   paginationConfig.current = 1 // Reset to first page
@@ -224,9 +230,19 @@ const handleExport = async () => {
     const params: Record<string, string> = {}
     if (filters.value.orderNumber) params.orderNumber = filters.value.orderNumber
     if (filters.value.customerId)  params.customer = filters.value.customerId
+    if (filters.value.status) params.status = filters.value.status
+    if (filters.value.returnMethod) params.returnMethod = filters.value.returnMethod
     if (filters.value.receiveDate && Array.isArray(filters.value.receiveDate)) {
       params.receiveDateStart = dayjs(filters.value.receiveDate[0]).format('YYYY-MM-DD')
       params.receiveDateEnd   = dayjs(filters.value.receiveDate[1]).format('YYYY-MM-DD')
+    }
+    if (filters.value.createdAt && Array.isArray(filters.value.createdAt)) {
+      params.createdAtStart = dayjs(filters.value.createdAt[0]).format('YYYY-MM-DD')
+      params.createdAtEnd   = dayjs(filters.value.createdAt[1]).format('YYYY-MM-DD')
+    }
+    if (filters.value.complaintDate && Array.isArray(filters.value.complaintDate)) {
+      params.complaintDateStart = dayjs(filters.value.complaintDate[0]).format('YYYY-MM-DD')
+      params.complaintDateEnd   = dayjs(filters.value.complaintDate[1]).format('YYYY-MM-DD')
     }
 
     const blob = await returnOrderApi.exportExcel(params)

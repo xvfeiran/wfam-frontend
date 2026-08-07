@@ -11,6 +11,8 @@ export interface OrderListParams {
   receiveDateEnd?: string
   createdAtStart?: string
   createdAtEnd?: string
+  complaintDateStart?: string
+  complaintDateEnd?: string
   page?: number
   pageSize?: number
   sortBy?: string
@@ -118,7 +120,7 @@ export const returnOrderApi = {
   endEntry(id: string): Promise<ReturnOrder> {
     return request.post(`/return-orders/${id}/end-entry`) as unknown as Promise<ReturnOrder>
   },
-  exportExcel(params?: Pick<OrderListParams, 'orderNumber' | 'customer' | 'receiveDateStart' | 'receiveDateEnd'>): Promise<Blob> {
+  exportExcel(params?: Pick<OrderListParams, 'orderNumber' | 'customer' | 'status' | 'returnMethod' | 'receiveDateStart' | 'receiveDateEnd' | 'createdAtStart' | 'createdAtEnd' | 'complaintDateStart' | 'complaintDateEnd'>): Promise<Blob> {
     return request.get('/return-orders/export', {
       params,
       responseType: 'blob',

@@ -82,8 +82,6 @@ const columns = computed(() => [
     title: t('returnPart.relatedOrder'),
     dataIndex: 'orderNumber',
     key: 'orderNumber',
-    sorter: true,
-    sortOrder: props.sortState.field === 'orderNumber' ? props.sortState.order : null,
     customRender: ({ record }: { record: Part }) => {
       if (!record.orderNumber) {
         return h('span', { style: { color: '#999' } }, t('validation.unsubmitted'))

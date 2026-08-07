@@ -9,11 +9,13 @@
           <a-table
             :columns="myAnalysisColumns"
             :data-source="myAnalysisApplications"
-            :pagination="tablePagination"
+            :pagination="appsPagination"
+            :loading="appsLoading"
             row-key="id"
             size="middle"
             :bordered="false"
             :sticky="true"
+            @change="handleAppsTableChange"
           >
             <template #bodyCell="{ column, record }">
               <template v-if="column.key === 'status'">
@@ -60,12 +62,14 @@
           </div>
           <a-table
             :columns="approvalAnalysisColumns"
-            :data-source="filteredMyApprovals"
-            :pagination="tablePagination"
+            :data-source="myApprovalRecords"
+            :pagination="approvalsPagination"
+            :loading="approvalsLoading"
             row-key="id"
             size="middle"
             :bordered="false"
             :sticky="true"
+            @change="handleApprovalsTableChange"
           >
             <template #bodyCell="{ column, record }">
               <template v-if="column.key === 'status'">
@@ -136,7 +140,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
@@ -153,6 +157,7 @@ import { approvalApi } from '@/services/approvalApi'
 import { partApi } from '@/services/partApi'
 import { useApprovalColumns } from '@/composables/useApprovalColumns'
 import { useDebouncedClick } from '@/composables/useDebouncedClick'
+import { useTableList } from '@/composables/useTableList'
 import AnalysisReportModal from '@/views/return-parts/components/AnalysisReportModal.vue'
 
 const { t } = useI18n()
@@ -172,36 +177,47 @@ const selectedPart = ref<Part | null>(null)
 // 防抖处理
 const rejectDebounce = useDebouncedClick({ delay: 1000 })
 
-// 通用分页配置
-const tablePagination = {
-  pageSize: 10,
-  showSizeChanger: true,
-  showTotal: (total: number) => t('common.total', { total }),
-}
-
-// 我的精分析申请（我提交的）
-const myAnalysisApplications = ref<AnalysisApplication[]>([])
-
-// 我的审批记录（待审批 + 已审批/已驳回）
-const myApprovalRecords = ref<AnalysisApplication[]>([])
-
 // 状态筛选
 const approvalStatusFilter = ref<string | undefined>('all')
 const approvalStatusOptions = [ApprovalStatus.PENDING, ApprovalStatus.APPROVED, ApprovalStatus.REJECTED]
 
-// 根据筛选条件过滤审批记录
-const filteredMyApprovals = computed(() => {
-  if (!approvalStatusFilter.value || approvalStatusFilter.value === 'all') {
-    return myApprovalRecords.value
-  }
-  return myApprovalRecords.value.filter(r => r.status === approvalStatusFilter.value)
+// 我的精分析申请（我提交的）— 服务端分页
+const {
+  loading: appsLoading,
+  items: myAnalysisApplications,
+  pagination: appsPagination,
+  handleTableChange: handleAppsTableChange,
+  loadData: loadApps,
+} = useTableList<AnalysisApplication>(async (params) => {
+  return approvalApi.getMyApplications({ page: params.page, pageSize: params.pageSize })
+})
+
+// 我的审批记录（待审批 + 已审批/已驳回）— 服务端分页 + 服务端状态筛选
+const {
+  loading: approvalsLoading,
+  items: myApprovalRecords,
+  pagination: approvalsPagination,
+  handleTableChange: handleApprovalsTableChange,
+  loadData: loadApprovals,
+} = useTableList<AnalysisApplication>(async (params) => {
+  return approvalApi.getMyApprovals({
+    page: params.page,
+    pageSize: params.pageSize,
+    status: approvalStatusFilter.value && approvalStatusFilter.value !== 'all' ? approvalStatusFilter.value : undefined,
+  })
+})
+
+// 状态筛选变化：回到第 1 页并服务端重查
+watch(approvalStatusFilter, () => {
+  approvalsPagination.current = 1
+  loadApprovals()
 })
 
 onMounted(async () => {
-  myAnalysisApplications.value = await approvalApi.getMyApplications()
+  await loadApps()
 
   if (isQMCLeader.value) {
-    myApprovalRecords.value = await approvalApi.getMyApprovals()
+    await loadApprovals()
   }
 
   if (isQMCLeader.value && (route.query.tab === 'myApproval' || route.query.tab === 'pendingApproval')) {
@@ -251,8 +267,7 @@ const handleCancelApplication = (record: AnalysisApplication) => {
     content: t('approval.confirmWithdraw'),
     onOk: async () => {
       await approvalApi.withdraw(record.id)
-      const item = myAnalysisApplications.value.find(a => a.id === record.id)
-      if (item) item.status = ApprovalStatus.WITHDRAWN
+      await loadApps()
       message.success(t('message.withdrawComplete'))
     },
   })
@@ -280,8 +295,7 @@ const handleApprove = (record: AnalysisApplication) => {
     content: t('approval.confirmApprove').replace('{type}', t('approval.analysisReport')),
     onOk: async () => {
       await approvalApi.approve(record.id)
-      const item = myApprovalRecords.value.find(a => a.id === record.id)
-      if (item) item.status = ApprovalStatus.APPROVED
+      await loadApprovals()
       message.success(t('message.approvalComplete'))
     },
   })
@@ -305,8 +319,7 @@ const handleConfirmReject = () => rejectDebounce.execute(async () => {
 
   await approvalApi.reject(currentRejectRecord.value.id, rejectReason.value)
 
-  const item = myApprovalRecords.value.find(a => a.id === currentRejectRecord.value!.id)
-  if (item) item.status = ApprovalStatus.REJECTED
+  await loadApprovals()
 
   rejectModalVisible.value = false
   message.success(t('message.rejectComplete'))

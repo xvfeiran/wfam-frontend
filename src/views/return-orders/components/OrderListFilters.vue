@@ -47,6 +47,13 @@
           </a-form-item>
         </a-col>
       </a-row>
+      <a-row :gutter="24">
+        <a-col :span="12">
+          <a-form-item :label="t('returnOrder.complaintDate')" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+            <a-range-picker v-model:value="localFilters.complaintDate" style="width: 100%" />
+          </a-form-item>
+        </a-col>
+      </a-row>
       <a-row>
         <a-col :span="24" class="filter-buttons">
           <a-space>
@@ -76,6 +83,7 @@ interface Filters {
   status?: string
   returnMethod?: string
   createdAt?: any
+  complaintDate?: any
 }
 
 interface Props {

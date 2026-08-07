@@ -272,23 +272,19 @@ const handleReset = () => {
 const handleTableChange = (pag: any, _filters: any, sorter: any) => {
   const sorterField: string | undefined = sorter?.columnKey || sorter?.field
   const sorterOrder: 'ascend' | 'descend' | undefined = sorter?.order
-  const prevField = sortState.value.field
-  const prevOrder = sortState.value.order
 
-  // Only update sort state when sorter carries valid sort data
-  if (sorterField && sorterOrder) {
+  // A genuine sort change only happens on an explicit asc/desc click, which always carries
+  // sorter.order. Pagination/filter events arrive with sorter.order === null (antdv still
+  // populates sorter.field with a column in controlled-sort mode), so a missing order must
+  // NOT be treated as a sort change — otherwise paging resets to page 1 and the active sort
+  // is dropped.
+  let sortChanged = false
+  if (sorterOrder && sorterField) {
+    sortChanged = sorterField !== sortState.value.field || sorterOrder !== sortState.value.order
     sortState.value = { field: sorterField, order: sorterOrder }
-  } else if (sorterField && !sorterOrder) {
-    sortState.value = {}
   }
-  // else: pagination/filter-only event — keep current sortState unchanged
 
-  const sortChanged = sorterField !== prevField || sorterOrder !== prevOrder
-  if (sortChanged && sorterField) {
-    pagination.value.current = 1
-  } else {
-    pagination.value.current = pag.current
-  }
+  pagination.value.current = sortChanged ? 1 : pag.current
   pagination.value.pageSize = pag.pageSize
   loadData()
 }
