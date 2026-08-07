@@ -190,6 +190,7 @@ const baseColumns = computed(() => [
     dataIndex: 'partNumber',
     key: 'partNumber',
     sorter: true,
+    sortOrder: sortState.value.field === 'partNumber' ? sortState.value.order : null,
     customRender: ({ record }: { record: Part }) => {
       if (!record.partNumber) {
         return h('span', { style: { color: '#999' } }, '-')
@@ -211,24 +212,28 @@ const baseColumns = computed(() => [
     dataIndex: 'partCode',
     key: 'partCode',
     sorter: true,
+    sortOrder: sortState.value.field === 'partCode' ? sortState.value.order : null,
   },
   {
     title: t('returnPart.businessUnit'),
     dataIndex: 'businessUnit',
     key: 'businessUnit',
     sorter: true,
+    sortOrder: sortState.value.field === 'businessUnit' ? sortState.value.order : null,
   },
   {
     title: t('returnPart.productPlatform'),
     dataIndex: 'productPlatform',
     key: 'productPlatform',
     sorter: true,
+    sortOrder: sortState.value.field === 'productPlatform' ? sortState.value.order : null,
   },
   {
     title: t('common.status'),
     dataIndex: 'status',
     key: 'status',
     sorter: true,
+    sortOrder: sortState.value.field === 'status' ? sortState.value.order : null,
   },
 ])
 
@@ -241,6 +246,7 @@ const allColumns = computed(() => {
       dataIndex: 'isSample',
       key: 'isSample',
       sorter: true,
+      sortOrder: sortState.value.field === 'isSample' ? sortState.value.order : null,
     })
   }
   return cols
@@ -264,13 +270,21 @@ const handleReset = () => {
 }
 
 const handleTableChange = (pag: any, _filters: any, sorter: any) => {
+  const sorterField: string | undefined = sorter?.columnKey || sorter?.field
+  const sorterOrder: 'ascend' | 'descend' | undefined = sorter?.order
   const prevField = sortState.value.field
   const prevOrder = sortState.value.order
 
-  sortState.value = { field: sorter.columnKey || sorter.field, order: sorter.order }
+  // Only update sort state when sorter carries valid sort data
+  if (sorterField && sorterOrder) {
+    sortState.value = { field: sorterField, order: sorterOrder }
+  } else if (sorterField && !sorterOrder) {
+    sortState.value = {}
+  }
+  // else: pagination/filter-only event — keep current sortState unchanged
 
-  const sortChanged = (sorter.columnKey || sorter.field) !== prevField || sorter.order !== prevOrder
-  if (sortChanged && (sorter.columnKey || sorter.field)) {
+  const sortChanged = sorterField !== prevField || sorterOrder !== prevOrder
+  if (sortChanged && sorterField) {
     pagination.value.current = 1
   } else {
     pagination.value.current = pag.current

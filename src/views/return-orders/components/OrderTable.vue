@@ -63,6 +63,7 @@ const columns = computed(() => [
     dataIndex: 'orderNumber',
     key: 'orderNumber',
     sorter: true,
+    sortOrder: props.sortState.field === 'orderNumber' ? props.sortState.order : null,
     customRender: ({ record }: { record: ReturnOrder }) => {
       const text = record.orderNumber || t('validation.unsubmitted')
       if (!record.orderNumber) {
@@ -82,16 +83,18 @@ const columns = computed(() => [
     dataIndex: 'customer',
     key: 'customer',
     sorter: true,
+    sortOrder: props.sortState.field === 'customer' ? props.sortState.order : null,
     filters: props.customers.map(c => ({ text: c.name, value: c.name })),
   },
-  { title: t('returnOrder.receiveDate'), dataIndex: 'receiveDate', key: 'receiveDate', sorter: true },
-  { title: t('returnOrder.complaintDate'), dataIndex: 'complaintDate', key: 'complaintDate', sorter: true },
-  { title: t('returnOrder.returnQuantity'), dataIndex: 'returnQuantity', key: 'returnQuantity', sorter: true },
+  { title: t('returnOrder.receiveDate'), dataIndex: 'receiveDate', key: 'receiveDate', sorter: true, sortOrder: props.sortState.field === 'receiveDate' ? props.sortState.order : null },
+  { title: t('returnOrder.complaintDate'), dataIndex: 'complaintDate', key: 'complaintDate', sorter: true, sortOrder: props.sortState.field === 'complaintDate' ? props.sortState.order : null },
+  { title: t('returnOrder.returnQuantity'), dataIndex: 'returnQuantity', key: 'returnQuantity', sorter: true, sortOrder: props.sortState.field === 'returnQuantity' ? props.sortState.order : null },
   {
     title: t('common.status'),
     dataIndex: 'status',
     key: 'status',
     sorter: true,
+    sortOrder: props.sortState.field === 'status' ? props.sortState.order : null,
     customRender: ({ record }: { record: ReturnOrder }) => {
       return h(Tag, { color: getOrderStatusColor(record.status) }, () => getStatusLabel(record.status))
     },
@@ -101,6 +104,7 @@ const columns = computed(() => [
     dataIndex: 'returnMethod',
     key: 'returnMethod',
     sorter: true,
+    sortOrder: props.sortState.field === 'returnMethod' ? props.sortState.order : null,
     customRender: ({ record }: { record: ReturnOrder }) => {
       const m = record.returnMethod
       if (m === ReturnMethod.EXPRESS) return t('returnOrder.methodExpress')
@@ -109,12 +113,13 @@ const columns = computed(() => [
       return m || '-'
     },
   },
-  { title: t('returnOrder.complaintType'), dataIndex: 'complaintType', key: 'complaintType', sorter: true },
+  { title: t('returnOrder.complaintType'), dataIndex: 'complaintType', key: 'complaintType', sorter: true, sortOrder: props.sortState.field === 'complaintType' ? props.sortState.order : null },
   {
     title: t('common.createdAt'),
     dataIndex: 'createdAt',
     key: 'createdAt',
     sorter: true,
+    sortOrder: props.sortState.field === 'createdAt' ? props.sortState.order : null,
     customRender: ({ text }: { text: string }) => text ? dayjs(text).format('YYYY-MM-DD HH:mm') : '-',
   },
 ])

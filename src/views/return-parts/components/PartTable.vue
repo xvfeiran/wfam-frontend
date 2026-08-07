@@ -32,7 +32,7 @@ interface Props {
   sortState: { field?: string; order?: 'ascend' | 'descend' }
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
 const emit = defineEmits<{
   (e: 'selection-change', keys: string[]): void
@@ -64,6 +64,7 @@ const columns = computed(() => [
     dataIndex: 'partNumber',
     key: 'partNumber',
     sorter: true,
+    sortOrder: props.sortState.field === 'partNumber' ? props.sortState.order : null,
     customRender: ({ record }: { record: Part }) => {
       if (!record.partNumber) {
         return h('span', { style: { color: '#999' } }, '-')
@@ -82,6 +83,7 @@ const columns = computed(() => [
     dataIndex: 'orderNumber',
     key: 'orderNumber',
     sorter: true,
+    sortOrder: props.sortState.field === 'orderNumber' ? props.sortState.order : null,
     customRender: ({ record }: { record: Part }) => {
       if (!record.orderNumber) {
         return h('span', { style: { color: '#999' } }, t('validation.unsubmitted'))
@@ -95,16 +97,17 @@ const columns = computed(() => [
       }, record.orderNumber)
     }
   },
-  { title: t('returnPart.partCode'), dataIndex: 'partCode', key: 'partCode', sorter: true },
-  { title: t('returnPart.businessUnit'), dataIndex: 'businessUnit', key: 'businessUnit', sorter: true },
-  { title: t('returnPart.productPlatform'), dataIndex: 'productPlatform', key: 'productPlatform', sorter: true },
-  { title: t('partDetail.analyst'), dataIndex: 'analyst', key: 'analyst', sorter: true,
+  { title: t('returnPart.partCode'), dataIndex: 'partCode', key: 'partCode', sorter: true, sortOrder: props.sortState.field === 'partCode' ? props.sortState.order : null },
+  { title: t('returnPart.businessUnit'), dataIndex: 'businessUnit', key: 'businessUnit', sorter: true, sortOrder: props.sortState.field === 'businessUnit' ? props.sortState.order : null },
+  { title: t('returnPart.productPlatform'), dataIndex: 'productPlatform', key: 'productPlatform', sorter: true, sortOrder: props.sortState.field === 'productPlatform' ? props.sortState.order : null },
+  { title: t('partDetail.analyst'), dataIndex: 'analyst', key: 'analyst', sorter: true, sortOrder: props.sortState.field === 'analyst' ? props.sortState.order : null,
     customRender: ({ text }: { text: string }) => userDisplayName(text) },
   {
     title: t('common.status'),
     dataIndex: 'status',
     key: 'status',
     sorter: true,
+    sortOrder: props.sortState.field === 'status' ? props.sortState.order : null,
     customRender: ({ record }: { record: Part }) => {
       return h(Tag, { color: getPartStatusColor(record.status) }, () => getStatusLabel(record.status))
     },
@@ -114,6 +117,7 @@ const columns = computed(() => [
     dataIndex: 'createdAt',
     key: 'createdAt',
     sorter: true,
+    sortOrder: props.sortState.field === 'createdAt' ? props.sortState.order : null,
     customRender: ({ text }: { text: string }) => text ? dayjs(text).format('YYYY-MM-DD HH:mm') : '-',
   },
 ])

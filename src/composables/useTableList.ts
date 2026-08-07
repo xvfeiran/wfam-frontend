@@ -62,18 +62,26 @@ export function useTableList<T extends { id: string }>(
   }
 
   const handleTableChange = (newPagination: any, _filters: Record<string, string[] | null>, sorter: any) => {
+    // Extract sort field from sorter (use columnKey as primary, fallback to field for robustness)
+    const sorterField: string | undefined = sorter?.columnKey || sorter?.field
+    const sorterOrder: 'ascend' | 'descend' | undefined = sorter?.order
+
     const prevSortField = sortState.value.field
     const prevSortOrder = sortState.value.order
 
-    // Update sort state
-    sortState.value = {
-      field: sorter.field,
-      order: sorter.order,
+    // Only update sort state when sorter carries valid sort data.
+    // When clicking pagination, sorter may be empty/undefined - we must preserve existing sort.
+    if (sorterField && sorterOrder) {
+      sortState.value = { field: sorterField, order: sorterOrder }
+    } else if (sorterField && !sorterOrder) {
+      // Sort was cleared (third click on a column header)
+      sortState.value = {}
     }
+    // else: pagination/filter-only event — keep current sortState unchanged
 
     // If sort changed, reset to page 1
-    const sortChanged = (sorter.field !== prevSortField) || (sorter.order !== prevSortOrder)
-    if (sortChanged && sorter.field) {
+    const sortChanged = (sorterField !== prevSortField) || (sorterOrder !== prevSortOrder)
+    if (sortChanged && sorterField) {
       pagination.current = 1
     } else {
       pagination.current = newPagination.current

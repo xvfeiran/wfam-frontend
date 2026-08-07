@@ -362,7 +362,13 @@ const handleCustomerTableChange = async (
   sortBy: string | undefined,
   sortOrder: 'ascend' | 'descend' | null,
 ) => {
-  customerCurrentPage.value = page
+  // Reset to page 1 when sort changes
+  const sortChanged = sortBy !== customerSortBy.value || (sortOrder || undefined) !== customerSortOrder.value
+  if (sortChanged && sortBy) {
+    customerCurrentPage.value = 1
+  } else {
+    customerCurrentPage.value = page
+  }
   customerPageSize.value = pageSize
   customerSortBy.value = sortBy
   customerSortOrder.value = sortOrder || undefined
@@ -450,7 +456,13 @@ const handlePartCodeTableChange = async (
   sortBy: string | undefined,
   sortOrder: 'ascend' | 'descend' | null,
 ) => {
-  partCodeCurrentPage.value = page
+  // Reset to page 1 when sort changes
+  const sortChanged = sortBy !== partCodeSortBy.value || (sortOrder || undefined) !== partCodeSortOrder.value
+  if (sortChanged && sortBy) {
+    partCodeCurrentPage.value = 1
+  } else {
+    partCodeCurrentPage.value = page
+  }
   partCodePageSize.value = pageSize
   partCodeSortBy.value = sortBy
   partCodeSortOrder.value = sortOrder || undefined

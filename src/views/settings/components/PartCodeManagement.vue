@@ -144,12 +144,20 @@ const handleReset = () => {
 }
 
 const handleTableChange = (pagination: any, _filters: any, sorter: any) => {
-  sortState.value = {
-    field: sorter.field,
-    order: sorter.order,
+  // Extract sort field (use columnKey as primary, fallback to field)
+  const sorterField: string | undefined = sorter?.columnKey || sorter?.field
+  const sorterOrder: 'ascend' | 'descend' | null | undefined = sorter?.order
+
+  // Only update sort state when sorter carries valid sort data
+  if (sorterField && sorterOrder) {
+    sortState.value = { field: sorterField, order: sorterOrder }
+  } else if (sorterField && !sorterOrder) {
+    sortState.value = { field: undefined, order: null }
   }
+  // else: pagination/filter-only event — keep current sortState unchanged
+
   // 单一事件携带分页+排序全部信息，避免父级触发两次并发 load 导致数据竞态
-  emit('table-change', pagination.current, pagination.pageSize, sorter.field, sorter.order)
+  emit('table-change', pagination.current, pagination.pageSize, sorterField, sorterOrder ?? null)
 }
 </script>
 

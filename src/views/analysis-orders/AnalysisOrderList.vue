@@ -134,6 +134,7 @@ const columns = computed<TableProps['columns']>(() => [
     dataIndex: 'orderNumber',
     key: 'orderNumber',
     sorter: true,
+    sortOrder: sortState.value.field === 'orderNumber' ? sortState.value.order : null,
     customRender: ({ text }: { text: string }) => text || '-',
   },
   {
@@ -141,6 +142,7 @@ const columns = computed<TableProps['columns']>(() => [
     dataIndex: 'analyst',
     key: 'analyst',
     sorter: true,
+    sortOrder: sortState.value.field === 'analyst' ? sortState.value.order : null,
     customRender: ({ text }: { text: string }) => {
       if (!text || text === '导入数据无此字段') return '-'
       return userDisplayName(text)
@@ -151,6 +153,7 @@ const columns = computed<TableProps['columns']>(() => [
     dataIndex: 'status',
     key: 'status',
     sorter: true,
+    sortOrder: sortState.value.field === 'status' ? sortState.value.order : null,
     customRender: ({ record }: { record: AnalysisOrder }) => {
       return h(Tag, { color: getStatusColor(record.status) }, () => getStatusLabel(record.status))
     },
