@@ -40,7 +40,7 @@
         @change="handleTableChange"
       >
         <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'customerCode'">
+          <template v-if="column.key === 'code'">
             <a-tag v-if="record.code" color="blue">{{ record.code }}</a-tag>
             <span v-else style="color: #999">-</span>
           </template>
@@ -106,7 +106,7 @@ const columns = computed(() => [
   {
     title: t('settings.customerCode'),
     dataIndex: 'code',
-    key: 'customerCode',
+    key: 'code',
     sorter: true,
     sortOrder: sortState.value.field === 'code' ? sortState.value.order : undefined,
   },
