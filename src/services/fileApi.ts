@@ -1,11 +1,19 @@
 import request from './request'
+import { useDevMode } from '@/composables/useDevMode'
 
 export interface ImageUploadResult {
   relativePath: string
   url: string
 }
 
-const FILE_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8102/aftermarket-parts-management-system/api/v1'
+// 必须与 request.ts 的 baseURL 解析逻辑保持一致：
+// 调试模式直连后端，子应用（生产）模式走网关。
+// 否则生产环境未配置 VITE_BACKEND_URL 时，<img src> 会回退到 localhost:8102，
+// 导致照片缩略图/预览全部加载失败。
+const { isDevMode } = useDevMode()
+const backendBaseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8102/aftermarket-parts-management-system/api/v1'
+const gatewayBaseUrl = import.meta.env.VITE_GATEWAY_URL || backendBaseUrl
+const FILE_BASE = isDevMode.value ? backendBaseUrl : gatewayBaseUrl
 
 export const fileApi = {
   /** 获取文件完整 URL（用于 img src，直接请求后端，不经过 Axios） */
